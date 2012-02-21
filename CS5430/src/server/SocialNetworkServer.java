@@ -2,9 +2,14 @@ package server;
 
 import java.net.*;
 import java.io.*;
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
+import java.sql.Statement;
 
 public class SocialNetworkServer {
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, SQLException {
 
 		ServerSocket serverSocket = null;
 		try {
@@ -50,5 +55,31 @@ public class SocialNetworkServer {
 		in.close();
 		clientSocket.close();
 		serverSocket.close();
+		
+		Connection conn = getConnection();
+		Statement stmt = null;
+		String query = "INSERT INTO test.new_table VALUES (1)";
+		try {
+      stmt = conn.createStatement();
+      int result = stmt.executeUpdate(query);
+      System.out.println("Inserted "  + result + " rows.");
+		}
+		finally {
+		  if (stmt != null) {
+		    stmt.close();
+		  }
+		}
+	}
+	
+	private static Connection getConnection() throws SQLException {
+	  Connection conn = null;
+	  Properties connectionProps = new Properties();
+    connectionProps.put("user", "root");
+    connectionProps.put("password", "root");
+    conn = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/",
+            connectionProps);
+    System.out.println("Connected to database");
+    return conn;
 	}
 }
