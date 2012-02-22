@@ -8,27 +8,27 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.sql.Statement;
 
+/* Setup code and Connection code courtesy of 
+ * tutorials in docs.oracle.com
+ */
+
+//TODO should we merely just exit if the server finds an error?
+
 public class SocialNetworkServer {
+  private static int listenPortNum = 5329;
+  private static int dbPortNum = 3306;
+  private static String hostName = "localhost";
+  private static String user = "root";
+  private static String password = "root";
+  
 	public static void main(String[] args) throws IOException, SQLException {
 
-		ServerSocket serverSocket = null;
-		try {
-			// creates the server socket and listens on port 4443
-			serverSocket = new ServerSocket(4443);
-		} catch (IOException e) {
-			System.err.println("Could not listen on port: 4443.");
-			System.exit(1);
-		}
+		ServerSocket serverSocket = initializeSocket();
 
-		Socket clientSocket = null;
-		try {
-			// connecting to the client
-			clientSocket = serverSocket.accept();
-		} catch (IOException e) {
-			System.err.println("Accept failed.");
-			System.exit(1);
+		while (true) {
+		  acceptClient(serverSocket);
 		}
-
+/*
 		// Getting client socket's output stream
 		PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 		// Getting client socket's input stream
@@ -68,16 +68,46 @@ public class SocialNetworkServer {
 		  if (stmt != null) {
 		    stmt.close();
 		  }
-		}
+		}*/
 	}
 	
-	private static Connection getConnection() throws SQLException {
+	private static ServerSocket initializeSocket() {
+	  ServerSocket serverSocket = null;
+	  try {
+      // creates the server socket and listens on port 4443
+      serverSocket = new ServerSocket(listenPortNum);
+    } catch (IOException e) {
+      System.err.println("Could not listen on port: " + listenPortNum + ".");
+      //TODO exit here?
+      System.exit(1);
+    }
+    return serverSocket;
+	}
+	
+	private static void acceptClient(ServerSocket serverSocket) {
+	  Socket clientSocket = null;
+    try {
+      // connecting to the client
+      clientSocket = serverSocket.accept();
+    } catch (IOException e) {
+      System.err.println("Accept failed.");
+      //TODO exit here?
+      System.exit(1);
+    }
+    
+    SocialNetworkProtocol snp = new SocialNetworkProtocol(clientSocket);
+    Thread client = new Thread(snp);
+    client.run();
+	}
+	
+	private static Connection getConnection(String userName, String pwd, 
+	    String host, int port) throws SQLException {
 	  Connection conn = null;
 	  Properties connectionProps = new Properties();
-    connectionProps.put("user", "root");
-    connectionProps.put("password", "root");
+    connectionProps.put("user", userName);
+    connectionProps.put("password", pwd);
     conn = DriverManager.getConnection(
-            "jdbc:mysql://localhost:3306/",
+            "jdbc:mysql://" + host + ":" + port + "/",
             connectionProps);
     System.out.println("Connected to database");
     return conn;
