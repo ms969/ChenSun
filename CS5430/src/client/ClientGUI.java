@@ -9,13 +9,14 @@ public class ClientGUI {
 	public static void main(String[] args) throws IOException {
 	  
 		Socket kkSocket = null;
-		PrintWriter out = null;
-		BufferedReader in = null;
+		PrintWriter socketOut = null;
+		BufferedReader socketIn = null;
+		BufferedReader keyboard = null;
 
 		try {
 			kkSocket = new Socket(InetAddress.getByName(serverHostName), serverPortNum);
-			out = new PrintWriter(kkSocket.getOutputStream(), true);
-			in = new BufferedReader(new InputStreamReader(
+			socketOut = new PrintWriter(kkSocket.getOutputStream(), true);
+			socketIn = new BufferedReader(new InputStreamReader(
 					kkSocket.getInputStream()));
 		} catch (UnknownHostException e) {
 			System.err.println("Don't know about host: " + serverHostName);
@@ -27,29 +28,38 @@ public class ClientGUI {
 		}
 		System.out.println("Connected to " + serverHostName + ":" + serverPortNum);
 		
+		keyboard = new BufferedReader(new InputStreamReader(System.in));
+		
 		/** LOGGING IN **/
 		boolean notLoggedIn = true;
 		boolean exit = false;
+		
 		while (notLoggedIn && !exit) {
 		  System.out.println("Please input your Username.");
-		  String username = ""; //System.in.
+		  String username = keyboard.readLine();
 		  System.out.println("Input Password");
-		  String password = ""; //System.in.
+		  String password = keyboard.readLine();
 		  /**Send to server for verification**/
 		}
 		
 		/*TODO Get Information from Server if successfully logged in*/
 		
 		boolean inSession = true;
+		String input;
+		String socketMsg;
+		
 		while (inSession) {
 		  System.out.print(">> ");
-		  String input = ""; //Get command, system In.
+		  input = keyboard.readLine();
+		  socketOut.println(input);
+		  socketMsg = socketIn.readLine();
+		  System.out.println(socketMsg);
 		}
 		
 		
 		// -----
 		
-		
+		/*
 		String fromServer;
 		
 		while ((fromServer = in.readLine()) != null) {
@@ -62,10 +72,10 @@ public class ClientGUI {
 			if (fromServer.equals("Connected.")) {
 				break;
 			}
-		}
+		}*/
 
-		out.close();
-		in.close();
+		socketOut.close();
+		socketIn.close();
 		kkSocket.close();
 	}
 }
