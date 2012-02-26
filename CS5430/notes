@@ -1,0 +1,61 @@
+Right now the main method in protocol is receiving strings from the client.
+Everytime it receives a string, it passes it to processInput(). 
+
+OK, what are the results that could be handed after processing the input?
+a string gets printed out on the client's screen. (starts with print)
+passing a command to client to change something.
+passing a command to get something back.
+right now, one line per "command"
+Is there ways to pass back multiple lines?
+
+---------------LOGIN-----------------------------
+client says: Login or register
+user says: login user1
+client gives to protocol: login user1
+protocol processes command "login":
+	checks username against database.
+	If name exist, passback command "setLoggedIn true; setUser user1"
+	if name not exist, passback command "setLoggedIn false"
+
+Logged in as: MJ
+Role: Admin
+A Cappella Group: Fantasia
+
+Pending Friend Requests (2)
+Pending User Requests (0)
+
+Boards:
+Board1
+I am super excited!
+
+>> goto “Board1”
+
+----------------------REGISTRATION-----------------------------
+client says: login or register
+user says: register
+client gives to protocol register
+protocol processes command register:
+
+
+Choose a username:
+>> user1
+(checks name against system, name exists)
+username already exist. Choose a different one.
+>> user2
+(checks name, name does not exist)
+Choose a capella group for user2:
+A Cappella 1
+A Cappella 2
+A Cappella 3
+A Cappella 4
+>> A Cappella 12
+(checks against the database)
+The group you chose is not registered with our system. Please choose one from the list:
+A Cappella 1
+A Cappella 2
+A Cappella 3
+A Cappella 4
+>> A Cappella 3
+(checks against database)
+Registration request for user2 from A Cappella 3 has been sent.
+Once an admin from your group approves, you will be added to the system.
