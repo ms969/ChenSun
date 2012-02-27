@@ -283,8 +283,8 @@ public class SocialNetworkDatabaseBoards {
 			DBManager.closePreparedStatement(pstmt);
 			DBManager.closeResultSet(boards);
 		}
-		if (boards.equals("print Boards:;print freeforall") && !sqlex) {
-			return "print No Boards!";
+		if (boardlist.equals("print Boards:;print freeforall") && !sqlex) {
+			return boardlist;
 		}
 		else if (sqlex) {
 			return "print Database Error while querying viewable boards. Contact an admin.";
