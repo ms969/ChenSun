@@ -8,13 +8,22 @@ import database.SocialNetworkDatabaseBoards;
 
 public class SocialNetworkBoards {
 
+	public static Boolean boardExists(String boardName) {
+		Connection dbconn = DBManager.getConnection();
+		Boolean exists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		DBManager.closeConnection(dbconn);
+		return exists;
+	}
+	
 	//TODO assumptions: user is admin.
-	public static String createBoard(String boardName, String username) 
+	public static String createBoard(String username, String boardName) 
 	throws IOException {
 		if (boardName.trim().contains("..") || boardName.trim().equals("") 
 				|| boardName.trim().toLowerCase().equals("freefreeall")
 				|| boardName.trim().toLowerCase().equals("main")
-				|| boardName.trim().contains(";")) {
+				|| boardName.trim().toLowerCase().equals("home")
+				|| boardName.trim().contains(";")
+				|| boardName.trim().contains("/")) {
 			return "print Cannot create a board with the name \"" + boardName 
 			  +"\". Please use a different name (Case Insensitive).";
 		}

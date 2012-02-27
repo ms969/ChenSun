@@ -6,20 +6,20 @@ import database.SocialNetworkDatabasePosts;
 import database.DBManager;
 
 public class SocialNetworkPosts {
-	public String createPostFreeForAll(String username, String content) {
+	public static String createPostFreeForAll(String username, String content) {
 		return "";
 	}
-	public String createPost(String username, String boardName, 
+	public static String createPost(String username, String boardName, 
 		 String regionName, String content) {
 		return "";
 	}
-	public String getPostListFreeForAll(String username) {
+	public static String getPostListFreeForAll(String username) {
 		Connection dbconn = DBManager.getConnection();
 		String msg = SocialNetworkDatabasePosts.getPostListFreeForAll(dbconn, username);
 		DBManager.closeConnection(dbconn);
 		return msg;
 	}
-	public String getPostList(String username, String boardName, String regionName) {
+	public static String getPostList(String username, String boardName, String regionName) {
 		if (boardName == null || regionName == null) {
 			return "Invalid Call to Function";
 		}

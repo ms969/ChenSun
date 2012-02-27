@@ -2,10 +2,19 @@ package server;
 
 import java.sql.Connection;
 
+import database.SocialNetworkDatabaseBoards;
 import database.SocialNetworkDatabaseRegions;
 import database.DBManager;
 
 public class SocialNetworkRegions {
+	
+	public static Boolean regionExists(String boardName, String regionName) {
+		Connection dbconn = DBManager.getConnection();
+		Boolean regionExists = SocialNetworkDatabaseRegions.regionExists(dbconn, 
+				boardName.trim().toLowerCase(), regionName.trim().toLowerCase());
+		DBManager.closeConnection(dbconn);
+		return regionExists;
+	}
 	
 	public static String createRegion(String username, String boardName, String regionName) {
 		if (boardName == null || regionName == null) {
@@ -15,15 +24,24 @@ public class SocialNetworkRegions {
 			return "Invalid Call to Function";
 		}
 		//TODO any more region names that should be discouraged?
-		if (regionName.trim().equals("") || regionName.contains("..") || 
-				regionName.contains(";")) {
+		if (regionName.trim().equals("") || regionName.contains("..") 
+				|| regionName.contains(";")
+				|| regionName.trim().toLowerCase().equals("home")
+				|| regionName.trim().contains("/")) {
 			return "print Cannot create a region with the name \"" + regionName 
 			  +"\". Please use a different name (Case Insensitive).";
 		}
 		Connection dbconn = DBManager.getConnection();
-		String msg = SocialNetworkDatabaseRegions.createRegion(dbconn, username, boardName, regionName);
-		DBManager.closeConnection(dbconn);
-		return msg;
+		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		if (boardExists.booleanValue()) {
+			String msg = SocialNetworkDatabaseRegions.createRegion(dbconn, username, 
+					boardName.trim().toLowerCase(), regionName.trim().toLowerCase());
+			DBManager.closeConnection(dbconn);
+			return msg;
+		}
+		else {
+			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+		}
 	}
 
 	public static String viewRegions(String username, String boardName){
@@ -34,8 +52,14 @@ public class SocialNetworkRegions {
 			return "Invalid Call to Function";
 		}
 		Connection dbconn = DBManager.getConnection();
-		String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, boardName.trim().toLowerCase());
-		DBManager.closeConnection(dbconn);
-		return msg;
+		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		if (boardExists.booleanValue()) {
+			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, boardName.trim().toLowerCase());
+			DBManager.closeConnection(dbconn);
+			return msg;
+		}
+		else {
+			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+		}
 	}
 }

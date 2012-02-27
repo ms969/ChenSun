@@ -11,6 +11,40 @@ public class SocialNetworkDatabasePosts {
 	private static String specialStrCreatedPost = "**";
 	
 	/**
+	 * Verifies whether a post exists in the given board (and region).
+	 */
+	public static Boolean postExists(Connection conn, String boardName, String regionName, int postNum) {
+		PreparedStatement pstmt = null;
+		String getPost = "";
+		if (boardName.equals("freeforall")) {
+			getPost = "SELECT * FROM freeforall.posts " +
+			"WHERE pid = \"?\"";
+		}
+		else {
+			getPost = "SELECT * FROM " + boardName + ".posts " +
+					"WHERE pid = \"?\" AND rname = \"?\"";
+		}
+		
+		Boolean postExists = null;
+		try {
+			pstmt = conn.prepareStatement(getPost);
+			pstmt.setInt(1, postNum);
+			if (boardName.equals("freeforall")) {
+				pstmt.setString(2, regionName);
+			}
+			postExists = new Boolean(pstmt.execute());
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println(e.getSQLState());
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return postExists;
+	}
+	
+	/**
 	 * Returns the list of posts within the Free For All board that the
 	 * specified user can see.
 	 * 

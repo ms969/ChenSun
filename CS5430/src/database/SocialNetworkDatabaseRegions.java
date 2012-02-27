@@ -32,6 +32,11 @@ public class SocialNetworkDatabaseRegions {
 		return regionExists;
 	}
 	
+	/**
+	 * 
+	 * Creates a region under the given board with the given region name.
+	 * ASSUMES that the boardName is valid.
+	 */
 	//TODO (author) ensure the user is an admin for the board.
 	public static String createRegion(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement regionPstmt = null;
