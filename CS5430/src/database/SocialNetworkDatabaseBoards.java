@@ -11,8 +11,29 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-//TODO method to add an admin
 public class SocialNetworkDatabaseBoards {
+	
+	public static String getUserRole(Connection conn, String username) {
+		String userRole = "SELECT role FROM main.users WHERE username = \"?\"";
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String role = "";
+		try {
+			pstmt = conn.prepareStatement(userRole);
+			pstmt.setString(1, username);
+			rs = pstmt.executeQuery();
+			if (rs.next()) {
+				role = rs.getString("role");
+			}
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return role;
+	}
 	
 	/**
 	 * Using an SQL Script, creates a database for the provided board id.
@@ -20,9 +41,8 @@ public class SocialNetworkDatabaseBoards {
 	 * Returns true on success, false on failure.
 	 * method is used within createBoard
 	 * @throws IOException 
-	 * @throws SQLException 
 	 */
-	private static boolean createBoardDatabase(Connection conn, String boardName) throws IOException, SQLException {
+	private static boolean createBoardDatabase(Connection conn, String boardName) throws IOException {
 		File createBoardSql = null;
 		BufferedReader sqlReader = null;
 		String fileContents = "";
@@ -67,9 +87,7 @@ public class SocialNetworkDatabaseBoards {
 			error = true;
 		}
 		finally {
-			if (stmt != null) {
-				stmt.close();
-			}
+			DBManager.closeStatement(stmt);
 			//conn.setAutoCommit(true);
 		}
 		/* The first result is of creating the database,
@@ -185,15 +203,18 @@ public class SocialNetworkDatabaseBoards {
 	
 	/**
 	 * Gets a list of boards that the user has permission to view.
+	 * For Admins: Must be within the "admin" list of the board
+	 * For Users: Must be within the "RegionPrivileges" list of the board
 	 * A user has permission to view a board if it has at least one
 	 * region where it has view permissions within that board.
 	 * @throws SQLException 
 	 * */
 	//TODO add the free for all board
 	public static String getBoardList(Connection conn, String username) throws SQLException {
-		String boardlist = "print Boards:;print freeforall";
+		String boardlist = "print Boards:;print \tfreeforall;";
 		/*First, get a list of all the boards*/
-		String allBoards = "SELECT bname FROM main.Boards";
+		String allBoards = "SELECT bname FROM main.boards";
+		//TODO admin stuff.
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
 		ResultSet boards = null;
@@ -201,21 +222,39 @@ public class SocialNetworkDatabaseBoards {
 		try {
 			stmt = conn.createStatement();
 			boards = stmt.executeQuery(allBoards);
-			String getRegionPrivs;
+			String role = getUserRole(conn, username);
+			String getRegionPrivs, getRegionAdmins;
 			while (boards.next()) {
 				/* For each Board ID, check its RegionPrivileges to see
 				 * if there exists one tuple with username = this user
 				 */
 				String bname = boards.getString("bname");
-				getRegionPrivs = "SELECT privilege FROM " 
-					+ bname + ".regionprivileges WHERE username = \"?\"";
-				pstmt = conn.prepareStatement(getRegionPrivs);
-				pstmt.setString(1, username);
-				if (pstmt.execute()) { // returns true if there is a result set.
-					boardlist += "print \t" + boards.getString("bname") + ";";
+				if (role.equals("member")) {
+					getRegionPrivs = "SELECT privilege FROM " 
+						+ bname + ".regionprivileges WHERE username = \"?\"";
+					pstmt = conn.prepareStatement(getRegionPrivs);
+					pstmt.setString(1, username);
+					if (pstmt.execute()) { // returns true if there is a result set.
+						boardlist += "print \t" + bname + ";";
+					}
+					pstmt.close();
+					pstmt = null;
 				}
-				pstmt.close();
-				pstmt = null;
+				else if (!role.equals("")) { // an admin
+					getRegionAdmins = "SELECT * FROM " 
+						+ bname + ".admins WHERE username = \"?\"";
+					pstmt = conn.prepareStatement(getRegionAdmins);
+					pstmt.setString(1, username);
+					if (pstmt.execute()) { // returns true if there is a result set.
+						boardlist += "print \t" + bname + ";";
+					}
+					pstmt.close();
+					pstmt = null;
+				}
+				else { //there was an sql exception when getting the role.
+					sqlex = true;
+					break;
+				}
 			}
 		}
 		catch (SQLException e) {
@@ -223,24 +262,18 @@ public class SocialNetworkDatabaseBoards {
 			sqlex = true;
 		}
 		finally {
-			if (stmt != null) {
-				stmt.close();
-			}
-			if (pstmt != null) {
-				pstmt.close();
-			}
-			if (boards != null) {
-				boards.close();
-			}
+			DBManager.closeStatement(stmt);
+			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(boards);
 		}
-		if (boards.equals("Boards:\n") && !sqlex) {
+		if (boards.equals("print Boards:;print freeforall") && !sqlex) {
 			return "print No Boards!";
 		}
 		else if (sqlex) {
 			return "print Database Error while querying viewable boards. Contact an admin.";
 		}
 		else {
-			return boardlist.substring(0, boardlist.length()-1);
+			return boardlist;
 		}
 	}
 }
