@@ -10,6 +10,28 @@ public class SocialNetworkDatabaseRegions {
 	//private static int numPostsPerBoard = 2;
 	private static String specialStrPostable = "*";
 	
+	/**
+	 * Determine whether the region exists in this board.
+	 * ASSUMES THE BOARD EXISTS.
+	 */
+	public static Boolean regionExists(Connection conn, String boardName, String regionName) {
+		String getRegion = "SELECT * FROM " + boardName + ".regions WHERE rname = \"?\"";
+		PreparedStatement pstmt = null;
+		Boolean regionExists = null;
+		try {
+			pstmt = conn.prepareStatement(getRegion);
+			pstmt.setString(1, regionName);
+			regionExists = new Boolean(pstmt.execute());
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return regionExists;
+	}
+	
 	//TODO (author) ensure the user is an admin for the board.
 	public static String createRegion(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement regionPstmt = null;
@@ -38,7 +60,7 @@ public class SocialNetworkDatabaseRegions {
 	 * Gets a list of regions that the user has access to.
 	 * If the user is an admin, the user can see all regions.
 	 * Also returns, with each region, the most recently posted posts.
-	 * Assumes boardName is not null
+	 * Assumes boardName is not null and is a valid board.
 	 * TODO (author) double check that the user can call this method within this board
 	 * */
 	public static String getRegionListRecentPosts(Connection conn, String username, String boardName){
@@ -111,7 +133,7 @@ public class SocialNetworkDatabaseRegions {
 			DBManager.closeResultSet(regionsResults);
 			DBManager.closeResultSet(recentPostsResults);
 		}
-		if (regionsAndPosts.equals("Regions:\n") && !sqlex) {
+		if (regionsAndPosts.equals("Regions:\n") && !sqlex) { //boardName assumed to be valid.
 			return "print No Regions for this Board";
 		}
 		else if (sqlex) {

@@ -35,8 +35,31 @@ public class SocialNetworkDatabaseBoards {
 		}
 		finally {
 			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(rs);
 		}
 		return role;
+	}
+	
+	/**
+	 * Determine whether the board exists.
+	 * The return arg is null if there was an exc.
+	 */
+	public static Boolean boardExists(Connection conn, String boardName) {
+		String getBoard = "SELECT * FROM main.boards WHERE bname = \"?\"";
+		PreparedStatement pstmt = null;
+		Boolean boardExists = null; //null if there is an error.
+		try {
+			pstmt = conn.prepareStatement(getBoard);
+			pstmt.setString(1, boardName);
+			boardExists = new Boolean(pstmt.execute());
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return boardExists;
 	}
 	
 	/**

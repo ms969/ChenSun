@@ -6,8 +6,11 @@ import database.SocialNetworkDatabasePosts;
 import database.DBManager;
 
 public class SocialNetworkPosts {
-	public String createPost(String username, Integer boardNum, 
-			Integer regionNum, String content) {
+	public String createPostFreeForAll(String username, String content) {
+		return "";
+	}
+	public String createPost(String username, String boardName, 
+		 String regionName, String content) {
 		return "";
 	}
 	public String getPostListFreeForAll(String username) {
