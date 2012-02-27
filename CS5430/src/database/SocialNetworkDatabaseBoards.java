@@ -13,6 +13,10 @@ import java.sql.Statement;
 
 public class SocialNetworkDatabaseBoards {
 	
+	/**
+	 * Utility function placed here for now...
+	 * Function to get the user's role.
+	 */
 	public static String getUserRole(Connection conn, String username) {
 		String userRole = "SELECT role FROM main.users WHERE username = \"?\"";
 		PreparedStatement pstmt = null;
@@ -120,11 +124,10 @@ public class SocialNetworkDatabaseBoards {
 	 * TODO LATER (author) 1) Checks that the user has permission to create a board
 	 * 2) It creates a reference to the board in the "main" database
 	 * 3) It creates a database to store the board's regions, posts, etc.
-	 * @throws SQLException 
 	 * @throws IOException 
 	 */
 	public static String createBoard(Connection conn, String createdBy, String boardName) 
-	throws SQLException, IOException {
+	throws IOException {
 		//PreparedStatement rolePstmt = null;
 		PreparedStatement insertBoardPstmt = null;
 		PreparedStatement addAdminPstmt = null;
@@ -166,21 +169,14 @@ public class SocialNetworkDatabaseBoards {
 			}
 		}
 		catch (SQLException e) {
-			if (conn != null) {
-				//rollback upon legitimate error
-				conn.rollback();
-			}
+			DBManager.rollback(conn);
 			e.printStackTrace();
 			sqlex = true;
 		}
 		finally {
-			if (insertBoardPstmt != null) {
-				insertBoardPstmt.close();
-			}
-			if (idresult != null) {
-				idresult.close();
-			}
-			conn.setAutoCommit(true);
+			DBManager.closePreparedStatement(insertBoardPstmt);
+			DBManager.closeResultSet(idresult);
+			DBManager.trueAutoCommit(conn);
 		}
 		if (firstsuccess == 1 && secondsuccess && thirdsuccess == 1) {
 			return "print Board \"" + boardName +"\" succesfully created.";
@@ -207,14 +203,12 @@ public class SocialNetworkDatabaseBoards {
 	 * For Users: Must be within the "RegionPrivileges" list of the board
 	 * A user has permission to view a board if it has at least one
 	 * region where it has view permissions within that board.
-	 * @throws SQLException 
 	 * */
-	//TODO add the free for all board
-	public static String getBoardList(Connection conn, String username) throws SQLException {
+	public static String getBoardList(Connection conn, String username) {
 		String boardlist = "print Boards:;print \tfreeforall;";
 		/*First, get a list of all the boards*/
 		String allBoards = "SELECT bname FROM main.boards";
-		//TODO admin stuff.
+
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
 		ResultSet boards = null;

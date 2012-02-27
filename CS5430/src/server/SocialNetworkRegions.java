@@ -1,15 +1,13 @@
 package server;
 
-import java.io.FileNotFoundException;
 import java.sql.Connection;
-import java.sql.SQLException;
 
 import database.SocialNetworkDatabaseRegions;
 import database.DBManager;
 
 public class SocialNetworkRegions {
 	
-	public static String createRegion(String username, String boardName, String regionName) throws SQLException, FileNotFoundException {
+	public static String createRegion(String username, String boardName, String regionName) {
 		if (boardName == null || regionName == null) {
 			return "Invalid Call to Function";
 		}
@@ -24,11 +22,11 @@ public class SocialNetworkRegions {
 		}
 		Connection dbconn = DBManager.getConnection();
 		String msg = SocialNetworkDatabaseRegions.createRegion(dbconn, username, boardName, regionName);
-		dbconn.close();
+		DBManager.closeConnection(dbconn);
 		return msg;
 	}
 
-	public static String viewRegions(String username, String boardName) throws SQLException {
+	public static String viewRegions(String username, String boardName){
 		if (boardName == null) {
 			return "Invalid Call to Function";
 		}
@@ -37,7 +35,7 @@ public class SocialNetworkRegions {
 		}
 		Connection dbconn = DBManager.getConnection();
 		String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, boardName.trim().toLowerCase());
-		dbconn.close();
+		DBManager.closeConnection(dbconn);
 		return msg;
 	}
 }
