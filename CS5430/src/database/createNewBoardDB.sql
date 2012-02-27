@@ -9,7 +9,7 @@ CREATE TABLE bname.posts (
     postedBy VARCHAR(100),
     datePosted DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
-    PRIMARY KEY(rname, pid, username),
+    PRIMARY KEY(rname, pid),
     FOREIGN KEY(rname) REFERENCES regions(rname) ON DELETE CASCADE
     /*FOREIGN KEY(postedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );

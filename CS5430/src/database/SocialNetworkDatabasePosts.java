@@ -8,47 +8,66 @@ import java.sql.Statement;
 
 public class SocialNetworkDatabasePosts {
 	private static String specialStrPostable = "*";
+	private static String specialStrCreatedPost = "**";
 	
 	/**
 	 * Returns the list of posts within the Free For All board that the
 	 * specified user can see.
+	 * 
+	 * A User can see a post if they are:
+	 *   - the creator of the post (username == postedBy)
+	 *   - granted view privilege in PostsPrivileges
+	 * 
 	 * Different from a regular board because you must check each post
-	 * one by one to ensure that the user has a privilege for it.
+	 * one by one to ensure that the user has the privilege for it.
 	 */
 	public static String getPostListFreeForAll(Connection conn, String username) {
 		String posts = "print Posts:;";
 		
-		PreparedStatement getPrivs = null;
-		String getPostPrivileges = "SELECT pid, privilege " +
-				"FROM freeforall.postprivileges " +
-				"WHERE username = \"?\"";
-		ResultSet privsResult = null;
-		
-		PreparedStatement getPost = null;
-		String getPostFreeForAll = "SELECT pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
+		/*Retrieves all posts, joined with their most recent reply*/
+		Statement getPosts = null;
+		String getPostsFreeForAll = "SELECT pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
 			"FROM freeforall.posts AS P INNER JOIN " + 
 			"freeforall.replies as R USING (pid) " +
-			"WHERE pid = ?";
-		ResultSet post = null;
+			"GROUP BY pid ORDER BY R.dateReplied";
+		ResultSet postsResults = null;
+		
+		/*Retrieves the privilege for a given post and user*/
+		PreparedStatement getPrivs = null;
+		String getPostPrivileges = "SELECT privilege " +
+				"FROM freeforall.postprivileges " +
+				"WHERE pid = ? AND username = \"?\"";
+		ResultSet privsResult = null;
 		
 		boolean sqlex = false;
 		try {
 			getPrivs = conn.prepareStatement(getPostPrivileges);
-			getPost = conn.prepareStatement(getPostFreeForAll);
-			getPrivs.setString(1, username);
-			privsResult = getPrivs.executeQuery();
+			getPosts = conn.createStatement();
+			postsResults = getPosts.executeQuery(getPostsFreeForAll);
+			
 			int pid;
-			while (privsResult.next()) {
-				pid = privsResult.getInt("pid");
-				getPost.setInt(1, pid);
-				post = getPost.executeQuery();
-				/*Only expect one result set*/
-				if (post.next()) {
-					posts += "print \t" + 
+			String postedBy;
+			while (postsResults.next()) {
+				pid = postsResults.getInt("pid");
+				postedBy = postsResults.getString("P.postedBy");
+				if (!postedBy.equals(username)) {
+					getPrivs.setInt(1, pid);
+					getPrivs.setString(2, username);
+					privsResult = getPrivs.executeQuery();
+					/*Only expect one result set*/
+					if (privsResult.next()) { //user has view or viewpost priv
+						posts += "print \t" + 
 						(privsResult.getString("privilege").equals("viewpost")? specialStrPostable : "") +
-						"Post#" + pid + "[" + post.getString("P.postedBy") + "]; print \t" +
-						"Most Recent Reply: [" + post.getString("R.repliedBy") + "]" +
-						post.getTimestamp("R.dateReplied").toString() + ";";
+						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
+						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+						postsResults.getTimestamp("R.dateReplied").toString() + ";";
+					}
+				}
+				else { //the user is the creator of the post
+					posts += "print \t" + specialStrCreatedPost +
+					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
+					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+					postsResults.getTimestamp("R.dateReplied").toString() + ";";
 				}
 			}
 		}
@@ -57,7 +76,10 @@ public class SocialNetworkDatabasePosts {
 			sqlex = true;
 		}
 		finally {
-			
+			DBManager.closeStatement(getPosts);
+			DBManager.closeResultSet(postsResults);
+			DBManager.closePreparedStatement(getPrivs);
+			DBManager.closeResultSet(privsResult);
 		}
 		if (posts.equals("print Posts:;") && !sqlex) {
 			return "print No posts for this board.";
@@ -115,17 +137,105 @@ public class SocialNetworkDatabasePosts {
 	}
 	
 	/*You can regulate who sees what*/
-	//TODO have to put SELF in PostPrivileges for free for all
+	/*Giving post permissions is separate from this function*/
+	//TODO remind the user to give people view and viewpost
 	public static String createPostFreeForAll(Connection conn, String username, String content) {
-		return "";
+		return createPost(conn, "freeforall", null, username, content);
 	}
 	
 	public static String createPost(Connection conn, String boardName, 
 			String regionName, String username, String content) {
-		return "";
+		PreparedStatement createPstmt = null;
+		String createPost = "";
+		
+		/*Have to retrieve the pid that is generated for the post*/
+		PreparedStatement getPstmt = null;
+		String getPost = "";
+		ResultSet getResult = null;
+		
+		if (boardName.equals("freeforall")) {
+			createPost = "INSERT INTO freeforall.posts " +
+					"VALUES (null, \"?\", NOW(), \"?\")";
+			getPost = "SELECT pid, MAX(datePosted) FROM freeforall.posts " +
+					"WHERE username = \"?\" AND content = \"?\"";
+		}
+		else {
+			createPost = "INSERT INTO " + boardName + ".posts " +
+					"VALUES (\"?\", null, \"?\". NOW(), \"?\")";
+			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
+					"WHERE rname = \"?\" username = \"?\" AND content = \"?\"";
+		}
+		
+		boolean sqlex = false;
+		boolean success = false;
+		try {
+			createPstmt = conn.prepareStatement(createPost);
+			if (boardName.equals("freeforall")) {
+				createPstmt.setString(1, username);
+				createPstmt.setString(2, content);
+			}
+			else {
+				createPstmt.setString(1, regionName);
+				createPstmt.setString(2, username);
+				createPstmt.setString(3, content);
+			}
+			success = (createPstmt.executeUpdate() == 1);
+			
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+			sqlex = true;
+		}
+		finally {
+			DBManager.closePreparedStatement(createPstmt);
+		}
+		if (sqlex) {
+			return "print Database error while inserting the post. Contact an admin.";
+		}
+		else if (success) {
+			/*Try to retrieve the pid for the user to reference*/
+			boolean getsuccess = false;
+			Integer pid = null;
+			try {
+				getPstmt = conn.prepareStatement(getPost);
+				if (boardName.equals("freeforall")) {
+					getPstmt.setString(1, username);
+					getPstmt.setString(2, content);
+				}
+				else {
+					getPstmt.setString(1, regionName);
+					getPstmt.setString(2, username);
+					getPstmt.setString(3, content);
+				}
+				getResult = getPstmt.executeQuery();
+				if (getResult.next()) { //There should be at most one result... just inserted!
+					pid = new Integer(getResult.getInt("pid"));
+				}
+			}
+			catch (SQLException e) {
+				e.printStackTrace();
+				sqlex = true;
+			}
+			finally {
+				DBManager.closePreparedStatement(getPstmt);
+				DBManager.closeResultSet(getResult);
+			}
+			if (pid == null || sqlex) {
+				return "print Post successfully added (post num cannot be retrieved).;" +
+						"print Don't forget to give people permission to view/reply to it!";
+			}
+			else {
+				return "print Post#" + pid + " successfully added.;" +
+						"print Don't forget to give people permission to view/reply to it!";
+			}
+		}
+		else { //not successful
+			return "print Post could not be uploaded. If this problem persists, contact an admin.";
+		}
 	}
 	
-	public static String createReplyFreeForAll(Connection conn, int postNum, String username, String content) {
+	public static String createReplyFreeForAll(Connection conn, int postNum, 
+			String username, String content) {
 		return "";
 	}
 	
