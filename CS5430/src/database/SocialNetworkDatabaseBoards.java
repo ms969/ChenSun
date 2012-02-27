@@ -2,7 +2,6 @@ package database;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
@@ -38,6 +37,28 @@ public class SocialNetworkDatabaseBoards {
 			DBManager.closeResultSet(rs);
 		}
 		return role;
+	}
+	
+	/**
+	 * Checks whether the user is part of this board.
+	 * Assumes the board is valid.
+	 */
+	public static Boolean isBoardAdmin(Connection conn, String username, String boardName) {
+		String isAdminQ = "SELECT * FROM " + boardName + ".admins WHERE username = \"?\"";
+		PreparedStatement pstmt = null;
+		Boolean isAdmin = null;
+		try {
+			pstmt = conn.prepareStatement(isAdminQ);
+			pstmt.setString(1, username);
+			isAdmin = new Boolean(pstmt.execute());
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return isAdmin;
 	}
 	
 	/**

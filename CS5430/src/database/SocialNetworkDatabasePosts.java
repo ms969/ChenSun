@@ -136,13 +136,19 @@ public class SocialNetworkDatabasePosts {
 		else return posts;
 	}
 	
-	/*You can regulate who sees what*/
-	/*Giving post permissions is separate from this function*/
-	//TODO remind the user to give people view and viewpost
+	//TODO need a way to add post privileges for the free for all board.
 	public static String createPostFreeForAll(Connection conn, String username, String content) {
 		return createPost(conn, "freeforall", null, username, content);
 	}
 	
+	/**
+	 * Inserts the post into the database, then tries its best to
+	 * return the pid that contains the post.
+	 * Assumes the board and region are correct (unless the board is freeforall)
+	 * Does NOT do "Post Privileges" processing.
+	 * 
+	 * TODO (author) For regular boards and regions, ensure the user can post under it
+	 */
 	public static String createPost(Connection conn, String boardName, 
 			String regionName, String username, String content) {
 		PreparedStatement createPstmt = null;
@@ -194,7 +200,6 @@ public class SocialNetworkDatabasePosts {
 		}
 		else if (success) {
 			/*Try to retrieve the pid for the user to reference*/
-			boolean getsuccess = false;
 			Integer pid = null;
 			try {
 				getPstmt = conn.prepareStatement(getPost);
@@ -236,12 +241,62 @@ public class SocialNetworkDatabasePosts {
 	
 	public static String createReplyFreeForAll(Connection conn, int postNum, 
 			String username, String content) {
-		return "";
+		return createReply(conn, "freeforall", null, postNum, username, content);
 	}
 	
+	/**
+	 * Inserts the reply for the given post.
+	 * Assumes the board, the region, and the post are valid.
+	 * TODO sqlexception could be because of a foreign key constraint
+	 * 
+	 * TODO tell the user to refresh the post to see their reply at the bottom.
+	 */
 	public static String createReply(Connection conn, String boardName, 
 			String regionName, int postNum, String username, String content) {
-		return "";
+		PreparedStatement createPstmt = null;
+		String createReply = ""; 
+		if (regionName.equals("freeforall")) {
+			createReply = "INSERT INTO freeforall.replies " +
+			"VALUES (?, null, \"?\", NOW(), \"?\")";
+		}
+		else {
+			createReply = "INSERT INTO " + boardName + ".replies " +
+			"VALUES (\"?\", ?, null, \"?\", NOW(), \"?\")";
+		}
+		boolean success = false;
+		boolean sqlex = false;
+		try {
+			createPstmt = conn.prepareStatement(createReply);
+			if (regionName.equals("freeforall")) {
+				createPstmt.setInt(1, postNum);
+				createPstmt.setString(2, username);
+				createPstmt.setString(3, content);
+			}
+			else {
+				createPstmt.setString(1 , regionName);
+				createPstmt.setInt(2, postNum);
+				createPstmt.setString(3, username);
+				createPstmt.setString(4, content);
+			}
+			success = (createPstmt.executeUpdate() == 1);
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println(e.getSQLState());
+			sqlex = true;
+		}
+		finally {
+			DBManager.closePreparedStatement(createPstmt);
+		}
+		if (!success || sqlex) {
+			return "print Database error while inserting reply. Contact an admin";
+		}
+		else if (success) {
+			return "print Reply successfully added. Refresh the post to view";
+		}
+		else {
+			return "print Reply could not be uploaded. If this problem persists, contact an admin";
+		}
 	}
 	
 	/** Gets a post from the free for all board designated
