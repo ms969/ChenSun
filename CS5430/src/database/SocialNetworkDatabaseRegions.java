@@ -91,10 +91,10 @@ public class SocialNetworkDatabaseRegions {
 				boardName + ".regions";
 		
 		PreparedStatement recentPostsPstmt = null;
-		String fetchRecentPost = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied)" +
-				"FROM " + boardName + ".posts AS P INNER JOIN " +
+		String fetchRecentPost = "SELECT rname, pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied)" +
+				"FROM " + boardName + ".posts AS P LEFT OUTER JOIN " +
 				boardName + ".replies AS R USING (rname, pid) " +
-				"WHERE rname = ?";
+				"WHERE rname = ? ORDER BY P.datePosted DESC";
 		ResultSet regionsResults = null;
 		ResultSet recentPostsResults = null;
 		
@@ -126,14 +126,17 @@ public class SocialNetworkDatabaseRegions {
 				}
 				recentPostsPstmt.setString(1, regionsResults.getString("rname"));
 				recentPostsResults = recentPostsPstmt.executeQuery();
-				if (recentPostsResults.next()) {
+				if (!recentPostsResults.next()) {
 					regionsAndPosts += "print \t\tNo Posts for this Region;";
 				}
 				else {
 					regionsAndPosts += "print \t\tMost Recently Updated Post#" + recentPostsResults.getInt("pid") +
-					"[" + recentPostsResults.getString("P.postedBy") + "];print \t\t" +
-					"Most Recent Reply: [" + recentPostsResults.getString("R.repliedBy") + "] " +
-					recentPostsResults.getTimestamp("MAX(R.dateReplied)").toString() + ";";
+					"[" + recentPostsResults.getString("P.postedBy") + "];";
+					if (recentPostsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+						regionsAndPosts += "print \t\t   " +
+						"Most Recent Reply: [" + recentPostsResults.getString("R.repliedBy") + "] " +
+						recentPostsResults.getTimestamp("MAX(R.dateReplied)").toString() + ";";
+					}
 				}
 			}
 		}
