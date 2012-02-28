@@ -144,13 +144,14 @@ public class SocialNetworkPosts {
 	public static String createPost(String username, String content, 
 			String boardName, String regionName) {
 		String bname = boardName.trim().toLowerCase();
-		String rname = regionName.trim().toLowerCase();
 		Connection dbconn = DBManager.getConnection();
-		if (bname.equals("freeforall")) {
+		if (bname.equals("freeforall")) { //regionName might be null
 			String msg = SocialNetworkDatabasePosts.createPostFreeForAll(dbconn, username, content);
 			DBManager.closeConnection(dbconn);
 			return msg;
 		}
+		//regionName should not be null
+		String rname = regionName.trim().toLowerCase();
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
 			return "print Error: Database error while verifying existence of board. " +
