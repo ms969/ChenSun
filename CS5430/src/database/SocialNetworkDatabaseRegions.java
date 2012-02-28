@@ -42,13 +42,20 @@ public class SocialNetworkDatabaseRegions {
 		PreparedStatement regionPstmt = null;
 		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (?)";
 		boolean success = false;
+		String sqlexmsg = "";
 		try {
 			regionPstmt = conn.prepareStatement(createRegion);
 			regionPstmt.setString(1, regionName);
 			success =  (regionPstmt.executeUpdate() == 1);
 		}
 		catch (SQLException e) {
-			e.printStackTrace();
+			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
+				sqlexmsg = "print A region in this board already exists with that name. Try a different name";
+			}
+			else {
+				e.printStackTrace();
+				sqlexmsg = "print Error: Database error while creating the region. Contact the admin.";
+			}
 		}
 		finally {
 			DBManager.closePreparedStatement(regionPstmt);
@@ -57,7 +64,7 @@ public class SocialNetworkDatabaseRegions {
 			return "print Region \"" + regionName + "\" successfully created.";
 		}
 		else {
-			return "print Error: Database error while creating the region. Contact the admin.";
+			return sqlexmsg;
 		}
 	}
 	
@@ -116,14 +123,14 @@ public class SocialNetworkDatabaseRegions {
 				}
 				recentPostsPstmt.setString(1, regionsResults.getString("rname"));
 				recentPostsResults = recentPostsPstmt.executeQuery();
-				if (!recentPostsResults.next()) {
+				if (recentPostsResults.next()) {
 					regionsAndPosts += "print \t\tNo Posts for this Region;";
 				}
 				else {
 					regionsAndPosts += "print \t\tMost Recently Updated Post#" + recentPostsResults.getInt("pid") +
 					"[" + recentPostsResults.getString("P.postedBy") + "];print \t\t" +
 					"Most Recent Reply: [" + recentPostsResults.getString("R.repliedBy") + "] " +
-					recentPostsResults.getTimestamp("R.dateReplied").toString() + ";";
+					recentPostsResults.getTimestamp("MAX(R.dateReplied)").toString() + ";";
 				}
 			}
 		}
@@ -138,7 +145,7 @@ public class SocialNetworkDatabaseRegions {
 			DBManager.closeResultSet(regionsResults);
 			DBManager.closeResultSet(recentPostsResults);
 		}
-		if (regionsAndPosts.equals("Regions:\n") && !sqlex) { //boardName assumed to be valid.
+		if (regionsAndPosts.equals("print Regions:;") && !sqlex) { //boardName assumed to be valid.
 			return "print No Regions for this Board";
 		}
 		else if (sqlex) {

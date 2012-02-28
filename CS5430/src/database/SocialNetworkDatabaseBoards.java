@@ -217,7 +217,7 @@ public class SocialNetworkDatabaseBoards {
 		catch (SQLException e) {
 			DBManager.rollback(conn);
 			/* The error code for a duplicate key insertion => Must be for board name*/
-			if (e.getErrorCode() == 1062) {
+			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
 				sqlexmsg = "print A board already exists with that name. Try a different name.";
 			}
 			else {
