@@ -95,6 +95,22 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
+		if (inputLine.matches(COMMANDS[7])) {
+			if (user != null) {
+				processCreateRegion(inputLine);
+			} else {
+				out.println();
+			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[8])) {
+			if (user != null) {
+				processPost();
+			} else {
+				out.println();
+			}
+			return;
+		}
 		if (inputLine.matches(COMMANDS[10])) {
 			if (user != null) {
 				processFriendRequests();
@@ -1005,6 +1021,122 @@ public class ServerInputProcessor extends InputProcessor {
 					SocialNetworkNavigation.printPath(currentPath) + ".; " +
 							"print You can go backwards by typing \"..\" ");
 			
+		}
+	}
+	
+	/**
+	 * Creates a region for the user.
+	 * The user must be in a board (except freeforall) to execute the command.
+	 */
+	private void processCreateRegion(String inputLine) {
+		String boardName = currentPath[0];
+		String regionName = inputLine.substring(("createRegion ").length());
+		if (boardName == null) {
+			out.println("print Must be in the desired board in order to create the region.");
+		}
+		else if (boardName.equals("freeforall")) {
+			out.println("print Cannot create regions in the freeforall board.");
+		}
+		else if (currentPath[1] != null) {
+			out.println("print Must be exactly in the desired board (i.e., not inside a region in the board) " +
+					"in order to create the region");
+		}
+		else {
+			out.println(SocialNetworkRegions.createRegion(user, currentPath[0], regionName));
+		}
+	}
+
+	private void processPost() throws IOException {
+		/*Verify the user is in the right place to create a post*/
+		String boardName = currentPath[0];
+		boolean canPost = false;
+		if (boardName == null) {
+			out.println("Must be within a board's region or in the freeforall board to create a post");
+		}
+		else if (boardName.equals("freeforall")) {
+			String postNum = currentPath[1];
+			if (postNum == null) {
+				canPost = true;
+			}
+			else {
+				out.println("Must go back to the board page to create a post (not inside a post)");
+			}
+		}
+		else { //in a regular board
+			String regionName = currentPath[1];
+			if (regionName == null) {
+				out.println("Must be within a board's region or in the freeforall board to create a post");
+			}
+			else {
+				String postNum = currentPath[2];
+				if (postNum == null) { //in a board, region, not in a post
+					canPost = true;
+				}
+				else {
+					out.println("Must go back to the region page to create a post (not inside a post)");
+				}
+			}
+		}
+		if (canPost) {
+			out.println("Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
+			String content = in.readLine();
+			if (!content.trim().equals("cancel")) {
+				out.println(SocialNetworkPosts.createPost(user, content, currentPath[0], currentPath[1]));
+			}
+			else {
+				out.println("print Post Creation cancelled");
+			}
+		
+		}
+	}
+	
+	/**
+	 * Similar to processPost basically... except that you must be in
+	 * a post
+	 * @throws IOException 
+	 */
+	private void processReply() throws IOException {
+		/*Verify the user is in the right place to create a post*/
+		String boardName = currentPath[0];
+		String postNum = "";
+		boolean canReply = false;
+		if (boardName == null) {
+			out.println("Must be within a post to create a reply");
+		}
+		else if (boardName.equals("freeforall")) {
+			postNum = currentPath[1];
+			if (postNum == null) {
+				out.println("Must be within a post to create a reply");
+			}
+			else {
+				canReply = true;
+			}
+		}
+		else { //in a regular board
+			String regionName = currentPath[1];
+			if (regionName == null) {
+				out.println("Must be within a post to create a reply");
+			}
+			else {
+				postNum = currentPath[2];
+				if (postNum == null) { //in a board, region, not in a post
+					out.println("Must be within a post to create a reply");
+				}
+				else {
+					canReply = true;
+				}
+			}
+		}
+		if (canReply) {
+			out.println("Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
+			String content = in.readLine();
+			if (!content.trim().equals("cancel")) {
+				out.println(SocialNetworkPosts.createReply(user, content, 
+						currentPath[0], currentPath[1], Integer.parseInt(postNum)));
+			}
+			else {
+				out.println("print Reply Creation cancelled");
+			}
 		}
 	}
 }
