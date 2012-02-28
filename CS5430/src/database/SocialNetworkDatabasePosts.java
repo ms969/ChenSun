@@ -30,7 +30,7 @@ public class SocialNetworkDatabasePosts {
 		try {
 			pstmt = conn.prepareStatement(getPost);
 			pstmt.setInt(1, postNum);
-			if (boardName.equals("freeforall")) {
+			if (!boardName.equals("freeforall")) {
 				pstmt.setString(2, regionName);
 			}
 			postResult = pstmt.executeQuery();
@@ -62,10 +62,10 @@ public class SocialNetworkDatabasePosts {
 		
 		/*Retrieves all posts, joined with their most recent reply*/
 		Statement getPosts = null;
-		String getPostsFreeForAll = "SELECT pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
-			"FROM freeforall.posts AS P INNER JOIN " + 
+		String getPostsFreeForAll = "SELECT pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied) " +
+			"FROM freeforall.posts AS P LEFT OUTER JOIN " + 
 			"freeforall.replies as R USING (pid) " +
-			"GROUP BY pid ORDER BY R.dateReplied";
+			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC";
 		ResultSet postsResults = null;
 		
 		/*Retrieves the privilege for a given post and user*/
@@ -94,16 +94,22 @@ public class SocialNetworkDatabasePosts {
 					if (privsResult.next()) { //user has view or viewpost priv
 						posts += "print \t" + 
 						(privsResult.getString("privilege").equals("viewpost")? specialStrPostable : "") +
-						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
-						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
-						postsResults.getTimestamp("R.dateReplied").toString() + ";";
+						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
+						if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+							posts += "print \t\t" +
+							"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+							postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+						}
 					}
 				}
 				else { //the user is the creator of the post
 					posts += "print \t" + specialStrCreatedPost +
-					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
-					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
-					postsResults.getTimestamp("R.dateReplied").toString() + ";";
+					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
+					if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+						posts += "print \t\t" +
+						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+						postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+					}
 				}
 			}
 		}
@@ -137,11 +143,11 @@ public class SocialNetworkDatabasePosts {
 	public static String getPostList(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement pstmt = null;
 		String posts = "print Posts:;";
-		String getPosts = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
-			"FROM " + boardName +  ".posts AS P INNER JOIN " + 
+		String getPosts = "SELECT rname, pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied) " +
+			"FROM " + boardName +  ".posts AS P LEFT OUTER JOIN " + 
 			boardName + ".replies as R USING (rname, pid) " +
 			"WHERE rname = ? " +
-			"GROUP BY pid ORDER BY R.dateReplied DESC";
+			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC ";
 		ResultSet postsResults = null;
 		boolean sqlex = false;
 		try {
@@ -150,9 +156,12 @@ public class SocialNetworkDatabasePosts {
 			postsResults = pstmt.executeQuery();
 			while (postsResults.next()) {
 				posts += "print \tPost#" + postsResults.getInt("pid") + 
-				"[" + postsResults.getString("P.postedBy") + "]; print \t" +
-				"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "] " +
-				postsResults.getTimestamp("R.dateReplied").toString() + ";";
+				"[" + postsResults.getString("P.postedBy") + "];";
+				if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+					posts += "print \t\t" +
+					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "] " +
+					postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+				}
 			}
 		}
 		catch (SQLException e) {
@@ -199,13 +208,13 @@ public class SocialNetworkDatabasePosts {
 			createPost = "INSERT INTO freeforall.posts " +
 					"VALUES (null, ?, NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM freeforall.posts " +
-					"WHERE username = ? AND content = ?";
+					"WHERE postedBy = ? AND content = ?";
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
-					"VALUES (?, null, ?. NOW(), ?)";
+					"VALUES (?, null, ?, NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
-					"WHERE rname = ? username = ? AND content = ?";
+					"WHERE rname = ? AND postedBy = ? AND content = ?";
 		}
 		
 		boolean sqlex = false;
@@ -288,7 +297,7 @@ public class SocialNetworkDatabasePosts {
 			String boardName, String regionName, int postNum) {
 		PreparedStatement createPstmt = null;
 		String createReply = ""; 
-		if (regionName.equals("freeforall")) {
+		if (boardName.equals("freeforall")) {
 			createReply = "INSERT INTO freeforall.replies " +
 			"VALUES (?, null, ?, NOW(), ?)";
 		}
@@ -300,7 +309,7 @@ public class SocialNetworkDatabasePosts {
 		boolean sqlex = false;
 		try {
 			createPstmt = conn.prepareStatement(createReply);
-			if (regionName.equals("freeforall")) {
+			if (boardName.equals("freeforall")) {
 				createPstmt.setInt(1, postNum);
 				createPstmt.setString(2, username);
 				createPstmt.setString(3, content);
@@ -363,7 +372,7 @@ public class SocialNetworkDatabasePosts {
 			getOriginalPost = "SELECT * FROM " + boardName + ".posts " +
 			"WHERE pid = ? AND rname = ?";
 			getReplies = "SELECT * FROM " + boardName + ".replies " +
-			"WHERE pid = ? AND rname = ? ORDER BY dateReplied";
+			"WHERE pid = ? AND rname = ? ORDER BY dateReplied ASC";
 		}
 		
 		PreparedStatement originalPost = null;
@@ -387,7 +396,7 @@ public class SocialNetworkDatabasePosts {
 			if (postResult.next()) { /*Only expect one post result*/
 				postAndReplies += 
 					"print ----- Post# " + postNum + "[" + postResult.getString("postedBy") + "]----- " +
-					postResult.getTimestamp("datePosted").toString() + "; print \t" +
+					postResult.getTimestamp("datePosted").toString() + ";print \t" +
 					postResult.getString("content") + ";";
 				
 				repliesResult = replies.executeQuery();
