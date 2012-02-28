@@ -57,7 +57,7 @@ public class SocialNetworkDatabaseRegions {
 			return "print Region \"" + regionName + "\" successfully created.";
 		}
 		else {
-			return "print Database error while creating the region. Contact the admin.";
+			return "print Error: Database error while creating the region. Contact the admin.";
 		}
 	}
 	
@@ -101,7 +101,7 @@ public class SocialNetworkDatabaseRegions {
 				regionsResults = regionStmt.executeQuery(fetchRegionsAdmin);
 			}
 			else { //error occurred while acquiring role
-				return "print Database Error while querying viewable regions. Contact an admin.;";
+				return "print Error: Database Error while querying viewable regions. Contact an admin.;";
 			}
 			recentPostsPstmt = conn.prepareStatement(fetchRecentPost);
 			while (regionsResults.next()) {
@@ -142,7 +142,7 @@ public class SocialNetworkDatabaseRegions {
 			return "print No Regions for this Board";
 		}
 		else if (sqlex) {
-			return "print Database Error while querying viewable regions. Contact an admin.;";
+			return "print Error: Database Error while querying viewable regions. Contact an admin.;";
 		}
 		else return regionsAndPosts;
 	}

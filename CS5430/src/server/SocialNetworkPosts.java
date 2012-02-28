@@ -29,7 +29,7 @@ public class SocialNetworkPosts {
 		if (bname.equals("freeforall")) {
 			Boolean postExists = postExists("freeforall", null, postNum);
 			if (postExists == null) {
-				return "print Database error while verifying existence of post. " +
+				return "print Error: Database error while verifying existence of post. " +
 				"If the problem persists, contact an admin.";
 			}
 			else if (postExists.booleanValue()) {
@@ -38,24 +38,25 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Post DNE";
+				return "print Error: Post does not exist. Refresh. " +
+						"If the problem persists, contact an admin.";
 			}
 		}
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
-			return "print Database error while verifying existence of board. " +
+			return "print Error: Database error while verifying existence of board. " +
 					"If the problem persists, contact an admin.";
 		}
 		else if (boardExists.booleanValue()) {
 			Boolean regionExists = SocialNetworkRegions.regionExists(bname, rname);
 			if (regionExists == null) {
-				return "print Database error while verifying existence of region. " +
+				return "print Error: Database error while verifying existence of region. " +
 						"If the problem persists, contact an admin.";
 			}
 			else if (regionExists.booleanValue()) {
 				Boolean postExists = postExists(bname, rname, postNum);
 				if (postExists == null) {
-					return "print Database error while verifying existence of post. " +
+					return "print Error: Database error while verifying existence of post. " +
 					"If the problem persists, contact an admin.";
 				}
 				else if (postExists.booleanValue()) {
@@ -65,15 +66,18 @@ public class SocialNetworkPosts {
 					return msg;
 				}
 				else {
-					return "print Post DNE";
+					return "print Error: Post does not exist. Refresh. " +
+					"If the problem persists, contact an admin.";
 				}
 			}
 			else {
-				return "print Region DNE";
+				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Board DNE";
+			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			"If the problem persists, contact an admin.";
 		}
 	}
 	
@@ -85,7 +89,7 @@ public class SocialNetworkPosts {
 		if (bname.equals("freeforall")) {
 			Boolean postExists = postExists("freeforall", null, postNum);
 			if (postExists == null) {
-				return "print Database error while verifying existence of post. " +
+				return "print Error: Database error while verifying existence of post. " +
 				"If the problem persists, contact an admin.";
 			}
 			else if (postExists.booleanValue()) {
@@ -94,24 +98,25 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Post DNE";
+				return "print Error: Post does not exist. Refresh. " +
+				"If the problem persists, contact an admin.";
 			}
 		}
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
-			return "print Database error while verifying existence of board. " +
+			return "print Error: Database error while verifying existence of board. " +
 					"If the problem persists, contact an admin.";
 		}
 		else if (boardExists.booleanValue()) {
 			Boolean regionExists = SocialNetworkRegions.regionExists(bname, rname);
 			if (regionExists == null) {
-				return "print Database error while verifying existence of region. " +
+				return "print Error: Database error while verifying existence of region. " +
 						"If the problem persists, contact an admin.";
 			}
 			else if (regionExists.booleanValue()) {
 				Boolean postExists = postExists(bname, rname, postNum);
 				if (postExists == null) {
-					return "print Database error while verifying existence of post. " +
+					return "print Error: Database error while verifying existence of post. " +
 					"If the problem persists, contact an admin.";
 				}
 				else if (postExists.booleanValue()) {
@@ -121,15 +126,18 @@ public class SocialNetworkPosts {
 					return msg;
 				}
 				else {
-					return "print Post DNE";
+					return "print Error: Post does not exist. Refresh. " +
+					"If the problem persists, contact an admin.";
 				}
 			}
 			else {
-				return "print Region DNE";
+				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Board DNE";
+			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			"If the problem persists, contact an admin.";
 		}
 	}
 	
@@ -145,13 +153,13 @@ public class SocialNetworkPosts {
 		}
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
-			return "print Database error while verifying existence of board. " +
+			return "print Error: Database error while verifying existence of board. " +
 					"If the problem persists, contact an admin.";
 		}
 		else if (boardExists.booleanValue()) {
 			Boolean regionExists = SocialNetworkRegions.regionExists(bname, rname);
 			if (regionExists == null) {
-				return "print Database error while verifying existence of region. " +
+				return "print Error: Database error while verifying existence of region. " +
 						"If the problem persists, contact an admin.";
 			}
 			else if (regionExists.booleanValue()) {
@@ -161,11 +169,13 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Region DNE";
+				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Board DNE";
+			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			"If the problem persists, contact an admin.";
 		}
 	}
 	
@@ -183,13 +193,13 @@ public class SocialNetworkPosts {
 		}
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
-			return "print Database error while verifying existence of board. " +
+			return "print Error: Database error while verifying existence of board. " +
 					"If the problem persists, contact an admin.";
 		}
 		else if (boardExists.booleanValue()) {
 			Boolean regionExists = SocialNetworkRegions.regionExists(bname, rname);
 			if (regionExists == null) {
-				return "print Database error while verifying existence of region. " +
+				return "print Error: Database error while verifying existence of region. " +
 						"If the problem persists, contact an admin.";
 			}
 			else if (regionExists.booleanValue()) {
@@ -199,11 +209,13 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Region DNE";
+				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Board DNE";
+			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			"If the problem persists, contact an admin.";
 		}
 	}
 }

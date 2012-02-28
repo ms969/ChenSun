@@ -1,12 +1,5 @@
 package server;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import database.DBManager;
-
 /**
  * Provides navigation functionality for the user to go to
  * Boards, Regions, and Posts.
@@ -92,49 +85,84 @@ public class SocialNetworkNavigation {
 	 * navigate to this board.
 	 * TODO (author) ensure the user can go to this board.
 	 */
-	public String goToBoard(Connection conn, String username, String[] currentPath, String boardName) {
+	public String goToBoard(String username, String[] currentPath, String boardName) {
+		String toReturn = "";
 		if (boardName.trim().toLowerCase().equals("freeforall")) {
-			currentPath[0] = "freeforall";
-			String toReturn = printPath(currentPath);
-			toReturn += "print ;"; //empty line
-			return toReturn += SocialNetworkPosts.getPostListFreeForAll(username);
+			toReturn = SocialNetworkPosts.viewPostList(username, "freeforall", null);
+			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
+				currentPath[0] = "freeforall";
+				toReturn = printPath(currentPath) + "print ;" + toReturn;
+			}
+			else {
+				toReturn = "print Error while heading to destination;" + toReturn;
+			}
 		}
-		/*else... check that there exists a board with such a name*/
+		else {
+			toReturn = SocialNetworkRegions.viewRegions(username, boardName);
+			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
+				currentPath[0] = boardName;
+				toReturn = printPath(currentPath) + "print ;" + toReturn;
+			}
+			else {
+				toReturn = "print Error while heading to destination;" + toReturn;
+			}
+		}
+		return toReturn;
+	}
+	
+	/**
+	 * Assuming the path is in the right position, 
+	 * navigate to this region
+	 * TODO (author) ensure the user can go to this region.
+	 */
+	public String goToRegion(String username, String[] currentPath, String regionName) {
+		if (currentPath[0] == null || ("freeforall").equals(currentPath[0])) {
+			return "Invalid Call to Function";
+		}
+		else {
+			String toReturn = SocialNetworkPosts.viewPostList(username, currentPath[0], regionName);
+			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
+				currentPath[1] = regionName;
+				toReturn = printPath(currentPath) + "print ;" + toReturn;
+			}
+			else {
+				toReturn = "print Error while heading to destination;" + toReturn;
+			}
+			return toReturn;
+		}
 		
-		Boolean boardExists = SocialNetworkBoards.boardExists(boardName);
-		if (boardExists == null) {
-			return "print Database Error trying to access the board. If this persists, contact an admin.";
+	}
+	
+	/**
+	 * Assuming the path is in the right position, 
+	 * navigate to this post
+	 * TODO (author) ensure the user can view this post
+	 */
+	public String goToPost(String username, String[] currentPath, int postNum) {
+		if (("freeforall").equals(currentPath[0])) {
+			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], null, postNum);
+			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
+				currentPath[1] = "" + postNum;
+				toReturn = printPath(currentPath) + "print ;" + toReturn;
+			}
+			else {
+				toReturn = "print Error while heading to destination;" + toReturn;
+			}
+			return toReturn;
 		}
-		else if (boardExists.booleanValue()) {
-			currentPath[0] = boardName;
-			String toReturn = printPath(currentPath);
-			toReturn += "print ;";
-			return toReturn + SocialNetworkRegions.viewRegions(username, boardName);
-			
+		else if (currentPath[1] != null && currentPath[0] != null){
+			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], currentPath[1], postNum);
+			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
+				currentPath[2] = "" + postNum;
+				toReturn = printPath(currentPath) + "print ;" + toReturn;
+			}
+			else {
+				toReturn = "print Error while heading to destination;" + toReturn;
+			}
+			return toReturn;
 		}
 		else {
-			return "print The board \"" + boardName + "\" does not exist.";
+			return "Invalid Call to Function";
 		}
 	}
-	/*
-	public String goToRegion(String currentPath, String boardName, String regionName) {
-		if (boardName.trim().toLowerCase().equals("")) {
-			return "Incorrect Call to Function";
-		}
-		String region;
-		if (regionName != null) {
-			region = regionName;
-		}
-		else if (currentPath.indexOf("/") == -1) {
-			return null;
-		}
-		else {
-			
-		}
-	}
-	public String goToPost(String currentPath, String boardName, String regionName, Integer postNum) {
-		if (postNum == null) {
-			return "";
-		}
-	}*/
 }

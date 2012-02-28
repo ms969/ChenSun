@@ -32,7 +32,7 @@ public class SocialNetworkBoards {
 				|| boardName.contains(" ")
 				|| boardName.trim().contains(";")
 				|| boardName.trim().contains("/")) {
-			return "print Cannot create a board with the name \"" + boardName 
+			return "print Error: Cannot create a board with the name \"" + boardName 
 			  +"\". Please use a different name (One word, Case Insensitive).";
 		}
 		Connection dbconn = DBManager.getConnection();

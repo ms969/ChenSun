@@ -27,6 +27,7 @@ public class SocialNetworkRegions {
 		if (boardName == null || regionName == null) {
 			return "Invalid Call to Function";
 		}
+		String bname = boardName.trim().toLowerCase();
 		if (boardName.equals("freeforall")) {
 			return "Invalid Call to Function";
 		}
@@ -36,22 +37,24 @@ public class SocialNetworkRegions {
 				|| regionName.contains(" ")
 				|| regionName.trim().toLowerCase().equals("home")
 				|| regionName.trim().contains("/")) {
-			return "print Cannot create a region with the name \"" + regionName 
+			return "print Error: Cannot create a region with the name \"" + regionName 
 			  +"\". Please use a different name (One word, Case Insensitive).";
 		}
 		Connection dbconn = DBManager.getConnection();
-		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, bname);
 		if (boardExists == null) {
-			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+			return "print Error: Database error while verifying existence of board. " +
+					"If the problem persists, contact an admin.";
 		}
 		if (boardExists.booleanValue()) {
 			String msg = SocialNetworkDatabaseRegions.createRegion(dbconn, username, 
-					boardName.trim().toLowerCase(), regionName.trim().toLowerCase());
+					bname, regionName.trim().toLowerCase());
 			DBManager.closeConnection(dbconn);
 			return msg;
 		}
 		else {
-			return "print Board DNE";
+			return "print Error: Encapsulating Board does not exist. Refresh. " +
+					"If the problem persists, contact an admin.";
 		}
 	}
 
@@ -59,21 +62,24 @@ public class SocialNetworkRegions {
 		if (boardName == null) {
 			return "Invalid Call to Function";
 		}
-		if (boardName.equals("freeforall")) {
+		String bname = boardName.trim().toLowerCase();
+		if (bname.equals("freeforall")) {
 			return "Invalid Call to Function";
 		}
 		Connection dbconn = DBManager.getConnection();
-		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, bname);
 		if (boardExists == null) {
-			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+			return "print Error: Database error while verifying existence of board. " +
+					"If the problem persists, contact an admin.";
 		}
 		if (boardExists.booleanValue()) {
-			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, boardName.trim().toLowerCase());
+			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, bname);
 			DBManager.closeConnection(dbconn);
 			return msg;
 		}
 		else {
-			return "print Board DNE";
+			return "print Error: Encapsulating Board does not exist. Refresh. " +
+					"If the problem persists, contact an admin.";
 		}
 	}
 }

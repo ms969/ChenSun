@@ -119,7 +119,7 @@ public class SocialNetworkDatabasePosts {
 			return "print No posts for this board.";
 		}
 		else if (sqlex) {
-			return "print Database Error while querying viewable posts. Contact an admin.";
+			return "print Error: Database Error while querying viewable posts. Contact an admin.";
 		}
 		else {
 			return posts;
@@ -165,14 +165,14 @@ public class SocialNetworkDatabasePosts {
 			return "print No Posts for this Region";
 		}
 		else if (sqlex) {
-			return "print Database Error while querying viewable posts. Contact an admin.";
+			return "print Error: Database Error while querying viewable posts. Contact an admin.";
 		}
 		else return posts;
 	}
 	
 	//TODO need a way to add post privileges for the free for all board.
 	public static String createPostFreeForAll(Connection conn, String username, String content) {
-		return createPost(conn, "freeforall", null, username, content);
+		return createPost(conn, username, content, "freeforall", null);
 	}
 	
 	/**
@@ -183,8 +183,8 @@ public class SocialNetworkDatabasePosts {
 	 * 
 	 * TODO (author) For regular boards and regions, ensure the user can post under it
 	 */
-	public static String createPost(Connection conn, String boardName, 
-			String regionName, String username, String content) {
+	public static String createPost(Connection conn, String username, String content, 
+			String boardName, String regionName) {
 		PreparedStatement createPstmt = null;
 		String createPost = "";
 		
@@ -230,7 +230,7 @@ public class SocialNetworkDatabasePosts {
 			DBManager.closePreparedStatement(createPstmt);
 		}
 		if (sqlex) {
-			return "print Database error while inserting the post. Contact an admin.";
+			return "print Error: Database error while inserting the post. Contact an admin.";
 		}
 		else if (success) {
 			/*Try to retrieve the pid for the user to reference*/
@@ -269,13 +269,13 @@ public class SocialNetworkDatabasePosts {
 			}
 		}
 		else { //not successful
-			return "print Post could not be uploaded. If this problem persists, contact an admin.";
+			return "print Error: Post could not be uploaded. If this problem persists, contact an admin.";
 		}
 	}
 	
-	public static String createReplyFreeForAll(Connection conn, int postNum, 
-			String username, String content) {
-		return createReply(conn, "freeforall", null, postNum, username, content);
+	public static String createReplyFreeForAll(Connection conn, String username, String content, 
+			int postNum) {
+		return createReply(conn, username, content, "freeforall", null, postNum);
 	}
 	
 	/**
@@ -285,8 +285,8 @@ public class SocialNetworkDatabasePosts {
 	 * 
 	 * TODO tell the user to refresh the post to see their reply at the bottom.
 	 */
-	public static String createReply(Connection conn, String boardName, 
-			String regionName, int postNum, String username, String content) {
+	public static String createReply(Connection conn, String username, String content, 
+			String boardName, String regionName, int postNum) {
 		PreparedStatement createPstmt = null;
 		String createReply = ""; 
 		if (regionName.equals("freeforall")) {
@@ -323,13 +323,13 @@ public class SocialNetworkDatabasePosts {
 			DBManager.closePreparedStatement(createPstmt);
 		}
 		if (!success || sqlex) {
-			return "print Database error while inserting reply. Contact an admin";
+			return "print Error: Database error while inserting reply. Contact an admin";
 		}
 		else if (success) {
 			return "print Reply successfully added. Refresh the post to view";
 		}
 		else {
-			return "print Reply could not be uploaded. If this problem persists, contact an admin";
+			return "print Error: Reply could not be uploaded. If this problem persists, contact an admin";
 		}
 	}
 	
@@ -338,8 +338,8 @@ public class SocialNetworkDatabasePosts {
 	 * postNum is assumed to be an accurate post number.
 	 */
 	//TODO (author) ensure that the user has access to this post.
-	public static String getPostFreeForAll(Connection conn, int postNum) {
-		return getPost(conn, "freeforall", "", postNum);
+	public static String getPostFreeForAll(Connection conn, String username, int postNum) {
+		return getPost(conn, username, "freeforall", "", postNum);
 	}
 	
 	/** Gets a post from the designated board and region
@@ -347,7 +347,7 @@ public class SocialNetworkDatabasePosts {
 	 *  ASSUMES that the board, region, and post are all valid.
 	 */
 	//TODO (author) ensure that the user has access to the encapsulating region.
-	public static String getPost(Connection conn, String boardName, 
+	public static String getPost(Connection conn, String username, String boardName, 
 			String regionName, int postNum) {
 		String getOriginalPost = "";
 		String getReplies = "";
@@ -405,10 +405,10 @@ public class SocialNetworkDatabasePosts {
 			sqlex = true;
 		}
 		if (postAndReplies.equals("") && !sqlex) {
-			return "print Post does not exist.";
+			return "print Error: Post does not exist. Refresh. If the problem persists, contact an admin.";
 		}
 		else if (sqlex) {
-			return "print Database error while querying post and replies. Contact an admin.";
+			return "print Error: Database error while querying post and replies. Contact an admin.";
 		}
 		else return postAndReplies;
 	}

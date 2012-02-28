@@ -226,18 +226,18 @@ public class SocialNetworkDatabaseBoards {
 			return "print Board \"" + boardName +"\" succesfully created.";
 		}
 		else if (firstsuccess == 0 && !sqlex) {
-			return "print Cannot create a board with the name \"" + boardName 
+			return "print Error: Cannot create a board with the name \"" + boardName 
 			  + "\". Please use a different name.";
 		}
 		//TODO later on, we might want to make these errors more ambiguous
 		else if (secondsuccess && !sqlex) {
-			return "print Database error while creating/initializing a board database. Contact an admin.";
+			return "print Error: Database error while creating/initializing a board database. Contact an admin.";
 		}
 		else if (!sqlex){
-			return "print Adding admin to the board db. Contact the admin.";
+			return "print Error: Could not add admin to the board db. Contact the admin.";
 		}
 		else {
-			return "print Connection error. Contact the admin.";
+			return "print Error: Connection error. Contact the admin.";
 		}
 	}
 	
@@ -308,7 +308,7 @@ public class SocialNetworkDatabaseBoards {
 			return boardlist;
 		}
 		else if (sqlex) {
-			return "print Database Error while querying viewable boards. Contact an admin.";
+			return "print Error: Database Error while querying viewable boards. Contact an admin.";
 		}
 		else {
 			return boardlist;
