@@ -36,6 +36,8 @@ public class ServerInputProcessor extends InputProcessor {
 		"^friendRequests$",	// 10
 		"^deleteUser$",		// 11
 		"^showFriends$",	// 12
+		"^changeUserRole$", // 13
+		"^transferSA$",		// 14
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -117,6 +119,7 @@ public class ServerInputProcessor extends InputProcessor {
 			} else {
 				out.println();
 			}
+			return;
 		}
 		if (inputLine.matches(COMMANDS[11])) {
 			if (user != null) {
@@ -124,11 +127,29 @@ public class ServerInputProcessor extends InputProcessor {
 			} else {
 				out.println();
 			}
+			return;
 		}
 		if (inputLine.matches(COMMANDS[12])) {
 			if (user != null) {
 				processShowFriends();
 			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[13])) {
+			if (user != null) {
+				processChangeUserRole();
+			} else {
+				out.println();
+			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[14])) {
+			if (user != null) {
+				processTransferSA();
+			} else {
+				out.println();
+			}
+			return;
 		}
 		out.println();
 	}
@@ -196,7 +217,6 @@ public class ServerInputProcessor extends InputProcessor {
 			out.println("print " + username + " does not exist.");
 		}
 	}
-
 
 	private void processRegistration() throws IOException {
 		String newUser = "";
@@ -317,12 +337,14 @@ public class ServerInputProcessor extends InputProcessor {
 	private void regApproval(String input) {
 		if (input.equals("cancel")) {
 			out.println();
+			return;
 		}
 		if (input.matches("^approve.+")) {
 			String value = getValue(input);
 			String delim = ",";
 			String[] approvedUsers = value.split(delim);
 			regApprove(approvedUsers);
+			return;
 		}
 		if (input.matches("^remove.+")) {
 			String value = getValue(input);
@@ -356,6 +378,7 @@ public class ServerInputProcessor extends InputProcessor {
 			command = command.substring(0, command.length()-2) + 
 					" has been deleted from the system.";
 			out.println(command);
+			return;
 		}
 	}
 
@@ -588,7 +611,6 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 	}
 	
-
 	private void addFriend(String username) throws IOException {
 		// username exists in the system.
 		out.println("print Are you sure you want to add " + username + 
@@ -654,12 +676,14 @@ public class ServerInputProcessor extends InputProcessor {
 	private void friendApproval(String input) {
 		if (input.equals("cancel")) {
 			out.println();
+			return;
 		}
 		if (input.matches("^approve.+")) {
 			String value = getValue(input);
 			String delim = ",";
 			String[] approvedFriends = value.split(delim);
 			friendApprove(approvedFriends);
+			return;
 		}
 		if (input.matches("^remove.+")) {
 			String value = getValue(input);
@@ -699,6 +723,7 @@ public class ServerInputProcessor extends InputProcessor {
 			command = command.substring(0, command.length()-2) + 
 					" have been deleted.";
 			out.println(command);
+			return;
 		}
 	}
 
@@ -824,6 +849,7 @@ public class ServerInputProcessor extends InputProcessor {
 			
 			toDelete = in.readLine();
 			if (toDelete.equals("cancel")) {
+				out.println();
 				return;
 			}
 			if (deletableUsers.contains(toDelete)) {
@@ -897,6 +923,175 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		out.println(command);
+	}
+
+	private void processChangeUserRole() throws IOException {
+		// TODO: check to see if user is actually a SA
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+		try {
+			stmt = conn.createStatement();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// Stores a list of changeable users
+		// Users[0]: username, Users[1]: role
+		ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
+		try {
+			String query = "SELECT username, role FROM main.users " +
+					"WHERE username != '" + user + "' AND aid = " +
+					"(SELECT aid FROM main.users WHERE username = '" + user + "')";
+			
+			if (SocialNetworkServer.DEBUG) {
+				System.out.println("role: changeable role query: " + query);
+			}
+			
+			ResultSet usersResult = stmt.executeQuery(query);
+			while (usersResult.next()) {
+				String[] userInfo = {usersResult.getString("username"), usersResult.getString("role").toUpperCase()};
+				changeableUsers.add(userInfo);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		boolean userChangeable = false;
+		String toChange = "";
+		String role = "";
+		
+		while (!userChangeable) {
+			String command = "print Users in your A Cappella group that you can change roles for:;";
+			for (String[] userInfo: changeableUsers) {
+				command += "print "+userInfo[0]+" ("+userInfo[1]+");";
+			}
+			command += "print ;print Type the name of the user you wish to change role for:;" +
+					"askForInput";
+			out.println(command);
+			
+			toChange = in.readLine();
+			if (toChange.equals("cancel")) {
+				out.println();
+				return;
+			}
+			for (String[] userInfo: changeableUsers) {
+				if (toChange.equals(userInfo[0])) {
+					if (userInfo[1].equals("ADMIN")) {
+						role = "member";
+					} else {
+						role = "admin";
+					}
+					userChangeable = true;
+					break;
+				}
+			}
+			if (!userChangeable) {
+				out.print("print Cannot change role for " + toChange + ";");
+			}
+		}
+		
+		// toChange is changeable
+		changeRole(toChange, role);
+	}
+
+	private void changeRole(String toChange, String role) {
+		// change user's role in the DB to 'role'
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+		String query = "UPDATE main.users SET role = '"+role+"' WHERE username = '"+toChange+"'";
+		try {
+			stmt = conn.createStatement();
+			stmt.executeUpdate(query);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		// print out confirmation on client.
+		String from;
+		if (role.equals("admin")) {
+			from = "MEMBER";
+		} else {
+			from = "ADMIN";
+		}
+		out.println("print Role for "+toChange+" has been changed from "+from+" to "+role.toUpperCase());
+	}
+
+	private void processTransferSA() throws IOException {
+		// TODO: check to see if user is actually a SA
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+		try {
+			stmt = conn.createStatement();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// Stores a list of changeable users
+		// Users[0]: username
+		ArrayList<String> groupAdmins = new ArrayList<String>();
+		try {
+			String query = "SELECT username FROM main.users " +
+					"WHERE username != '" + user + "' AND aid = " +
+					"(SELECT aid FROM main.users WHERE username = '" + user + "') AND " +
+					"role = 'admin'";
+			
+			if (SocialNetworkServer.DEBUG) {
+				System.out.println("transfer: adminUser query: " + query);
+			}
+			
+			ResultSet usersResult = stmt.executeQuery(query);
+			while (usersResult.next()) {
+				groupAdmins.add(usersResult.getString("username"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		boolean transferableUser = false;
+		String toChange = "";
+		
+		while (!transferableUser) {
+			String command = "print Users in your A Cappella group that you can transfer SA tole to:;";
+			for (String userInfo: groupAdmins) {
+				command += "print "+userInfo+" (ADMIN);";
+			}
+			command += "print ;print Type the name of the user you wish to transfer SA role to:;" +
+					"askForInput";
+			out.println(command);
+			
+			toChange = in.readLine();
+			if (toChange.equals("cancel")) {
+				out.println();
+				return;
+			}
+			if (groupAdmins.contains(toChange)) {
+				transferableUser = true;
+			}
+			if (!transferableUser) {
+				out.print("print Cannot transfer SA role to " + toChange + ";");
+			}
+		}
+		
+		// toChange is an admin that can have SA transferred to
+		transferSA(toChange);
+	}
+
+	private void transferSA(String toChange) {
+		// transfer SA-ship
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+		String promoteQuery = "UPDATE main.users SET role = 'sa' WHERE username = '"+toChange+"'";
+		String demoteQuery = "UPDATE main.users SET role = 'admin' WHERE username = '"+user+"';";
+		try {
+			stmt = conn.createStatement();
+			stmt.executeUpdate(promoteQuery);
+			stmt.executeUpdate(demoteQuery);
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// Print confirmation to client
+		out.println("print SA role has been transferred to "+toChange);
 	}
 
 	/**
