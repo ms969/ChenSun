@@ -64,7 +64,7 @@ public class SocialNetworkDatabaseRegions {
 			DBManager.closePreparedStatement(regionPstmt);
 		}
 		if (success) {
-			return "print Region \"" + regionName + "\" successfully created.";
+			return "print Region \"" + regionName + "\" successfully created.;print Don't forget to add users to the region privileges list!";
 		}
 		else {
 			return sqlexmsg;
