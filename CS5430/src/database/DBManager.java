@@ -31,7 +31,7 @@ public class DBManager {
 		connectionProps.put("password", pwd);
 		conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port
 				+ "/", connectionProps);
-		System.out.println("Connected to database");
+		//System.out.println("Connected to database");
 		return conn;
 	}
 	
