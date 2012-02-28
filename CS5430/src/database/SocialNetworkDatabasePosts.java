@@ -30,7 +30,7 @@ public class SocialNetworkDatabasePosts {
 		try {
 			pstmt = conn.prepareStatement(getPost);
 			pstmt.setInt(1, postNum);
-			if (boardName.equals("freeforall")) {
+			if (!boardName.equals("freeforall")) {
 				pstmt.setString(2, regionName);
 			}
 			postResult = pstmt.executeQuery();
@@ -62,10 +62,10 @@ public class SocialNetworkDatabasePosts {
 		
 		/*Retrieves all posts, joined with their most recent reply*/
 		Statement getPosts = null;
-		String getPostsFreeForAll = "SELECT pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
+		String getPostsFreeForAll = "SELECT pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied) " +
 			"FROM freeforall.posts AS P LEFT OUTER JOIN " + 
 			"freeforall.replies as R USING (pid) " +
-			"GROUP BY pid ORDER BY R.dateReplied";
+			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC";
 		ResultSet postsResults = null;
 		
 		/*Retrieves the privilege for a given post and user*/
@@ -137,11 +137,11 @@ public class SocialNetworkDatabasePosts {
 	public static String getPostList(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement pstmt = null;
 		String posts = "print Posts:;";
-		String getPosts = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
+		String getPosts = "SELECT rname, pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied) " +
 			"FROM " + boardName +  ".posts AS P LEFT OUTER JOIN " + 
 			boardName + ".replies as R USING (rname, pid) " +
 			"WHERE rname = ? " +
-			"GROUP BY pid ORDER BY R.dateReplied DESC";
+			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC ";
 		ResultSet postsResults = null;
 		boolean sqlex = false;
 		try {
@@ -387,7 +387,7 @@ public class SocialNetworkDatabasePosts {
 			if (postResult.next()) { /*Only expect one post result*/
 				postAndReplies += 
 					"print ----- Post# " + postNum + "[" + postResult.getString("postedBy") + "]----- " +
-					postResult.getTimestamp("datePosted").toString() + "; print \t" +
+					postResult.getTimestamp("datePosted").toString() + ";print \t" +
 					postResult.getString("content") + ";";
 				
 				repliesResult = replies.executeQuery();
