@@ -6,6 +6,13 @@ import database.SocialNetworkDatabaseBoards;
 import database.SocialNetworkDatabaseRegions;
 import database.DBManager;
 
+/**
+ * Look at corresponding SQL.java file for specs.
+ * These functions are merely wrappers, containing
+ * some server logic.
+ * @author kchen
+ *
+ */
 public class SocialNetworkRegions {
 	
 	public static Boolean regionExists(String boardName, String regionName) {
@@ -26,13 +33,17 @@ public class SocialNetworkRegions {
 		//TODO any more region names that should be discouraged?
 		if (regionName.trim().equals("") || regionName.contains("..") 
 				|| regionName.contains(";")
+				|| regionName.contains(" ")
 				|| regionName.trim().toLowerCase().equals("home")
 				|| regionName.trim().contains("/")) {
 			return "print Cannot create a region with the name \"" + regionName 
-			  +"\". Please use a different name (Case Insensitive).";
+			  +"\". Please use a different name (One word, Case Insensitive).";
 		}
 		Connection dbconn = DBManager.getConnection();
 		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		if (boardExists == null) {
+			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+		}
 		if (boardExists.booleanValue()) {
 			String msg = SocialNetworkDatabaseRegions.createRegion(dbconn, username, 
 					boardName.trim().toLowerCase(), regionName.trim().toLowerCase());
@@ -40,7 +51,7 @@ public class SocialNetworkRegions {
 			return msg;
 		}
 		else {
-			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+			return "print Board DNE";
 		}
 	}
 
@@ -53,13 +64,16 @@ public class SocialNetworkRegions {
 		}
 		Connection dbconn = DBManager.getConnection();
 		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, boardName.trim().toLowerCase());
+		if (boardExists == null) {
+			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+		}
 		if (boardExists.booleanValue()) {
 			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, boardName.trim().toLowerCase());
 			DBManager.closeConnection(dbconn);
 			return msg;
 		}
 		else {
-			return "print Database error while verifying existence of board. If the problem persists, contact an admin.";
+			return "print Board DNE";
 		}
 	}
 }

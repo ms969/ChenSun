@@ -6,6 +6,13 @@ import java.sql.Connection;
 import database.DBManager;
 import database.SocialNetworkDatabaseBoards;
 
+/**
+ * Look at corresponding SQL.java file for specs.
+ * These functions are merely wrappers, containing
+ * some server logic.
+ * @author kchen
+ *
+ */
 public class SocialNetworkBoards {
 
 	public static Boolean boardExists(String boardName) {
@@ -22,10 +29,11 @@ public class SocialNetworkBoards {
 				|| boardName.trim().toLowerCase().equals("freefreeall")
 				|| boardName.trim().toLowerCase().equals("main")
 				|| boardName.trim().toLowerCase().equals("home")
+				|| boardName.contains(" ")
 				|| boardName.trim().contains(";")
 				|| boardName.trim().contains("/")) {
 			return "print Cannot create a board with the name \"" + boardName 
-			  +"\". Please use a different name (Case Insensitive).";
+			  +"\". Please use a different name (One word, Case Insensitive).";
 		}
 		Connection dbconn = DBManager.getConnection();
 		String msg = SocialNetworkDatabaseBoards.createBoard(dbconn, username, boardName.trim().toLowerCase());
