@@ -23,7 +23,7 @@ public class ServerInputProcessor extends InputProcessor {
 	private String[] currentPath;
 	
 	public static final String[] COMMANDS = {
-		"^login.+",			// 0
+		"^login .+",		// 0
 		"^register$",		// 1
 		"^regRequests$",	// 2
 		"^addFriend.*",		// 3
@@ -35,6 +35,7 @@ public class ServerInputProcessor extends InputProcessor {
 		"^reply$",          // 9
 		"^friendRequests$",	// 10
 		"^deleteUser$",		// 11
+		"^showFriends$",	// 12
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -108,6 +109,11 @@ public class ServerInputProcessor extends InputProcessor {
 				out.println();
 			}
 		}
+		if (inputLine.matches(COMMANDS[12])) {
+			if (user != null) {
+				processShowFriends();
+			}
+		}
 		out.println();
 	}
 
@@ -152,24 +158,29 @@ public class ServerInputProcessor extends InputProcessor {
 			out.print("setLoggedIn true;setUser " + username + ";" +
 					"print Logged in as: " + username + ";" + 
 					"print Role: " + role.toUpperCase() + ";" +
-					"print A Cappella Group: " + aname + ";print ;" +
-					SocialNetworkNavigation.printPath(currentPath) +
-					"print ;" + SocialNetworkBoards.viewBoards(user));
+					"print A Cappella Group: " + aname + ";print ;");
 			
 			// Get friend requests
 			String friendReqCommand = getFriendReq(username);
 			out.print(friendReqCommand);
+			
+			// if admin or SA, get pending registration requests
 			if (role.equals("admin") || role.equals("sa")) {
-				// Get pending registration requests
 				String regReqCommand = getRegReq(username);
-				out.println(regReqCommand);
-			} else {
-				out.println();
+				out.print(regReqCommand + ";");
 			}
+			
+			String hr = getHR(80);
+			out.print(hr + "print ;");
+			
+			// printing out boards
+			out.println(SocialNetworkNavigation.printPath(currentPath) +
+					 SocialNetworkBoards.viewBoards(user));
 		} else {
 			out.println("print " + username + " does not exist.");
 		}
 	}
+
 
 	private void processRegistration() throws IOException {
 		String newUser = "";
@@ -835,6 +846,41 @@ public class ServerInputProcessor extends InputProcessor {
 		} else if (input.equals("cancel")) {
 			out.println();
 		}
+	}
+
+	private void processShowFriends() {
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+
+		// get the list of friends for the current user
+		ArrayList<String> existingFriends = new ArrayList<String>();
+		try {
+			String query = "SELECT * FROM main.friends WHERE username1 = '" + user + "' OR " +
+					"username2 = '" + user + "'";
+			stmt = conn.createStatement();
+			ResultSet friendsResult = stmt.executeQuery(query);
+			while (friendsResult.next()) {
+				if (friendsResult.getString("username1").equals(user)) {
+					existingFriends.add(friendsResult.getString("username2"));
+				} else {
+					existingFriends.add(friendsResult.getString("username1"));
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// printing out friend list
+		String command = "print Your friends:;";
+		if (existingFriends.size() == 0) {
+			command = "print You have no friends right now.;" +
+					"print To add a friend: type addFriend";
+		} else {
+			for (String friend: existingFriends) {
+				command += "print " + friend + ";";
+			}
+		}
+		out.println(command);
 	}
 
 	/**
