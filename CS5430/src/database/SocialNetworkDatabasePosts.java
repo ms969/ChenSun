@@ -211,7 +211,7 @@ public class SocialNetworkDatabasePosts {
 			createPost = "INSERT INTO " + boardName + ".posts " +
 					"VALUES (?, null, ?, NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
-					"WHERE rname = ? postedBy = ? AND content = ?";
+					"WHERE rname = ? AND postedBy = ? AND content = ?";
 		}
 		
 		boolean sqlex = false;
