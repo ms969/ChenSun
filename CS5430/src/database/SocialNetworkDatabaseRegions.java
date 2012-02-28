@@ -91,10 +91,10 @@ public class SocialNetworkDatabaseRegions {
 				boardName + ".regions";
 		
 		PreparedStatement recentPostsPstmt = null;
-		String fetchRecentPost = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(R.dateReplied)" +
+		String fetchRecentPosts = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(P.dateLastUpdated), MAX(R.dateReplied)" +
 				"FROM " + boardName + ".posts AS P LEFT OUTER JOIN " +
 				boardName + ".replies AS R USING (rname, pid) " +
-				"WHERE rname = ? ORDER BY P.datePosted DESC";
+				"WHERE rname = ? GROUP BY pid ORDER BY P.dateLastUpdated DESC";
 		ResultSet regionsResults = null;
 		ResultSet recentPostsResults = null;
 		
@@ -113,7 +113,7 @@ public class SocialNetworkDatabaseRegions {
 			else { //error occurred while acquiring role
 				return "print Error: Database Error while querying viewable regions. Contact an admin.;";
 			}
-			recentPostsPstmt = conn.prepareStatement(fetchRecentPost);
+			recentPostsPstmt = conn.prepareStatement(fetchRecentPosts);
 			while (regionsResults.next()) {
 				/*For each region, fetch the two most recent posts*/
 				if (role.equals("member")) {
@@ -128,7 +128,7 @@ public class SocialNetworkDatabaseRegions {
 				recentPostsResults = recentPostsPstmt.executeQuery();
 				if (recentPostsResults.next()) {
 					if (recentPostsResults.getTimestamp("P.datePosted") != null) {
-						regionsAndPosts += "print \t\tMost Recently Updated Post#" + recentPostsResults.getInt("pid") +
+						regionsAndPosts += "print \t\tMost Recent Activity | Post#" + recentPostsResults.getInt("pid") +
 						"[" + recentPostsResults.getString("P.postedBy") + "];";
 						if (recentPostsResults.getTimestamp("MAX(R.dateReplied)") != null) {
 							regionsAndPosts += "print \t\t   " +

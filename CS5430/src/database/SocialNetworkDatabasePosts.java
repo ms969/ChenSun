@@ -330,7 +330,6 @@ public class SocialNetworkDatabasePosts {
 		
 		PreparedStatement updateDatePstmt = null;
 		String updateDate = "";
-		ResultSet updateResult = null;
 		
 		if (boardName.equals("freeforall")) {
 			createReply = "INSERT INTO freeforall.replies " +
@@ -345,8 +344,8 @@ public class SocialNetworkDatabasePosts {
 			"VALUES (?, ?, null, ?, NOW(), ?)";
 			getDate = "SELECT MAX(dateReplied) FROM " + boardName + ".replies " +
 			"WHERE pid = ? AND rname = ?";
-			updateDate = "UPDATE freeforall.posts SET dateLastUpdated = ? " +
-			"WHERE pid = ? AND rname = ? ";
+			updateDate = "UPDATE " + boardName + ".posts SET dateLastUpdated = ? " +
+			"WHERE pid = ? AND rname = ?";
 		}
 		
 		boolean successInsert = false;
@@ -408,6 +407,9 @@ public class SocialNetworkDatabasePosts {
 		finally {
 			DBManager.trueAutoCommit(conn);
 			DBManager.closePreparedStatement(createPstmt);
+			DBManager.closePreparedStatement(getDatePstmt);
+			DBManager.closePreparedStatement(updateDatePstmt);
+			DBManager.closeResultSet(dateResult);
 		}
 		if (!successInsert || !successUpdate || sqlex) {
 			return "print Error: Database error while inserting reply. Contact an admin";
