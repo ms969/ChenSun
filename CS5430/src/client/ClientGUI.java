@@ -42,6 +42,10 @@ public class ClientGUI {
 			while (!processor.isLoggedIn() && !processor.isExit()) {
 				processor.processLogin();
 			}
+			
+			while(true) {
+				processor.askForInput();
+			}
 	
 			/* TODO Get Information from Server if successfully logged in */
 	

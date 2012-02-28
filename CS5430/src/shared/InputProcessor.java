@@ -5,4 +5,9 @@ public class InputProcessor {
 		int spacei = command.indexOf(" ");
 		return command.substring(spacei+1);
 	}
+	
+
+	public static String quote(String input) {
+		return "'" + input + "'";
+	}
 }

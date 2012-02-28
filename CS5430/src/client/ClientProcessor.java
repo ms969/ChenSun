@@ -15,11 +15,6 @@ public class ClientProcessor extends InputProcessor {
 	private PrintWriter serverOut;
 	private BufferedReader serverIn;
 	
-//	public static final String[] COMMANDS = {
-//		"^login.+",
-//		"registration",
-//	};
-	
 	public ClientProcessor(PrintWriter serverOut, BufferedReader serverIn, BufferedReader keyboard) {
 		this.serverOut = serverOut;
 		this.serverIn = serverIn;
@@ -62,7 +57,7 @@ public class ClientProcessor extends InputProcessor {
 		}
 	}
 	
-	private void askForInput() {
+	public void askForInput() {
 		System.out.print(">> ");
 		try {
 			String input = keyboard.readLine();

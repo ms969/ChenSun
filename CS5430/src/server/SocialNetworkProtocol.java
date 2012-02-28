@@ -25,20 +25,12 @@ public class SocialNetworkProtocol implements Runnable {
 		
 		String inputLine;
 		while ((inputLine = in.readLine()) != null) {
-			processInput(inputLine);
+			iprocessor.processCommand(inputLine);
 		}
 
 		// closing the connection
 		in.close();
 		clientSocket.close();
-	}
-
-	private void processInput(String inputLine) throws IOException {
-		for (int i=0; i < ServerInputProcessor.COMMANDS.length; i++) {
-			if (inputLine.matches(ServerInputProcessor.COMMANDS[i])) {
-				iprocessor.processCommand(ServerInputProcessor.COMMANDS[i], inputLine);
-			}
-		}
 	}
 
 	public void run() {
