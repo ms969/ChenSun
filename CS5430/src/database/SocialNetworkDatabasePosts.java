@@ -96,7 +96,7 @@ public class SocialNetworkDatabasePosts {
 						(privsResult.getString("privilege").equals("viewpost")? specialStrPostable : "") +
 						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
 						if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
-							posts += "print \t" +
+							posts += "print \t\t" +
 							"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
 							postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 						}
@@ -106,7 +106,7 @@ public class SocialNetworkDatabasePosts {
 					posts += "print \t" + specialStrCreatedPost +
 					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
 					if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
-						posts += "print \t" +
+						posts += "print \t\t" +
 						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
 						postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 					}
@@ -156,9 +156,12 @@ public class SocialNetworkDatabasePosts {
 			postsResults = pstmt.executeQuery();
 			while (postsResults.next()) {
 				posts += "print \tPost#" + postsResults.getInt("pid") + 
-				"[" + postsResults.getString("P.postedBy") + "]; print \t" +
-				"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "] " +
-				postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+				"[" + postsResults.getString("P.postedBy") + "];";
+				if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+					posts += "print \t\t" +
+					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "] " +
+					postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+				}
 			}
 		}
 		catch (SQLException e) {
@@ -369,7 +372,7 @@ public class SocialNetworkDatabasePosts {
 			getOriginalPost = "SELECT * FROM " + boardName + ".posts " +
 			"WHERE pid = ? AND rname = ?";
 			getReplies = "SELECT * FROM " + boardName + ".replies " +
-			"WHERE pid = ? AND rname = ? ORDER BY dateReplied";
+			"WHERE pid = ? AND rname = ? ORDER BY dateReplied ASC";
 		}
 		
 		PreparedStatement originalPost = null;
