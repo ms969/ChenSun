@@ -91,7 +91,7 @@ public class SocialNetworkDatabaseRegions {
 				boardName + ".regions";
 		
 		PreparedStatement recentPostsPstmt = null;
-		String fetchRecentPost = "SELECT rname, pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied)" +
+		String fetchRecentPost = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(R.dateReplied)" +
 				"FROM " + boardName + ".posts AS P LEFT OUTER JOIN " +
 				boardName + ".replies AS R USING (rname, pid) " +
 				"WHERE rname = ? ORDER BY P.datePosted DESC";
@@ -132,7 +132,7 @@ public class SocialNetworkDatabaseRegions {
 						"[" + recentPostsResults.getString("P.postedBy") + "];";
 						if (recentPostsResults.getTimestamp("MAX(R.dateReplied)") != null) {
 							regionsAndPosts += "print \t\t   " +
-							"Most Recent Reply: [" + recentPostsResults.getString("R.repliedBy") + "] " +
+							"Most Recent Reply at " +
 							recentPostsResults.getTimestamp("MAX(R.dateReplied)").toString() + ";";
 						}
 					}

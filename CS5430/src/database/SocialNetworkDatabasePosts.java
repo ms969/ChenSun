@@ -62,7 +62,7 @@ public class SocialNetworkDatabasePosts {
 		
 		/*Retrieves all posts, joined with their most recent reply*/
 		Statement getPosts = null;
-		String getPostsFreeForAll = "SELECT pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied) " +
+		String getPostsFreeForAll = "SELECT pid, P.postedBy, P.datePosted, MAX(R.dateReplied) " +
 			"FROM freeforall.posts AS P LEFT OUTER JOIN " + 
 			"freeforall.replies as R USING (pid) " +
 			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC";
@@ -97,7 +97,7 @@ public class SocialNetworkDatabasePosts {
 						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
 						if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
 							posts += "print \t\t" +
-							"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+							"Most Recent Reply at " +
 							postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 						}
 					}
@@ -107,7 +107,7 @@ public class SocialNetworkDatabasePosts {
 					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
 					if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
 						posts += "print \t\t" +
-						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+						"Most Recent Reply at " +
 						postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 					}
 				}
@@ -143,11 +143,11 @@ public class SocialNetworkDatabasePosts {
 	public static String getPostList(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement pstmt = null;
 		String posts = "print Posts:;";
-		String getPosts = "SELECT rname, pid, P.postedBy, P.datePosted, R.repliedBy, MAX(R.dateReplied) " +
+		String getPosts = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(R.dateReplied) " +
 			"FROM " + boardName +  ".posts AS P LEFT OUTER JOIN " + 
 			boardName + ".replies as R USING (rname, pid) " +
 			"WHERE rname = ? " +
-			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC ";
+			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC";
 		ResultSet postsResults = null;
 		boolean sqlex = false;
 		try {
@@ -159,7 +159,7 @@ public class SocialNetworkDatabasePosts {
 				"[" + postsResults.getString("P.postedBy") + "];";
 				if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
 					posts += "print \t\t" +
-					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "] " +
+					"Most Recent Reply at " +
 					postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 				}
 			}
@@ -204,18 +204,27 @@ public class SocialNetworkDatabasePosts {
 		String getPost = "";
 		ResultSet getResult = null;
 		
+		PreparedStatement getDatePstmt = null;
+		String getMaxDate = "";
+		ResultSet dateResult = null;
+		
 		if (boardName.equals("freeforall")) {
 			createPost = "INSERT INTO freeforall.posts " +
 					"VALUES (null, ?, NOW(), ?)";
-			getPost = "SELECT pid, MAX(datePosted) FROM freeforall.posts " +
+			getMaxDate = "SELECT MAX(datePosted) FROM freeforall.posts " +
 					"WHERE postedBy = ? AND content = ?";
+			getPost = "SELECT pid, datePosted FROM freeforall.posts " +
+					"WHERE postedBy = ? AND content = ? AND datePosted = ?";
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
 					"VALUES (?, null, ?, NOW(), ?)";
-			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
-					"WHERE rname = ? AND postedBy = ? AND content = ?";
+			getMaxDate = "SELECT MAX(datePosted) FROM " + boardName + ".posts " +
+			"WHERE rname = ? AND postedBy = ? AND content = ?";
+			getPost = "SELECT pid, datePosted FROM " + boardName + ".posts " +
+					"WHERE rname = ? AND postedBy = ? AND content = ? AND datePosted = ?";
 		}
+		
 		
 		boolean sqlex = false;
 		boolean success = false;
@@ -247,19 +256,35 @@ public class SocialNetworkDatabasePosts {
 			/*Try to retrieve the pid for the user to reference*/
 			Integer pid = null;
 			try {
+				getDatePstmt = conn.prepareStatement(getMaxDate);
 				getPstmt = conn.prepareStatement(getPost);
 				if (boardName.equals("freeforall")) {
 					getPstmt.setString(1, username);
 					getPstmt.setString(2, content);
+					getDatePstmt.setString(1, username);
+					getDatePstmt.setString(2, content);
 				}
 				else {
 					getPstmt.setString(1, regionName);
 					getPstmt.setString(2, username);
 					getPstmt.setString(3, content);
+					getDatePstmt.setString(1, regionName);
+					getDatePstmt.setString(2, username);
+					getDatePstmt.setString(3, content);
 				}
-				getResult = getPstmt.executeQuery();
-				if (getResult.next()) { //There should be at most one result... just inserted!
-					pid = new Integer(getResult.getInt("pid"));
+				dateResult = getDatePstmt.executeQuery();
+				if (dateResult.next()) {
+					if (boardName.equals("freeforall")) {
+						getPstmt.setTimestamp(3, dateResult.getTimestamp("MAX(datePosted)"));
+					}
+					else {
+						
+						getPstmt.setTimestamp(4, dateResult.getTimestamp("MAX(datePosted)"));
+					}
+					getResult = getPstmt.executeQuery();
+					if (getResult.next()) { //There should be at most one result... just inserted!
+						pid = new Integer(getResult.getInt("pid"));
+					}
 				}
 			}
 			catch (SQLException e) {
@@ -275,7 +300,7 @@ public class SocialNetworkDatabasePosts {
 						"print Don't forget to give people permission to view/reply to it!";
 			}
 			else {
-				return "print Post#" + pid + " successfully added.;" +
+				return "print Post#" + pid.intValue() + " successfully added.;" +
 						"print Don't forget to give people permission to view/reply to it!";
 			}
 		}
