@@ -209,7 +209,7 @@ public class SocialNetworkDatabasePosts {
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
-					"VALUES (?, null, ?. NOW(), ?)";
+					"VALUES (?, null, ?, NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
 					"WHERE rname = ? postedBy = ? AND content = ?";
 		}
