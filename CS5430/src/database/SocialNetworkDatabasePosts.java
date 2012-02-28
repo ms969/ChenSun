@@ -63,7 +63,7 @@ public class SocialNetworkDatabasePosts {
 		/*Retrieves all posts, joined with their most recent reply*/
 		Statement getPosts = null;
 		String getPostsFreeForAll = "SELECT pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
-			"FROM freeforall.posts AS P INNER JOIN " + 
+			"FROM freeforall.posts AS P LEFT OUTER JOIN " + 
 			"freeforall.replies as R USING (pid) " +
 			"GROUP BY pid ORDER BY R.dateReplied";
 		ResultSet postsResults = null;
@@ -96,14 +96,14 @@ public class SocialNetworkDatabasePosts {
 						(privsResult.getString("privilege").equals("viewpost")? specialStrPostable : "") +
 						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
 						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
-						postsResults.getTimestamp("R.dateReplied").toString() + ";";
+						postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 					}
 				}
 				else { //the user is the creator of the post
 					posts += "print \t" + specialStrCreatedPost +
 					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
 					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
-					postsResults.getTimestamp("R.dateReplied").toString() + ";";
+					postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 				}
 			}
 		}
@@ -138,7 +138,7 @@ public class SocialNetworkDatabasePosts {
 		PreparedStatement pstmt = null;
 		String posts = "print Posts:;";
 		String getPosts = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
-			"FROM " + boardName +  ".posts AS P INNER JOIN " + 
+			"FROM " + boardName +  ".posts AS P LEFT OUTER JOIN " + 
 			boardName + ".replies as R USING (rname, pid) " +
 			"WHERE rname = ? " +
 			"GROUP BY pid ORDER BY R.dateReplied DESC";
@@ -152,7 +152,7 @@ public class SocialNetworkDatabasePosts {
 				posts += "print \tPost#" + postsResults.getInt("pid") + 
 				"[" + postsResults.getString("P.postedBy") + "]; print \t" +
 				"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "] " +
-				postsResults.getTimestamp("R.dateReplied").toString() + ";";
+				postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
 			}
 		}
 		catch (SQLException e) {
