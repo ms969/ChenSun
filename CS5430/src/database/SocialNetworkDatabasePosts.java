@@ -199,13 +199,13 @@ public class SocialNetworkDatabasePosts {
 			createPost = "INSERT INTO freeforall.posts " +
 					"VALUES (null, ?, NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM freeforall.posts " +
-					"WHERE username = ? AND content = ?";
+					"WHERE postedBy = ? AND content = ?";
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
 					"VALUES (?, null, ?. NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
-					"WHERE rname = ? username = ? AND content = ?";
+					"WHERE rname = ? postedBy = ? AND content = ?";
 		}
 		
 		boolean sqlex = false;
