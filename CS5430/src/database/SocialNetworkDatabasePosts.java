@@ -15,6 +15,7 @@ public class SocialNetworkDatabasePosts {
 	 */
 	public static Boolean postExists(Connection conn, String boardName, String regionName, int postNum) {
 		PreparedStatement pstmt = null;
+		ResultSet postResult = null;
 		String getPost = "";
 		if (boardName.equals("freeforall")) {
 			getPost = "SELECT * FROM freeforall.posts " +
@@ -32,7 +33,8 @@ public class SocialNetworkDatabasePosts {
 			if (boardName.equals("freeforall")) {
 				pstmt.setString(2, regionName);
 			}
-			postExists = new Boolean(pstmt.execute());
+			postResult = pstmt.executeQuery();
+			postExists = new Boolean(postResult.next());
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
@@ -281,9 +283,6 @@ public class SocialNetworkDatabasePosts {
 	/**
 	 * Inserts the reply for the given post.
 	 * Assumes the board, the region, and the post are valid.
-	 * TODO sqlexception could be because of a foreign key constraint
-	 * 
-	 * TODO tell the user to refresh the post to see their reply at the bottom.
 	 */
 	public static String createReply(Connection conn, String username, String content, 
 			String boardName, String regionName, int postNum) {

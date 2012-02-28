@@ -47,17 +47,20 @@ public class SocialNetworkDatabaseBoards {
 	public static Boolean isBoardAdmin(Connection conn, String username, String boardName) {
 		String isAdminQ = "SELECT * FROM " + boardName + ".admins WHERE username = ?";
 		PreparedStatement pstmt = null;
+		ResultSet adminResult = null;
 		Boolean isAdmin = null;
 		try {
 			pstmt = conn.prepareStatement(isAdminQ);
 			pstmt.setString(1, username);
-			isAdmin = new Boolean(pstmt.execute());
+			adminResult = pstmt.executeQuery();
+			isAdmin = new Boolean(adminResult.next());
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
 		finally {
 			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(adminResult);
 		}
 		return isAdmin;
 	}
@@ -69,17 +72,20 @@ public class SocialNetworkDatabaseBoards {
 	public static Boolean boardExists(Connection conn, String boardName) {
 		String getBoard = "SELECT * FROM main.boards WHERE bname = ?";
 		PreparedStatement pstmt = null;
+		ResultSet boardResult = null;
 		Boolean boardExists = null; //null if there is an error.
 		try {
 			pstmt = conn.prepareStatement(getBoard);
 			pstmt.setString(1, boardName);
-			boardExists = new Boolean(pstmt.execute());
+			boardResult = pstmt.executeQuery();
+			boardExists = new Boolean(boardResult.next());
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
 		finally {
 			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(boardResult);
 		}
 		return boardExists;
 	}
@@ -185,7 +191,6 @@ public class SocialNetworkDatabaseBoards {
 		String sqlexmsg = "";
 		String insertBoard = "INSERT INTO main.boards VALUES (?, ?)";
 		String insertAdmin = "INSERT INTO " + boardName + ".admins VALUES (?)";
-		//TODO have to read in the sql file and replace all BID with the board
 		try {
 			conn.setAutoCommit(false);
 			insertBoardPstmt = conn.prepareStatement(insertBoard);
@@ -269,6 +274,7 @@ public class SocialNetworkDatabaseBoards {
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
 		ResultSet boards = null;
+		ResultSet privResult = null;
 		boolean sqlex = false;
 		try {
 			stmt = conn.createStatement();
@@ -285,10 +291,13 @@ public class SocialNetworkDatabaseBoards {
 						+ bname + ".regionprivileges WHERE username = ?";
 					pstmt = conn.prepareStatement(getRegionPrivs);
 					pstmt.setString(1, username);
-					if (pstmt.execute()) { // returns true if there is a result set.
+					privResult = pstmt.executeQuery();
+					if (privResult.next()) { // returns true if there is a result set.
 						boardlist += "print \t" + bname + ";";
 					}
+					privResult.close();
 					pstmt.close();
+					privResult = null;
 					pstmt = null;
 				}
 				else if (!role.equals("")) { // an admin
@@ -296,10 +305,13 @@ public class SocialNetworkDatabaseBoards {
 						+ bname + ".admins WHERE username = ?";
 					pstmt = conn.prepareStatement(getRegionAdmins);
 					pstmt.setString(1, username);
-					if (pstmt.execute()) { // returns true if there is a result set.
+					privResult = pstmt.executeQuery();
+					if (privResult.next()) { // returns true if there is a result set.
 						boardlist += "print \t" + bname + ";";
 					}
+					privResult.close();
 					pstmt.close();
+					privResult = null;
 					pstmt = null;
 				}
 				else { //there was an sql exception when getting the role.

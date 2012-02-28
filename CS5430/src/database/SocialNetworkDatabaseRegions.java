@@ -17,17 +17,20 @@ public class SocialNetworkDatabaseRegions {
 	public static Boolean regionExists(Connection conn, String boardName, String regionName) {
 		String getRegion = "SELECT * FROM " + boardName + ".regions WHERE rname = ?";
 		PreparedStatement pstmt = null;
+		ResultSet regionResult = null;
 		Boolean regionExists = null;
 		try {
 			pstmt = conn.prepareStatement(getRegion);
 			pstmt.setString(1, regionName);
-			regionExists = new Boolean(pstmt.execute());
+			regionResult = pstmt.executeQuery();
+			regionExists = new Boolean(regionResult.next());
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
 		finally {
 			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(regionResult);
 		}
 		return regionExists;
 	}
