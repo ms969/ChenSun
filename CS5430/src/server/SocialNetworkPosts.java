@@ -85,7 +85,6 @@ public class SocialNetworkPosts {
 			String regionName, int postNum) {
 		Connection dbconn = DBManager.getConnection();
 		String bname = boardName.trim().toLowerCase();
-		String rname = regionName.trim().toLowerCase();
 		if (bname.equals("freeforall")) {
 			Boolean postExists = postExists("freeforall", null, postNum);
 			if (postExists == null) {
@@ -102,6 +101,7 @@ public class SocialNetworkPosts {
 				"If the problem persists, contact an admin.";
 			}
 		}
+		String rname = regionName.trim().toLowerCase();
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
 			return "print Error: Database error while verifying existence of board. " +
