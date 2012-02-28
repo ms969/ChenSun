@@ -29,13 +29,13 @@ CREATE TABLE bname.admins (
     username VARCHAR(100) PRIMARY KEY
     /*FOREIGN KEY(username) REFERENCES Main.Users(username) ON DELETE CASCADE*/
 );
-CREATE TABLE bname.files (
+/* CREATE TABLE bname.files (
     rname VARCHAR(500) NOT NULL,
     pid INT NOT NULL,
     furl INT NOT NULL,
     PRIMARY KEY(rname, pid, furl),
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
-);
+); */
 CREATE TABLE bname.regionprivileges (
     rname VARCHAR(500) NOT NULL,
     username VARCHAR(100),
