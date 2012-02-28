@@ -20,12 +20,15 @@ public class ServerInputProcessor extends InputProcessor {
 	private BufferedReader in;
 	
 	private String user = null;
+	private String[] currentPath;
 	
 	public static final String[] COMMANDS = {
 		"^login.+",			// 0
 		"^register$",		// 1
 		"^regRequests$",	// 2
-		"^addFriend.*"		// 3
+		"^addFriend.*",		// 3
+		"^createBoard .+",   // 4
+		"^refresh$"         // 5
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -61,12 +64,32 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
+		if (inputLine.matches(COMMANDS[4])) {
+			if (user != null) {
+				processCreateBoard(inputLine);
+			} else {
+				out.println();
+			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[5])) {
+			if (user != null) {
+				processRefresh();
+			} else {
+				out.println();
+			}
+			return;
+		}
 		out.println();
 	}
 
 	public ServerInputProcessor(PrintWriter out, BufferedReader in) {
 		this.out = out;
 		this.in = in;
+		this.currentPath = new String[3];
+		for (int i = 0; i < currentPath.length; i++) {
+			currentPath[i] = null;
+		}
 	}
 
 	private void processLogin(String inputLine) {
@@ -471,6 +494,32 @@ public class ServerInputProcessor extends InputProcessor {
 			out.println("print Canceled.");
 		} else if (input.equals("cancel")) {
 			out.println();
+		}
+	}
+	
+	private void processCreateBoard(String input) throws IOException {
+		/* Ensure the person is in the right place to create a board (on the homepage)*/
+		if (currentPath[0] != null) {
+			out.println("print Must be at Home to create a board;" +
+					"print Current Path: " + SocialNetworkNavigation.printPath(currentPath));
+		}
+		else {
+			String boardname = input.substring(("createBoard ").length());
+			out.println(SocialNetworkBoards.createBoard(user, boardname));
+		}
+	}
+	
+	private void processRefresh() {
+		String boardName = currentPath[0];
+		if (boardName == null) {
+			out.println(SocialNetworkNavigation.printPath(currentPath) + 
+					"print ;" + SocialNetworkBoards.viewBoards(user));
+		}
+		else if (boardName.equals("freeforall")) {
+			
+		}
+		else {
+			
 		}
 	}
 

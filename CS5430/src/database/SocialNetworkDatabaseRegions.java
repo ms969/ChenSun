@@ -15,7 +15,7 @@ public class SocialNetworkDatabaseRegions {
 	 * ASSUMES THE BOARD EXISTS.
 	 */
 	public static Boolean regionExists(Connection conn, String boardName, String regionName) {
-		String getRegion = "SELECT * FROM " + boardName + ".regions WHERE rname = \"?\"";
+		String getRegion = "SELECT * FROM " + boardName + ".regions WHERE rname = ?";
 		PreparedStatement pstmt = null;
 		Boolean regionExists = null;
 		try {
@@ -40,7 +40,7 @@ public class SocialNetworkDatabaseRegions {
 	//TODO (author) ensure the user is an admin for the board.
 	public static String createRegion(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement regionPstmt = null;
-		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (\"?\")";
+		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (?)";
 		boolean success = false;
 		try {
 			regionPstmt = conn.prepareStatement(createRegion);
@@ -74,7 +74,7 @@ public class SocialNetworkDatabaseRegions {
 		PreparedStatement regionPstmt = null;
 		String fetchRegionsMember = "SELECT rname, privileges FROM " +
 				boardName + ".regionprivileges " +
-				"WHERE username = \"?\"";
+				"WHERE username = ?";
 		
 		Statement regionStmt = null;
 		String fetchRegionsAdmin = "SELECT * FROM " +
@@ -84,7 +84,7 @@ public class SocialNetworkDatabaseRegions {
 		String fetchRecentPost = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied)" +
 				"FROM " + boardName + ".posts AS P INNER JOIN " +
 				boardName + ".replies AS R USING (rname, pid) " +
-				"WHERE rname = \"?\"";
+				"WHERE rname = ?";
 		ResultSet regionsResults = null;
 		ResultSet recentPostsResults = null;
 		
