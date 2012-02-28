@@ -2,6 +2,7 @@ package database;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
@@ -17,7 +18,7 @@ public class SocialNetworkDatabaseBoards {
 	 * Function to get the user's role.
 	 */
 	public static String getUserRole(Connection conn, String username) {
-		String userRole = "SELECT role FROM main.users WHERE username = \"?\"";
+		String userRole = "SELECT role FROM main.users WHERE username = ?";
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		String role = "";
@@ -44,7 +45,7 @@ public class SocialNetworkDatabaseBoards {
 	 * Assumes the board is valid.
 	 */
 	public static Boolean isBoardAdmin(Connection conn, String username, String boardName) {
-		String isAdminQ = "SELECT * FROM " + boardName + ".admins WHERE username = \"?\"";
+		String isAdminQ = "SELECT * FROM " + boardName + ".admins WHERE username = ?";
 		PreparedStatement pstmt = null;
 		Boolean isAdmin = null;
 		try {
@@ -66,7 +67,7 @@ public class SocialNetworkDatabaseBoards {
 	 * The return arg is null if there was an exc.
 	 */
 	public static Boolean boardExists(Connection conn, String boardName) {
-		String getBoard = "SELECT * FROM main.boards WHERE bname = \"?\"";
+		String getBoard = "SELECT * FROM main.boards WHERE bname = ?";
 		PreparedStatement pstmt = null;
 		Boolean boardExists = null; //null if there is an error.
 		try {
@@ -98,12 +99,12 @@ public class SocialNetworkDatabaseBoards {
 		String[] queries;
 		/*Read in file contents and set correct references to bid*/
 		try {
-			createBoardSql = new File("createNewBoardDB.sql");
+			createBoardSql = new File("src/database/createNewBoardDB.sql");
 			sqlReader = new BufferedReader(new FileReader(createBoardSql));
 			line = sqlReader.readLine();
 			while (line != null) {
 				fileContents += line;
-				sqlReader.readLine();
+				line = sqlReader.readLine();
 			}
 		}
 		finally {
@@ -111,7 +112,7 @@ public class SocialNetworkDatabaseBoards {
 				sqlReader.close();
 			}
 		}
-		fileContents.replaceAll("bname", boardName);
+		fileContents = fileContents.replaceAll("bname", boardName);
 		queries = fileContents.split(";");
 		
 		/*Execute all queries*/
@@ -181,8 +182,9 @@ public class SocialNetworkDatabaseBoards {
 		boolean secondsuccess = false; //create board db success
 		int thirdsuccess = 0; //add admin success
 		boolean sqlex = false;
-		String insertBoard = "INSERT INTO main.boards VALUES (\"?\", \"?\")";
-		String insertAdmin = "INSERT INTO " + boardName + ".admins VALUES (\"?\")";
+		String sqlexmsg = "";
+		String insertBoard = "INSERT INTO main.boards VALUES (?, ?)";
+		String insertAdmin = "INSERT INTO " + boardName + ".admins VALUES (?)";
 		//TODO have to read in the sql file and replace all BID with the board
 		try {
 			conn.setAutoCommit(false);
@@ -215,7 +217,18 @@ public class SocialNetworkDatabaseBoards {
 		catch (SQLException e) {
 			DBManager.rollback(conn);
 			e.printStackTrace();
+			/* The error code for a duplicate key insertion => Must be for board name*/
+			if (e.getErrorCode() == 1062) {
+				sqlexmsg = "print A board already exists with that name. Try a different name.";
+			}
+			else {
+				sqlexmsg = "print Error: Connection error. Contact the admin.";
+			}
 			sqlex = true;
+		}
+		catch (FileNotFoundException fnfe) {
+			DBManager.rollback(conn);
+			fnfe.printStackTrace();
 		}
 		finally {
 			DBManager.closePreparedStatement(insertBoardPstmt);
@@ -237,7 +250,7 @@ public class SocialNetworkDatabaseBoards {
 			return "print Error: Could not add admin to the board db. Contact the admin.";
 		}
 		else {
-			return "print Error: Connection error. Contact the admin.";
+			return sqlexmsg;
 		}
 	}
 	
@@ -269,7 +282,7 @@ public class SocialNetworkDatabaseBoards {
 				String bname = boards.getString("bname");
 				if (role.equals("member")) {
 					getRegionPrivs = "SELECT privilege FROM " 
-						+ bname + ".regionprivileges WHERE username = \"?\"";
+						+ bname + ".regionprivileges WHERE username = ?";
 					pstmt = conn.prepareStatement(getRegionPrivs);
 					pstmt.setString(1, username);
 					if (pstmt.execute()) { // returns true if there is a result set.
@@ -280,7 +293,7 @@ public class SocialNetworkDatabaseBoards {
 				}
 				else if (!role.equals("")) { // an admin
 					getRegionAdmins = "SELECT * FROM " 
-						+ bname + ".admins WHERE username = \"?\"";
+						+ bname + ".admins WHERE username = ?";
 					pstmt = conn.prepareStatement(getRegionAdmins);
 					pstmt.setString(1, username);
 					if (pstmt.execute()) { // returns true if there is a result set.

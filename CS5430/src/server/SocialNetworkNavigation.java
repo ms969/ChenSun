@@ -21,8 +21,6 @@ package server;
  *   So, for example, from board, you can only go home or to a region.
  *   - ".." goes back a unit.
  *   
- *   TODO special case: free for all board
- *   TODO navigation should be concerned with whether the board/region/post exists
  */
 public class SocialNetworkNavigation {
 	

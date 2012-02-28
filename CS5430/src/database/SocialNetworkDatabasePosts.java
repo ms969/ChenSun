@@ -18,11 +18,11 @@ public class SocialNetworkDatabasePosts {
 		String getPost = "";
 		if (boardName.equals("freeforall")) {
 			getPost = "SELECT * FROM freeforall.posts " +
-			"WHERE pid = \"?\"";
+			"WHERE pid = ?";
 		}
 		else {
 			getPost = "SELECT * FROM " + boardName + ".posts " +
-					"WHERE pid = \"?\" AND rname = \"?\"";
+					"WHERE pid = ? AND rname = ?";
 		}
 		
 		Boolean postExists = null;
@@ -70,7 +70,7 @@ public class SocialNetworkDatabasePosts {
 		PreparedStatement getPrivs = null;
 		String getPostPrivileges = "SELECT privilege " +
 				"FROM freeforall.postprivileges " +
-				"WHERE pid = ? AND username = \"?\"";
+				"WHERE pid = ? AND username = ?";
 		ResultSet privsResult = null;
 		
 		boolean sqlex = false;
@@ -138,7 +138,7 @@ public class SocialNetworkDatabasePosts {
 		String getPosts = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied) " +
 			"FROM " + boardName +  ".posts AS P INNER JOIN " + 
 			boardName + ".replies as R USING (rname, pid) " +
-			"WHERE rname = \"?\" " +
+			"WHERE rname = ? " +
 			"GROUP BY pid ORDER BY R.dateReplied DESC";
 		ResultSet postsResults = null;
 		boolean sqlex = false;
@@ -195,15 +195,15 @@ public class SocialNetworkDatabasePosts {
 		
 		if (boardName.equals("freeforall")) {
 			createPost = "INSERT INTO freeforall.posts " +
-					"VALUES (null, \"?\", NOW(), \"?\")";
+					"VALUES (null, ?, NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM freeforall.posts " +
-					"WHERE username = \"?\" AND content = \"?\"";
+					"WHERE username = ? AND content = ?";
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
-					"VALUES (\"?\", null, \"?\". NOW(), \"?\")";
+					"VALUES (?, null, ?. NOW(), ?)";
 			getPost = "SELECT pid, MAX(datePosted) FROM " + boardName + ".posts " +
-					"WHERE rname = \"?\" username = \"?\" AND content = \"?\"";
+					"WHERE rname = ? username = ? AND content = ?";
 		}
 		
 		boolean sqlex = false;
@@ -291,11 +291,11 @@ public class SocialNetworkDatabasePosts {
 		String createReply = ""; 
 		if (regionName.equals("freeforall")) {
 			createReply = "INSERT INTO freeforall.replies " +
-			"VALUES (?, null, \"?\", NOW(), \"?\")";
+			"VALUES (?, null, ?, NOW(), ?)";
 		}
 		else {
 			createReply = "INSERT INTO " + boardName + ".replies " +
-			"VALUES (\"?\", ?, null, \"?\", NOW(), \"?\")";
+			"VALUES (?, ?, null, ?, NOW(), ?)";
 		}
 		boolean success = false;
 		boolean sqlex = false;
@@ -362,9 +362,9 @@ public class SocialNetworkDatabasePosts {
 		}
 		else {
 			getOriginalPost = "SELECT * FROM " + boardName + ".posts " +
-			"WHERE pid = ? AND rname = \"?\"";
+			"WHERE pid = ? AND rname = ?";
 			getReplies = "SELECT * FROM " + boardName + ".replies " +
-			"WHERE pid = ? AND rname = \"?\" ORDER BY dateReplied";
+			"WHERE pid = ? AND rname = ? ORDER BY dateReplied";
 		}
 		
 		PreparedStatement originalPost = null;
