@@ -25,7 +25,9 @@ public class ServerInputProcessor extends InputProcessor {
 		"^login.+",			// 0
 		"^register$",		// 1
 		"^regRequests$",	// 2
-		"^addFriend.*"		// 3
+		"^addFriend.*",		// 3
+		"^friendRequests$",	// 4
+		"^deleteUser$",		// 5
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -60,6 +62,21 @@ public class ServerInputProcessor extends InputProcessor {
 				out.println();
 			}
 			return;
+		}
+		if (inputLine.matches(COMMANDS[4])) {
+			if (user != null) {
+				processFriendRequests();
+			} else {
+				out.println();
+			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[5])) {
+			if (user != null) {
+				processDeleteUser();
+			} else {
+				out.println();
+			}
 		}
 		out.println();
 	}
@@ -103,6 +120,9 @@ public class ServerInputProcessor extends InputProcessor {
 					"print Role: " + role.toUpperCase() + ";" +
 					"print A Cappella Group: " + aname + ";print ");
 			
+			// Get friend requests
+			String friendReqCommand = getFriendReq(username);
+			out.print(friendReqCommand);
 			if (role.equals("admin") || role.equals("sa")) {
 				// Get pending registration requests
 				String regReqCommand = getRegReq(username);
@@ -111,7 +131,7 @@ public class ServerInputProcessor extends InputProcessor {
 				out.println();
 			}
 		} else {
-			out.println("print " + username + " does not exist.\\n");
+			out.println("print " + username + " does not exist.");
 		}
 	}
 
@@ -137,6 +157,8 @@ public class ServerInputProcessor extends InputProcessor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
+			
+			// TODO: check that username is legal and isn't keywords like cancel
 			
 			if (userExist) {
 				out.println("print Username already exist. Choose a different one.;" +
@@ -278,7 +300,7 @@ public class ServerInputProcessor extends InputProcessor {
 		// Building queries: select info from regrequests and delete from regreqests
 		String selectQuery = "SELECT * FROM main.registrationrequests WHERE ";
 		String deleteQuery = "DELETE FROM main.registrationrequests WHERE ";
-		String acappellaQuery = "SELECT username FROM ";// TODO
+		
 		for (int i=0; i < approvedUsers.length; i++) {
 			approvedUsers[i] = approvedUsers[i].trim();
 			
@@ -296,9 +318,12 @@ public class ServerInputProcessor extends InputProcessor {
 			ResultSet selectResult = stmt.executeQuery(selectQuery);
 			String insertQuery = "INSERT INTO main.users (username, aid, role) " +
 					"VALUES ";
+			ArrayList<String> addFriendQueries = new ArrayList<String>();
 			while (selectResult.next()) {
 				insertQuery += "('" + selectResult.getString("username") + "'," + 
 						selectResult.getString("aid") + ",'member'), ";
+				addFriendQueries.add(addFriendsFromGroupQuery(selectResult.getString("username"), 
+						selectResult.getInt("aid")));
 			}
 			// taking off the last comma, SQL doesn't like it
 			insertQuery = insertQuery.substring(0, insertQuery.length()-2);
@@ -307,11 +332,17 @@ public class ServerInputProcessor extends InputProcessor {
 				System.out.println(selectQuery);
 				System.out.println(insertQuery);
 				System.out.println(deleteQuery);
+				for (String query: addFriendQueries) {
+					System.out.println(query);
+				}
 			}
 			
 			// execute insertion and deletion queries
 			stmt.executeUpdate(insertQuery);
 			stmt.executeUpdate(deleteQuery);
+			for (String query: addFriendQueries) {
+				stmt.executeUpdate(query);
+			}
 			stmt.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -327,6 +358,34 @@ public class ServerInputProcessor extends InputProcessor {
 				" has been added to the system.";
 		out.println(command);
 		
+	}
+
+	private String addFriendsFromGroupQuery(String username, int aid) {
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+		String acappellaUsers = "SELECT username FROM main.users WHERE aid = " + aid;
+		try {
+			stmt = conn.createStatement();
+			ResultSet acappellaResult = stmt.executeQuery(acappellaUsers);
+			String addQuery = "INSERT INTO main.friends (username1, username2) VALUES ";
+			String user1, user2;
+			while (acappellaResult.next()) {
+				if (username.compareTo(acappellaResult.getString("username")) < 0) {
+					user1 = username;
+					user2 = acappellaResult.getString("username");
+					addQuery += "('" + user1 + "','" + user2 + "'), ";
+				} else if (username.compareTo(acappellaResult.getString("username")) > 0) {
+					user1 = acappellaResult.getString("username");
+					user2 = username;
+					addQuery += "('" + user1 + "','" + user2 + "'), ";
+				}
+			}
+			// taking off the last comma, SQL doesn't like it
+			return addQuery.substring(0, addQuery.length()-2);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	private String getRegReq(String username) {
@@ -363,17 +422,36 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		
-		// Getting the complete list of users. Users[0]: username. Users[1]: group name
-		ArrayList<String[]> displayedUsers = new ArrayList<String[]>();
+		// Stores a list of users that is not the current user, who is not a friend of the 
+		// current user, and has not requested current user as friend
+		// Users[0]: username. Users[1]: group name
+		ArrayList<String[]> friendableUsers = new ArrayList<String[]>();
 		try {
-			String query = "SELECT username, aname " +
-				"FROM main.users NATURAL JOIN main.acappella";
+			// existing friends of user
+			ArrayList<String> existingFriends = new ArrayList<String>();
+			String query = "SELECT * FROM main.friends WHERE username1 = '" + user + "' OR " +
+					"username2 = '" + user + "'";
+			ResultSet friendsResult = stmt.executeQuery(query);
+			while (friendsResult.next()) {
+				if (friendsResult.getString("username1").equals(user)) {
+					existingFriends.add(friendsResult.getString("username2"));
+				} else {
+					existingFriends.add(friendsResult.getString("username1"));
+				}
+			}
+			
+			// list of users that is not the current user and who have not requested 
+			// current user as friend
+			query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella " +
+					"WHERE username != '" + user + "' AND username NOT IN " +
+							"(SELECT requester FROM main.friendrequests " +
+							"WHERE requestee = '" + user + "')";
 			ResultSet usersResult = stmt.executeQuery(query);
 			while (usersResult.next()) {
-				if (!usersResult.getString("username").equals(user)) {
+				if (!existingFriends.contains(usersResult.getString("username"))) {
 					String[] userInfo = {usersResult.getString("username"), 
 							usersResult.getString("aname")};
-					displayedUsers.add(userInfo);
+					friendableUsers.add(userInfo);
 				}
 			}
 		} catch (SQLException e) {
@@ -387,7 +465,7 @@ public class ServerInputProcessor extends InputProcessor {
 			
 			while (!userExist) {
 				String command = "print Users in the system:;";
-				for (String[] userInfo: displayedUsers) {
+				for (String[] userInfo: friendableUsers) {
 					command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
 				}
 				command += "print ;print Type the name of the user you wish to friend:;" +
@@ -395,14 +473,14 @@ public class ServerInputProcessor extends InputProcessor {
 				out.println(command);
 				
 				toFriend = in.readLine();
-				for (String[] userInfo: displayedUsers) {
+				for (String[] userInfo: friendableUsers) {
 					if (userInfo[0].equals(toFriend)) {
 						userExist = true;
 						break;
 					}
 				}
 				if (!userExist) {
-					out.print("print " + toFriend + " is not a user in the system.;");
+					out.print("print Cannot friend " + toFriend + ";");
 				}
 			}
 			
@@ -416,7 +494,7 @@ public class ServerInputProcessor extends InputProcessor {
 			
 			while (!userExist) {
 				String command = "print Usernames starting with '" + value + "';";
-				for (String[] userInfo: displayedUsers) {
+				for (String[] userInfo: friendableUsers) {
 					value = value.toLowerCase();
 					if (userInfo[0].toLowerCase().startsWith(value)) {
 						command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
@@ -431,14 +509,14 @@ public class ServerInputProcessor extends InputProcessor {
 					out.println();
 					return;
 				}
-				for (String[] userInfo: displayedUsers) {
+				for (String[] userInfo: friendableUsers) {
 					if (userInfo[0].equals(toFriend)) {
 						userExist = true;
 						break;
 					}
 				}
 				if (!userExist) {
-					out.print("print " + toFriend + " is not a user in the system.;");
+					out.print("print Cannot friend " + toFriend + ";");
 				}
 			}
 			
@@ -446,6 +524,7 @@ public class ServerInputProcessor extends InputProcessor {
 			addFriend(toFriend);
 		}
 	}
+	
 
 	private void addFriend(String username) throws IOException {
 		// username exists in the system.
@@ -467,6 +546,255 @@ public class ServerInputProcessor extends InputProcessor {
 			
 			// print out confirmation
 			out.println("print Friend request sent to " + username);
+		} else if (input.equals("n")) {
+			out.println("print Canceled.");
+		} else if (input.equals("cancel")) {
+			out.println();
+		}
+	}
+	
+
+	private void processFriendRequests() throws IOException {
+		ArrayList<String> pendingFriends = new ArrayList<String>();
+		int count = 0;
+		try {
+			Connection conn = DBManager.getConnection();
+			Statement stmt = conn.createStatement();
+			String query = "SELECT requester " +
+				"FROM main.friendrequests " +
+				"WHERE requestee = '" + user + "'";
+			ResultSet requests = stmt.executeQuery(query);
+			while (requests.next()) {
+				pendingFriends.add(requests.getString("requester"));
+				count++;
+			}
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		if (count > 0) {
+			String command = "print Pending Friend Requests (" + 
+					count + "):";
+			for (int i=0; i < pendingFriends.size(); i++) {
+				command = command + ";print " + pendingFriends.get(i);
+			}
+			command = command + ";print ;print [To approve: approve " +
+					"<username1>, <username2>];print [To remove: " +
+					"remove <username1>, <username2>];askForInput";
+			out.println(command);
+			friendApproval(in.readLine());
+		} else {
+			out.println("print No pending friend requests at the moment.");
+		}
+	}
+
+	private void friendApproval(String input) {
+		if (input.equals("cancel")) {
+			out.println();
+		}
+		if (input.matches("^approve.+")) {
+			String value = getValue(input);
+			String delim = ",";
+			String[] approvedFriends = value.split(delim);
+			friendApprove(approvedFriends);
+		}
+		if (input.matches("^remove.+")) {
+			String value = getValue(input);
+			String delim = ",";
+			String[] usersToDelete = value.split(delim);
+			
+			// Building queries
+			String deleteQuery = "DELETE FROM main.friendrequests WHERE ";
+			for (int i=0; i < usersToDelete.length; i++) {
+				usersToDelete[i] = usersToDelete[i].trim();
+				
+				deleteQuery += "(requester = " + quote(usersToDelete[i]) + 
+						" AND requestee = " + quote(user) + ")";
+				if (i != usersToDelete.length -1) {
+					deleteQuery += " OR ";
+				}
+			}
+			
+			if (SocialNetworkServer.DEBUG) {
+				System.out.println(deleteQuery);
+			}
+			
+			try {
+				Connection conn = DBManager.getConnection();
+				Statement stmt = conn.createStatement();
+				stmt.executeUpdate(deleteQuery);
+				stmt.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			// confirmation to client
+			String command = "print Friend requests from ";
+			for (String user: usersToDelete) {
+				command += user + ", ";
+			}
+			// substring to take off the last comma
+			command = command.substring(0, command.length()-2) + 
+					" have been deleted.";
+			out.println(command);
+		}
+	}
+
+	private void friendApprove(String[] approvedUsers) {
+		// Building queries
+		String deleteQuery = "DELETE FROM main.friendrequests WHERE ";
+		String insertQuery = "INSERT INTO main.friends (username1, username2) VALUES ";
+		
+		for (int i=0; i < approvedUsers.length; i++) {
+			approvedUsers[i] = approvedUsers[i].trim();
+			
+			deleteQuery += "(requester = " + quote(approvedUsers[i]) + 
+					" AND requestee = " + quote(user) + ")";
+			String user1, user2;
+			if (user.compareTo(approvedUsers[i]) < 0) {
+				user1 = quote(user);
+				user2 = quote(approvedUsers[i]);
+			} else {
+				user1 = quote(approvedUsers[i]);
+				user2 = quote(user);
+			}
+			insertQuery += "(" + user1+ "," + user2 + "), ";
+			if (i != approvedUsers.length -1) {
+				deleteQuery += " OR ";
+			}
+		}
+		// taking off the last comma, SQL doesn't like it
+		insertQuery = insertQuery.substring(0, insertQuery.length()-2);
+		try {
+			// building the insert into users table query
+			Connection conn = DBManager.getConnection();
+			Statement stmt = conn.createStatement();
+
+			if (SocialNetworkServer.DEBUG) {
+				System.out.println(insertQuery);
+				System.out.println(deleteQuery);
+			}
+			
+			// execute insertion and deletion queries
+			stmt.executeUpdate(insertQuery);
+			stmt.executeUpdate(deleteQuery);
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// confirmation to client
+		String command = "print ";
+		for (String user: approvedUsers) {
+			command += user + ", ";
+		}
+		// substring to take off the last comma
+		command = command.substring(0, command.length()-2) + 
+				" have been added as your friends.";
+		out.println(command);
+	}
+
+	private String getFriendReq(String username) {
+		String command = "";
+		int requestCount = 0;
+		try {
+			Connection conn = DBManager.getConnection();
+			Statement stmt = conn.createStatement();
+			String query = "SELECT COUNT(requestee) as count " +
+					"FROM main.friendrequests " +
+					"WHERE requestee = '" +
+					username + "'";
+			ResultSet requests = stmt.executeQuery(query);
+			while (requests.next()) {
+				requestCount = requests.getInt("count");
+			}
+			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		if (requestCount != 0) {
+			command = ";print Pending Friend Requests (" +
+					requestCount + ") [To view: friendRequests]";
+		}
+		return command;
+	}
+
+	private void processDeleteUser() throws IOException {
+		// TODO: check to see if user is actually a SA
+		Connection conn = DBManager.getConnection();
+		Statement stmt = null;
+		try {
+			stmt = conn.createStatement();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		// Stores a list of deletable users
+		ArrayList<String> deletableUsers = new ArrayList<String>();
+		try {
+			String query = "SELECT username FROM main.users " +
+					"WHERE username != '" + user + "' AND aid = " +
+					"(SELECT aid FROM main.users WHERE username = '" + user + "')";
+			
+			if (SocialNetworkServer.DEBUG) {
+				System.out.println("Delete User deletable user query: " + query);
+			}
+			
+			ResultSet usersResult = stmt.executeQuery(query);
+			while (usersResult.next()) {
+				deletableUsers.add(usersResult.getString("username"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		boolean userDeletable = false;
+		String toDelete = "";
+		
+		while (!userDeletable) {
+			String command = "print Users in your A Cappella group that you can delete:;";
+			for (String userInfo: deletableUsers) {
+				command += "print " + userInfo + ";";
+			}
+			command += "print ;print Type the name of the user you wish to delete:;" +
+					"askForInput";
+			out.println(command);
+			
+			toDelete = in.readLine();
+			if (toDelete.equals("cancel")) {
+				return;
+			}
+			if (deletableUsers.contains(toDelete)) {
+				userDeletable = true;
+			}
+			if (!userDeletable) {
+				out.print("print Cannot delete " + toDelete + ";");
+			}
+		}
+		
+		// toDelete is deletable
+		deleteUser(toDelete);
+	}
+
+	private void deleteUser(String username) throws IOException {
+		// username is a deletable user
+		out.println("print User deletions cannot be undone.;" + 
+				"print Are you sure you want to delete this user? (y/n);askForInput");
+		String input = in.readLine();
+		if (input.equals("y")) {
+			try {
+				Connection conn = DBManager.getConnection();
+				Statement stmt = null;
+				String query = "DELETE FROM main.users WHERE username = '"+username+"'";
+				stmt = conn.createStatement();
+				stmt.executeUpdate(query);
+				stmt.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
+			// print out confirmation
+			out.println("print " + username + " has been deleted from the system.");
 		} else if (input.equals("n")) {
 			out.println("print Canceled.");
 		} else if (input.equals("cancel")) {
