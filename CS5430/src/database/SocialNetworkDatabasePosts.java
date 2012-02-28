@@ -94,16 +94,22 @@ public class SocialNetworkDatabasePosts {
 					if (privsResult.next()) { //user has view or viewpost priv
 						posts += "print \t" + 
 						(privsResult.getString("privilege").equals("viewpost")? specialStrPostable : "") +
-						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
-						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
-						postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+						"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
+						if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+							posts += "print \t" +
+							"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+							postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+						}
 					}
 				}
 				else { //the user is the creator of the post
 					posts += "print \t" + specialStrCreatedPost +
-					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "]; print \t" +
-					"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
-					postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+					"Post#" + pid + "[" + postsResults.getString("P.postedBy") + "];";
+					if (postsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+						posts += "print \t" +
+						"Most Recent Reply: [" + postsResults.getString("R.repliedBy") + "]" +
+						postsResults.getTimestamp("MAX(R.dateReplied)") + ";";
+					}
 				}
 			}
 		}
@@ -288,7 +294,7 @@ public class SocialNetworkDatabasePosts {
 			String boardName, String regionName, int postNum) {
 		PreparedStatement createPstmt = null;
 		String createReply = ""; 
-		if (regionName.equals("freeforall")) {
+		if (boardName.equals("freeforall")) {
 			createReply = "INSERT INTO freeforall.replies " +
 			"VALUES (?, null, ?, NOW(), ?)";
 		}
@@ -300,7 +306,7 @@ public class SocialNetworkDatabasePosts {
 		boolean sqlex = false;
 		try {
 			createPstmt = conn.prepareStatement(createReply);
-			if (regionName.equals("freeforall")) {
+			if (boardName.equals("freeforall")) {
 				createPstmt.setInt(1, postNum);
 				createPstmt.setString(2, username);
 				createPstmt.setString(3, content);
