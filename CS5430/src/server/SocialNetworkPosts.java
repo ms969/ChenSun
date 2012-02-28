@@ -180,17 +180,18 @@ public class SocialNetworkPosts {
 	}
 	
 	public static String viewPostList(String username, String boardName, String regionName) {
-		if (boardName == null || regionName == null) {
+		if (boardName == null || (!("freeforall").equals(boardName) && regionName == null)) {
 			return "Invalid Call to Function";
 		}
 		String bname = boardName.trim().toLowerCase();
-		String rname = regionName.trim().toLowerCase();
 		Connection dbconn = DBManager.getConnection();
-		if (bname.equals("freeforall")) {
+		if (bname.equals("freeforall")) { //regionName might be null
 			String msg = SocialNetworkDatabasePosts.getPostListFreeForAll(dbconn, username);
 			DBManager.closeConnection(dbconn);
 			return msg;
 		}
+		//regionName is NOT null
+		String rname = regionName.trim().toLowerCase();
 		Boolean boardExists = SocialNetworkBoards.boardExists(bname);
 		if (boardExists == null) {
 			return "print Error: Database error while verifying existence of board. " +
