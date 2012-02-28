@@ -216,12 +216,12 @@ public class SocialNetworkDatabaseBoards {
 		}
 		catch (SQLException e) {
 			DBManager.rollback(conn);
-			e.printStackTrace();
 			/* The error code for a duplicate key insertion => Must be for board name*/
 			if (e.getErrorCode() == 1062) {
 				sqlexmsg = "print A board already exists with that name. Try a different name.";
 			}
 			else {
+				e.printStackTrace();
 				sqlexmsg = "print Error: Connection error. Contact the admin.";
 			}
 			sqlex = true;
