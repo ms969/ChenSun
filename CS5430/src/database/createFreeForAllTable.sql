@@ -4,6 +4,7 @@ CREATE TABLE freeforall.posts (
     postedBy VARCHAR(100),
     datePosted DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
+    dateLastUpdated DATETIME NOT NULL,
     PRIMARY KEY(pid)
     /*FOREIGN KEY(postedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );

@@ -62,10 +62,10 @@ public class SocialNetworkDatabasePosts {
 		
 		/*Retrieves all posts, joined with their most recent reply*/
 		Statement getPosts = null;
-		String getPostsFreeForAll = "SELECT pid, P.postedBy, P.datePosted, MAX(R.dateReplied) " +
+		String getPostsFreeForAll = "SELECT pid, P.postedBy, P.datePosted, P.dateLastUpdated, MAX(R.dateReplied) " +
 			"FROM freeforall.posts AS P LEFT OUTER JOIN " + 
 			"freeforall.replies as R USING (pid) " +
-			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC";
+			"GROUP BY pid ORDER BY P.dateLastUpdated DESC";
 		ResultSet postsResults = null;
 		
 		/*Retrieves the privilege for a given post and user*/
@@ -143,11 +143,11 @@ public class SocialNetworkDatabasePosts {
 	public static String getPostList(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement pstmt = null;
 		String posts = "print Posts:;";
-		String getPosts = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(R.dateReplied) " +
+		String getPosts = "SELECT rname, pid, P.postedBy, P.datePosted, P.dateLastUpdated, MAX(R.dateReplied) " +
 			"FROM " + boardName +  ".posts AS P LEFT OUTER JOIN " + 
 			boardName + ".replies as R USING (rname, pid) " +
 			"WHERE rname = ? " +
-			"GROUP BY pid ORDER BY R.dateReplied DESC, P.datePosted DESC";
+			"GROUP BY pid ORDER BY P.dateLastUpdated DESC";
 		ResultSet postsResults = null;
 		boolean sqlex = false;
 		try {
@@ -210,7 +210,7 @@ public class SocialNetworkDatabasePosts {
 		
 		if (boardName.equals("freeforall")) {
 			createPost = "INSERT INTO freeforall.posts " +
-					"VALUES (null, ?, NOW(), ?)";
+					"VALUES (null, ?, NOW(), ?, NOW())";
 			getMaxDate = "SELECT MAX(datePosted) FROM freeforall.posts " +
 					"WHERE postedBy = ? AND content = ?";
 			getPost = "SELECT pid, datePosted FROM freeforall.posts " +
@@ -218,7 +218,7 @@ public class SocialNetworkDatabasePosts {
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
-					"VALUES (?, null, ?, NOW(), ?)";
+					"VALUES (?, null, ?, NOW(), ?, NOW())";
 			getMaxDate = "SELECT MAX(datePosted) FROM " + boardName + ".posts " +
 			"WHERE rname = ? AND postedBy = ? AND content = ?";
 			getPost = "SELECT pid, datePosted FROM " + boardName + ".posts " +
@@ -316,23 +316,44 @@ public class SocialNetworkDatabasePosts {
 	
 	/**
 	 * Inserts the reply for the given post.
+	 * Updates the originating post's dateLastUpdated
 	 * Assumes the board, the region, and the post are valid.
 	 */
 	public static String createReply(Connection conn, String username, String content, 
 			String boardName, String regionName, int postNum) {
 		PreparedStatement createPstmt = null;
-		String createReply = ""; 
+		String createReply = "";
+		
+		PreparedStatement getDatePstmt = null;
+		String getDate = "";
+		ResultSet dateResult = null;
+		
+		PreparedStatement updateDatePstmt = null;
+		String updateDate = "";
+		ResultSet updateResult = null;
+		
 		if (boardName.equals("freeforall")) {
 			createReply = "INSERT INTO freeforall.replies " +
 			"VALUES (?, null, ?, NOW(), ?)";
+			getDate = "SELECT MAX(dateReplied) FROM freeforall.replies " +
+			"WHERE pid = ?";
+			updateDate = "UPDATE freeforall.posts SET dateLastUpdated = ? " +
+					"WHERE pid = ?";
 		}
 		else {
 			createReply = "INSERT INTO " + boardName + ".replies " +
 			"VALUES (?, ?, null, ?, NOW(), ?)";
+			getDate = "SELECT MAX(dateReplied) FROM " + boardName + ".replies " +
+			"WHERE pid = ? AND rname = ?";
+			updateDate = "UPDATE freeforall.posts SET dateLastUpdated = ? " +
+			"WHERE pid = ? AND rname = ? ";
 		}
-		boolean success = false;
+		
+		boolean successInsert = false;
+		boolean successUpdate = false;
 		boolean sqlex = false;
 		try {
+			conn.setAutoCommit(false);
 			createPstmt = conn.prepareStatement(createReply);
 			if (boardName.equals("freeforall")) {
 				createPstmt.setInt(1, postNum);
@@ -345,20 +366,53 @@ public class SocialNetworkDatabasePosts {
 				createPstmt.setString(3, username);
 				createPstmt.setString(4, content);
 			}
-			success = (createPstmt.executeUpdate() == 1);
+			successInsert = (createPstmt.executeUpdate() == 1);
+			if (successInsert) {
+				/* Get the timestamp of the most recent reply!*/
+				getDatePstmt = conn.prepareStatement(getDate);
+				getDatePstmt.setInt(1, postNum);
+				if (!boardName.equals("freeforall")) {
+					getDatePstmt.setString(2, regionName);
+				}
+				dateResult = getDatePstmt.executeQuery();
+				if (dateResult.next()) {//only expect one result, the max.
+					/*Update the record with this time*/
+					updateDatePstmt = conn.prepareStatement(updateDate);
+					updateDatePstmt.setTimestamp(1, dateResult.getTimestamp("MAX(dateReplied)"));
+					updateDatePstmt.setInt(2, postNum);
+					if (!boardName.equals("freeforall")) {
+						updateDatePstmt.setString(3, regionName);
+					}
+					successUpdate = (updateDatePstmt.executeUpdate() == 1);
+					if (successUpdate) {
+						conn.commit();
+					}
+					else {
+						conn.rollback();
+					}
+				}
+				else {
+					conn.rollback();
+				}
+			}
+			else {
+				conn.rollback();
+			}
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
 			System.out.println(e.getSQLState());
+			DBManager.rollback(conn);
 			sqlex = true;
 		}
 		finally {
+			DBManager.trueAutoCommit(conn);
 			DBManager.closePreparedStatement(createPstmt);
 		}
-		if (!success || sqlex) {
+		if (!successInsert || !successUpdate || sqlex) {
 			return "print Error: Database error while inserting reply. Contact an admin";
 		}
-		else if (success) {
+		else if (successInsert && successUpdate) {
 			return "print Reply successfully added. Refresh the post to view";
 		}
 		else {
