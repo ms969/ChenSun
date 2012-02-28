@@ -1,6 +1,6 @@
 CREATE DATABASE freeforall;
 CREATE TABLE freeforall.posts (
-    pid INT,
+    pid INT NOT NULL AUTO_INCREMENT,
     postedBy VARCHAR(100),
     datePosted DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
@@ -8,12 +8,12 @@ CREATE TABLE freeforall.posts (
     /*FOREIGN KEY(postedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );
 CREATE TABLE freeforall.replies (
-    pid INT,
-    eid INT,
+    pid INT NOT NULL,
+    eid INT NOT NULL AUTO_INCREMENT,
     repliedBy VARCHAR(100),
     dateReplied DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
-    PRIMARY KEY(pid, eid),
+    PRIMARY KEY(eid, pid),
     FOREIGN KEY(pid) REFERENCES posts(pid) ON DELETE CASCADE
     /*FOREIGN KEY(repliedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );

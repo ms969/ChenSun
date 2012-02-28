@@ -113,6 +113,14 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
+		if (inputLine.matches(COMMANDS[9])) {
+			if (user != null) {
+				processReply();
+			} else {
+				out.println();
+			}
+			return;
+		}
 		if (inputLine.matches(COMMANDS[10])) {
 			if (user != null) {
 				processFriendRequests();
@@ -1142,12 +1150,12 @@ public class ServerInputProcessor extends InputProcessor {
 				String postNum = currentPath[2];
 				if (postNum == null) { //Merely in the region
 					out.println(SocialNetworkNavigation.printPath(currentPath) + 
-							"print ;" + SocialNetworkPosts.viewPost(user, boardName, regionName, 
-									Integer.parseInt(postNum)));
+							"print ;" + SocialNetworkPosts.viewPostList(user, boardName, regionName));
 				}
 				else { //Inside the post
 					out.println(SocialNetworkNavigation.printPath(currentPath) + 
-							"print ;" + SocialNetworkPosts.viewPostList(user, boardName, regionName));
+							"print ;" + SocialNetworkPosts.viewPost(user, boardName, regionName,
+									Integer.parseInt(postNum)));
 				}
 			}
 		}
@@ -1181,10 +1189,7 @@ public class ServerInputProcessor extends InputProcessor {
 					postNum = Integer.parseInt(destination);
 				}
 				catch (NumberFormatException e) {
-					out.println("print You entered an invalid post number. Your current path (" 
-							+ SocialNetworkNavigation.printPath(currentPath) + ")" +
-									"implies you are going to a post. Type \"goto ###\", or \"goto ..\" to " +
-									"go backwards");
+					out.println("print You entered an invalid post number. Type \"goto ###\"");
 				}
 				if (postNum != null) {
 					out.println(SocialNetworkNavigation.goToPost(user, currentPath, postNum.intValue()));
@@ -1246,7 +1251,7 @@ public class ServerInputProcessor extends InputProcessor {
 		String boardName = currentPath[0];
 		boolean canPost = false;
 		if (boardName == null) {
-			out.println("Must be within a board's region or in the freeforall board to create a post");
+			out.println("print Must be within a board's region or in the freeforall board to create a post");
 		}
 		else if (boardName.equals("freeforall")) {
 			String postNum = currentPath[1];
@@ -1254,13 +1259,13 @@ public class ServerInputProcessor extends InputProcessor {
 				canPost = true;
 			}
 			else {
-				out.println("Must go back to the board page to create a post (not inside a post)");
+				out.println("print Must go back to the board page to create a post (not inside a post)");
 			}
 		}
 		else { //in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				out.println("Must be within a board's region or in the freeforall board to create a post");
+				out.println("print Must be within a board's region or in the freeforall board to create a post");
 			}
 			else {
 				String postNum = currentPath[2];
@@ -1268,12 +1273,12 @@ public class ServerInputProcessor extends InputProcessor {
 					canPost = true;
 				}
 				else {
-					out.println("Must go back to the region page to create a post (not inside a post)");
+					out.println("print Must go back to the region page to create a post (not inside a post)");
 				}
 			}
 		}
 		if (canPost) {
-			out.println("Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
+			out.println("print Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
 			String content = in.readLine();
 			if (!content.trim().equals("cancel")) {
 				out.println(SocialNetworkPosts.createPost(user, content, currentPath[0], currentPath[1]));
@@ -1296,12 +1301,12 @@ public class ServerInputProcessor extends InputProcessor {
 		String postNum = "";
 		boolean canReply = false;
 		if (boardName == null) {
-			out.println("Must be within a post to create a reply");
+			out.println("print Must be within a post to create a reply");
 		}
 		else if (boardName.equals("freeforall")) {
 			postNum = currentPath[1];
 			if (postNum == null) {
-				out.println("Must be within a post to create a reply");
+				out.println("print Must be within a post to create a reply");
 			}
 			else {
 				canReply = true;
@@ -1310,12 +1315,12 @@ public class ServerInputProcessor extends InputProcessor {
 		else { //in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				out.println("Must be within a post to create a reply");
+				out.println("print Must be within a post to create a reply");
 			}
 			else {
 				postNum = currentPath[2];
 				if (postNum == null) { //in a board, region, not in a post
-					out.println("Must be within a post to create a reply");
+					out.println("print Must be within a post to create a reply");
 				}
 				else {
 					canReply = true;
@@ -1323,7 +1328,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canReply) {
-			out.println("Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
+			out.println("print Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
 			String content = in.readLine();
 			if (!content.trim().equals("cancel")) {
 				out.println(SocialNetworkPosts.createReply(user, content, 
