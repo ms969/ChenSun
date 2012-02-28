@@ -13,6 +13,7 @@ public class DBManager {
 	private static final String HOSTNAME = "localhost";
 	private static final String USER = "root";
 	private static final String PASSWORD = "root";
+	public static final int DUPLICATE_KEY_CODE = 1062;
 	
 	public static Connection getConnection() {
 		try {
@@ -31,7 +32,7 @@ public class DBManager {
 		connectionProps.put("password", pwd);
 		conn = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port
 				+ "/", connectionProps);
-		System.out.println("Connected to database");
+		//System.out.println("Connected to database");
 		return conn;
 	}
 	

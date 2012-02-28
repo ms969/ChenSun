@@ -25,7 +25,7 @@ CREATE TABLE bname.replies (
     /*FOREIGN KEY(repliedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );
 CREATE TABLE bname.admins (
-    username VARCHAR(100)
+    username VARCHAR(100) PRIMARY KEY
     /*FOREIGN KEY(username) REFERENCES Main.Users(username) ON DELETE CASCADE*/
 );
 CREATE TABLE bname.files (
@@ -41,6 +41,6 @@ CREATE TABLE bname.regionprivileges (
     privilege ENUM('view', 'viewpost') NOT NULL,
     grantedBy VARCHAR(100) NOT NULL,
     PRIMARY KEY(rname, username),
-    FOREIGN KEY(rname) REFERENCES Regions(rname) ON DELETE CASCADE
+    FOREIGN KEY(rname) REFERENCES regions(rname) ON DELETE CASCADE
     /*FOREIGN KEY(username, grantedBy) REFERENCES Main.Users(username) ON DELETE CASCADE*/
 )

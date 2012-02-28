@@ -20,14 +20,21 @@ public class ServerInputProcessor extends InputProcessor {
 	private BufferedReader in;
 	
 	private String user = null;
+	private String[] currentPath;
 	
 	public static final String[] COMMANDS = {
 		"^login.+",			// 0
 		"^register$",		// 1
 		"^regRequests$",	// 2
 		"^addFriend.*",		// 3
-		"^friendRequests$",	// 4
-		"^deleteUser$",		// 5
+		"^createBoard .+",  // 4
+		"^refresh$",        // 5
+		"^goto .+",         // 6
+		"^createRegion .+", // 7
+		"^post$",           // 8
+		"^reply$",          // 9
+		"^friendRequests$",	// 10
+		"^deleteUser$",		// 11
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -65,13 +72,36 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		if (inputLine.matches(COMMANDS[4])) {
 			if (user != null) {
-				processFriendRequests();
+				processCreateBoard(inputLine);
 			} else {
 				out.println();
 			}
 			return;
 		}
 		if (inputLine.matches(COMMANDS[5])) {
+			if (user != null) {
+				processRefresh();
+			} else {
+				out.println();
+			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[6])) {
+			if (user != null) {
+				processGoto(inputLine);
+			} else {
+				out.println();
+			}
+			return;
+		}
+		if (inputLine.matches(COMMANDS[10])) {
+			if (user != null) {
+				processFriendRequests();
+			} else {
+				out.println();
+			}
+		}
+		if (inputLine.matches(COMMANDS[11])) {
 			if (user != null) {
 				processDeleteUser();
 			} else {
@@ -84,6 +114,10 @@ public class ServerInputProcessor extends InputProcessor {
 	public ServerInputProcessor(PrintWriter out, BufferedReader in) {
 		this.out = out;
 		this.in = in;
+		this.currentPath = new String[3];
+		for (int i = 0; i < currentPath.length; i++) {
+			currentPath[i] = null;
+		}
 	}
 
 	private void processLogin(String inputLine) {
@@ -118,7 +152,9 @@ public class ServerInputProcessor extends InputProcessor {
 			out.print("setLoggedIn true;setUser " + username + ";" +
 					"print Logged in as: " + username + ";" + 
 					"print Role: " + role.toUpperCase() + ";" +
-					"print A Cappella Group: " + aname + ";print ");
+					"print A Cappella Group: " + aname + ";print ;" +
+					SocialNetworkNavigation.printPath(currentPath) +
+					"print ;" + SocialNetworkBoards.viewBoards(user));
 			
 			// Get friend requests
 			String friendReqCommand = getFriendReq(username);
@@ -552,7 +588,6 @@ public class ServerInputProcessor extends InputProcessor {
 			out.println();
 		}
 	}
-	
 
 	private void processFriendRequests() throws IOException {
 		ArrayList<String> pendingFriends = new ArrayList<String>();
@@ -802,4 +837,128 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 	}
 
+	/**
+	 * Creates a board. MUST be in the home directory.
+	 */
+	private void processCreateBoard(String input) throws IOException {
+		/* Ensure the person is in the right place to create a board (on the homepage)*/
+		if (currentPath[0] != null) {
+			out.println("print Must be at Home to create a board;" +
+					"print Current Path: " + SocialNetworkNavigation.printPath(currentPath));
+		}
+		else {
+			String boardname = input.substring(("createBoard ").length());
+			out.println(SocialNetworkBoards.createBoard(user, boardname));
+		}
+	}
+	
+	/**
+	 * Depending on where the user is, fetches the correct view of information.
+	 * The user prints their current path and the information associated with it.
+	 */
+	private void processRefresh() {
+		String boardName = currentPath[0];
+		if (boardName == null) {
+			out.println(SocialNetworkNavigation.printPath(currentPath) + 
+					"print ;" + SocialNetworkBoards.viewBoards(user));
+		}
+		else if (boardName.equals("freeforall")) {
+			/*No regions*/
+			String postNum = currentPath[1];
+			if (postNum == null) { //Merely in the board
+				out.println(SocialNetworkNavigation.printPath(currentPath) + 
+						"print ;" + SocialNetworkPosts.viewPostList(user, boardName, null));
+			}
+			else { //Inside the post
+				out.println(SocialNetworkNavigation.printPath(currentPath) + 
+						"print ;" + SocialNetworkPosts.viewPost(user, boardName, null, 
+								Integer.parseInt(postNum)));
+			}
+		}
+		else { //a regular board
+			String regionName = currentPath[1];
+			if (regionName == null) { //Merely in the board
+				out.println(SocialNetworkNavigation.printPath(currentPath) + 
+						"print ;" + SocialNetworkRegions.viewRegions(user, boardName));
+			}
+			else {
+				String postNum = currentPath[2];
+				if (postNum == null) { //Merely in the region
+					out.println(SocialNetworkNavigation.printPath(currentPath) + 
+							"print ;" + SocialNetworkPosts.viewPost(user, boardName, regionName, 
+									Integer.parseInt(postNum)));
+				}
+				else { //Inside the post
+					out.println(SocialNetworkNavigation.printPath(currentPath) + 
+							"print ;" + SocialNetworkPosts.viewPostList(user, boardName, regionName));
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Depending on where the user is, processes where the user should go.
+	 */
+	private void processGoto(String inputLine) {
+		String destination = inputLine.substring(("goto ").length());
+		int validDest = SocialNetworkNavigation.validDestination(currentPath, destination);
+		switch (validDest) {
+		case -1: /*Go backwards*/
+			SocialNetworkNavigation.goBack(currentPath);
+			processRefresh();
+			break;
+		case 2: /*Go immediately home*/
+			for (int i = 0; i < currentPath.length; i++) {
+				currentPath[i] = null;
+			}
+			processRefresh();
+			break;
+		case 1: /*Go forward in the hierarchy to destination*/
+			/*Have different cases depending on the current path*/
+			if (currentPath[0] == null) {
+				out.println(SocialNetworkNavigation.goToBoard(user, currentPath, destination));
+			}
+			else if (currentPath[0].equals("freeforall")) {
+				Integer postNum = null;
+				try {
+					postNum = Integer.parseInt(destination);
+				}
+				catch (NumberFormatException e) {
+					out.println("print You entered an invalid post number. Your current path (" 
+							+ SocialNetworkNavigation.printPath(currentPath) + ")" +
+									"implies you are going to a post. Type \"goto ###\", or \"goto ..\" to " +
+									"go backwards");
+				}
+				if (postNum != null) {
+					out.println(SocialNetworkNavigation.goToPost(user, currentPath, postNum.intValue()));
+				}
+			}
+			else {
+				if (currentPath[1] != null) {
+					Integer postNum = null;
+					try {
+						postNum = Integer.parseInt(destination);
+					}
+					catch (NumberFormatException e) {
+						out.println("print You entered an invalid post number. Your current path (" 
+								+ SocialNetworkNavigation.printPath(currentPath) + ")" +
+										"implies you are going to a post. Type \"goto ###\", or \"goto ..\" to " +
+										"go backwards");
+					}
+					if (postNum != null) {
+						out.println(SocialNetworkNavigation.goToPost(user, currentPath, postNum));
+					}
+				}
+				else {
+					out.println(SocialNetworkNavigation.goToRegion(user, currentPath, destination));
+				}
+			}
+			break;
+		default:
+			out.println("print Invalid destination given your current path: " + 
+					SocialNetworkNavigation.printPath(currentPath) + ".; " +
+							"print You can go backwards by typing \"..\" ");
+			
+		}
+	}
 }

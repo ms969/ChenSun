@@ -21,8 +21,6 @@ package server;
  *   So, for example, from board, you can only go home or to a region.
  *   - ".." goes back a unit.
  *   
- *   TODO special case: free for all board
- *   TODO navigation should be concerned with whether the board/region/post exists
  */
 public class SocialNetworkNavigation {
 	
@@ -57,7 +55,11 @@ public class SocialNetworkNavigation {
 		if (destination.trim().toLowerCase().equals("home") || destination.trim().equals("/")) {
 			return 2;
 		}
-		if (currentPath[currentPath.length] != null) {
+		//first case covers being in a regular board's post
+		//second case covers being in the freeforall board's post
+		if (currentPath[currentPath.length-1] != null || 
+				(currentPath[0] != null && ("freeforall").equals(currentPath[0]) 
+						&& currentPath[1] != null)) {
 			return 0;
 		}
 		else { //actual destination and can advance.
@@ -69,15 +71,14 @@ public class SocialNetworkNavigation {
 	 * where there is a valid entry in the path.
 	 * -1 means the path is empty (is in the home dir)
 	 * */
-	public int goBack(String[] currentPath) {
-		for (int i = currentPath.length - 1; i >= currentPath.length; i--) {
+	public static void goBack(String[] currentPath) {
+		for (int i = currentPath.length - 1; i >= 0; i--) {
 			if (currentPath[i] != null) {
 				currentPath[i] = null;
-				return i-1;
+				return ;
 			}
 		}
 		//The path was already in the home directory.
-		return -1;
 	}
 	
 	/**
@@ -85,7 +86,7 @@ public class SocialNetworkNavigation {
 	 * navigate to this board.
 	 * TODO (author) ensure the user can go to this board.
 	 */
-	public String goToBoard(String username, String[] currentPath, String boardName) {
+	public static String goToBoard(String username, String[] currentPath, String boardName) {
 		String toReturn = "";
 		if (boardName.trim().toLowerCase().equals("freeforall")) {
 			toReturn = SocialNetworkPosts.viewPostList(username, "freeforall", null);
@@ -115,7 +116,7 @@ public class SocialNetworkNavigation {
 	 * navigate to this region
 	 * TODO (author) ensure the user can go to this region.
 	 */
-	public String goToRegion(String username, String[] currentPath, String regionName) {
+	public static String goToRegion(String username, String[] currentPath, String regionName) {
 		if (currentPath[0] == null || ("freeforall").equals(currentPath[0])) {
 			return "Invalid Call to Function";
 		}
@@ -138,7 +139,7 @@ public class SocialNetworkNavigation {
 	 * navigate to this post
 	 * TODO (author) ensure the user can view this post
 	 */
-	public String goToPost(String username, String[] currentPath, int postNum) {
+	public static String goToPost(String username, String[] currentPath, int postNum) {
 		if (("freeforall").equals(currentPath[0])) {
 			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], null, postNum);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
