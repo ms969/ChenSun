@@ -59,6 +59,49 @@ information accordingly! (username and group you want to join).
   2) Afterwards, login as "You" (type 'login You')!
   We have a user set up for you named "You".
   If you want to use this existing registration, just type 'login You'.
+  3) "You" is the Super Admin of the a cappella group CS5430 TAs. There are friend
+  requests and registration requests waiting for you. You can type "regRequests" to
+  view a list of registration requests for your group and approve them. You can 
+  also type "friendRequests" to view a list of people who wants to friend you. You 
+  can then approve or remove these requests.
+  4) At any point during the functions, you can type cancel to end the proceeding.
+  5) Type "addFriend c" to view a list of users whose name starts with 'c'
+     type any one of the names to send them a friend request.
+  6) Type "logout" to sign off as "You"
+  7) Type "login MJ" to sign on as MJ.
+  8) Type "showFriends" to see a list of your friends.
+  9) Type "changeUserRole" and then type someone's name to toggle their role 
+     between admin and member
+ 10) Type "deleteUser" to delete someone from your group.
+ 11) Type "transferSA" to transfer your super admin role to another admin in the 
+     group.
+ 12) You can also log in as a regular member and exercise the regular members
+     commands listed below.
+  
 
   Basic Commands
+	- login <username>: log in to the system as user <username>
+	- register: registers as a member of a specified a cappella group in the 
+	system. After you register, your registration have to be approved by an admin 
+	of your group. If you're approved, you will automatically be friends of 
+	everyone in your a cappella group.
+	- logout: signs you off from the system so a different user can sign on.
+	
+	- addFriend: Add a user as your friend in the system. The command "addFriend" 
+	will display a list of all the users in the system. "addFriemd Kev" will 
+	show a list of users whose name starts with "Kev"
+	- friendRequests: Shows your pending friend requests.
+	- showFriends: Displays a list of all your friends.
+	
+	Admin and SA only command:
+		- regRequests: View all the registration requests in your a cappella 
+		group. Here is where you can approve registration requests also.
+	
+	SA only commands:
+		- deleteUser: deletes a user from the system.
+		- changeUserRole: changes the role of a user in your a cappella group 
+		from admin to member or from member to admin.
+		- transferSA: transfer the super admin role from yourself to anothr admin 
+		in your a cappella group.
+	
 	
