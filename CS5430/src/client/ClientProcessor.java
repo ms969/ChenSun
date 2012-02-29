@@ -9,7 +9,7 @@ import shared.InputProcessor;
 public class ClientProcessor extends InputProcessor {
 	private boolean loggedIn = false;
 	private boolean exit = false;
-	private String user = null;
+	//private String user = null;
 	
 	private BufferedReader keyboard;
 	private PrintWriter serverOut;
@@ -38,9 +38,9 @@ public class ClientProcessor extends InputProcessor {
 			if (commands[i].equals("isExit")) {
 				serverOut.println(isExit());
 			}
-			if (commands[i].equals("getUser")) {
+			/*if (commands[i].equals("getUser")) {
 				serverOut.println(getUser());
-			}
+			}*/
 			if (commands[i].matches("^setLoggedIn.+")) {
 				String value = getValue(commands[i]);
 				setLoggedIn(Boolean.parseBoolean(value));
@@ -49,10 +49,10 @@ public class ClientProcessor extends InputProcessor {
 				String value = getValue(commands[i]);
 				setExit(Boolean.parseBoolean(value));
 			}
-			if (commands[i].matches("^setUser.+")) {
+			/*if (commands[i].matches("^setUser.+")) {
 				String value = getValue(commands[i]);
 				setUser(value);
-			}
+			}*/
 			// *** Add commands here ***
 		}
 	}
@@ -82,9 +82,9 @@ public class ClientProcessor extends InputProcessor {
 		return exit;
 	}
 	
-	public String getUser() {
-		return user;
-	}
+//	public String getUser() {
+//		return user;
+//	}
 
 	public void setLoggedIn(boolean loggedIn) {
 		this.loggedIn = loggedIn;
@@ -94,7 +94,7 @@ public class ClientProcessor extends InputProcessor {
 		this.exit = exit;
 	}
 	
-	public void setUser(String user) {
-		this.user = user;
-	}
+//	public void setUser(String user) {
+//		this.user = user;
+//	}
 }

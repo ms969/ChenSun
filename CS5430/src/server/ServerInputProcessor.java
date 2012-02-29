@@ -42,6 +42,7 @@ public class ServerInputProcessor extends InputProcessor {
 		//"^addParticipants$",	// 16
 		//"^removeParticipants$",	// 17
 		//"^editParticipants$",	// 18
+		"^logout$",			// 15
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -195,9 +196,23 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}*/
+		if (inputLine.matches(COMMANDS[15])) {
+			if (user != null) {
+				processLogout();
+			} else {
+				out.println();
+			}
+			return;
+		}
 		out.println();
 	}
 	
+	private void processLogout() {
+		user = null;
+		out.println("print Logged out.;setLoggedIn false");
+		// TODO: fix setting log in and exit here and processlogin
+	}
+
 	public ServerInputProcessor(PrintWriter out, BufferedReader in) {
 		this.out = out;
 		this.in = in;
@@ -325,7 +340,7 @@ public class ServerInputProcessor extends InputProcessor {
 		// Output for Client
 		if (userExist) {
 			user = username;
-			out.print("setLoggedIn true;setUser " + username + ";" +
+			out.print("setLoggedIn true;" + 
 					"print Logged in as: " + username + ";" + 
 					"print Role: " + role.toUpperCase() + ";" +
 					"print A Cappella Group: " + aname + ";print ;");
@@ -363,6 +378,10 @@ public class ServerInputProcessor extends InputProcessor {
 		
 		while(userExist) {
 			newUser = in.readLine();
+			if (newUser.equals("cancel")) {
+				out.println();
+				return;
+			}
 			
 			String query = "SELECT username FROM main.users WHERE username = '" +
 					newUser + "'";
@@ -373,6 +392,7 @@ public class ServerInputProcessor extends InputProcessor {
 					userExist = false;
 				}
 			} catch (SQLException e) {
+				userExist = false;
 				e.printStackTrace();
 			}
 			finally {
@@ -401,43 +421,47 @@ public class ServerInputProcessor extends InputProcessor {
 				groupList.put(groups.getString("aname"), groups.getInt("aid"));
 				command = command + ";print " + groups.getString("aname");
 			}
+			
+			String group = "";
+			int aid = 0;
+			while (!groupExist) {
+				out.println("print Choose a cappella group for " + newUser + ":" +
+						command + ";askForInput");
+				group = in.readLine();
+				if (group.equals("cancel")) {
+					out.println();
+					return;
+				}
+				
+				if (!groupList.containsKey(group)) {
+					out.print("print Please choose a group from the list.;");
+				} else {
+					groupExist = true;
+					aid = groupList.get(group);
+				}
+			}
+			
+			// group exists
+			query = "INSERT INTO main.registrationrequests (username, aid) " +
+					"VALUE ('" + newUser + "', " + aid + ")";
+			
+			stmt.executeUpdate(query);
+			out.println("print Registration request for " + newUser + " from " +
+					group + " has been sent.;print Once an admin from your group " +
+					"approves, you will be added to the system.;print ;");
 		} catch (SQLException e) {
-			e.printStackTrace();
+			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
+				out.println("print User is already in the system. Choose a different username.;print ;");
+			} else {
+				e.printStackTrace();
+			}
 		}
 		finally {
 			DBManager.closeResultSet(groups);
-		}
-		
-		String group = "";
-		int aid = 0;
-		while (!groupExist) {
-			out.println("print Choose a cappella group for " + newUser + ":" +
-					command + ";askForInput");
-			group = in.readLine();
-			
-			if (!groupList.containsKey(group)) {
-				out.print("print Please choose a group from the list.;");
-			} else {
-				groupExist = true;
-				aid = groupList.get(group);
-			}
-		}
-		
-		// group exists
-		out.println("print Registration request for " + newUser + " from " +
-				group + " has been sent.;print Once an admin from your group " +
-				"approves, you will be added to the system.");
-		query = "INSERT INTO main.registrationrequests (username, aid) " +
-				"VALUE ('" + newUser + "', " + aid + ")";
-		try {
-			stmt.executeUpdate(query);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
-		}
+		}	
+
 	}
 
 	private void processRegRequests() throws IOException {
@@ -459,6 +483,7 @@ public class ServerInputProcessor extends InputProcessor {
 				count++;
 			}
 		} catch (SQLException e) {
+			count = 0;
 			e.printStackTrace();
 		}
 		finally {
@@ -517,6 +542,15 @@ public class ServerInputProcessor extends InputProcessor {
 			try {
 				stmt = conn.createStatement();
 				stmt.executeUpdate(deleteQuery);
+				// confirmation to client
+				String command = "print ";
+				for (String user: usersToDelete) {
+					command += user + ", ";
+				}
+				// substring to take off the last comma
+				command = command.substring(0, command.length()-2) + 
+						" has been deleted from the system.";
+				out.println(command);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -524,15 +558,7 @@ public class ServerInputProcessor extends InputProcessor {
 				DBManager.closeStatement(stmt);
 				DBManager.closeConnection(conn);
 			}
-			// confirmation to client
-			String command = "print ";
-			for (String user: usersToDelete) {
-				command += user + ", ";
-			}
-			// substring to take off the last comma
-			command = command.substring(0, command.length()-2) + 
-					" has been deleted from the system.";
-			out.println(command);
+			
 			return;
 		}
 	}
@@ -555,40 +581,53 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		Connection conn = null;
 		Statement stmt = null;
+		ResultSet selectResult = null;
 		try {
 			// building the insert into users table query
 			conn = DBManager.getConnection();
 			conn.setAutoCommit(false);
 			stmt = conn.createStatement();
-			ResultSet selectResult = stmt.executeQuery(selectQuery);
-			String insertQuery = "INSERT INTO main.users (username, aid, role) " +
-					"VALUES ";
-			ArrayList<String> addFriendQueries = new ArrayList<String>();
+			
+			selectResult = stmt.executeQuery(selectQuery);
+			
+			ArrayList<String[]> pendingUserInfo = new ArrayList<String[]>();
 			while (selectResult.next()) {
-				insertQuery += "('" + selectResult.getString("username") + "'," + 
-						selectResult.getString("aid") + ",'member'), ";
-				addFriendQueries.add(addFriendsFromGroupQuery(selectResult.getString("username"), 
-						selectResult.getInt("aid")));
+				String[] userInfo = {selectResult.getString("username"), selectResult.getString("aid")};
+				pendingUserInfo.add(userInfo);
 			}
-			// taking off the last comma, SQL doesn't like it
-			insertQuery = insertQuery.substring(0, insertQuery.length()-2);
+			for (String[] userInfo: pendingUserInfo) {
+				String insertQuery = "INSERT INTO main.users (username, aid, role) " +
+						"VALUE " + "('" + userInfo[0] + "'," + 
+						userInfo[1] + ",'member')";
+				String addFriendQuery = addFriendsFromGroupQuery(userInfo[0], Integer.parseInt(userInfo[1]));
+				
+				if (SocialNetworkServer.DEBUG) {
+					
+				}
+				
+				stmt.executeUpdate(insertQuery);
+				stmt.executeUpdate(addFriendQuery);
+				conn.commit();
+			}
+			stmt.executeUpdate(deleteQuery);
+			conn.commit();
+			
+
 			
 			if (SocialNetworkServer.DEBUG) {
 				System.out.println(selectQuery);
-				System.out.println(insertQuery);
 				System.out.println(deleteQuery);
-				for (String query: addFriendQueries) {
-					System.out.println(query);
-				}
 			}
 			
-			// execute insertion and deletion queries
-			stmt.executeUpdate(insertQuery);
-			stmt.executeUpdate(deleteQuery);
-			for (String query: addFriendQueries) {
-				stmt.executeUpdate(query);
+			// confirmation to client
+			String command = "print ";
+			for (String user: approvedUsers) {
+				command += user + ", ";
 			}
-			conn.commit();
+			// substring to take off the last comma
+			command = command.substring(0, command.length()-2) + 
+					" has been added to the system.";
+			out.println(command);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -598,16 +637,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
-		// confirmation to client
-		String command = "print ";
-		for (String user: approvedUsers) {
-			command += user + ", ";
-		}
-		// substring to take off the last comma
-		command = command.substring(0, command.length()-2) + 
-				" has been added to the system.";
-		out.println(command);
 		
 	}
 
@@ -663,6 +692,7 @@ public class ServerInputProcessor extends InputProcessor {
 				requestCount = requests.getInt("count");
 			}
 		} catch (SQLException e) {
+			requestCount = 0;
 			e.printStackTrace();
 		}
 		finally {
@@ -683,15 +713,11 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet usersResult = null;
 		try {
 			stmt = conn.createStatement();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		// Stores a list of users that is not the current user, who is not a friend of the 
-		// current user, and has not requested current user as friend
-		// Users[0]: username. Users[1]: group name
-		ArrayList<String[]> friendableUsers = new ArrayList<String[]>();
-		try {
+			// Stores a list of users that is not the current user, who is not a friend of the 
+			// current user, and has not requested current user as friend
+			// Users[0]: username. Users[1]: group name
+			ArrayList<String[]> friendableUsers = new ArrayList<String[]>();
+			
 			// existing friends of user
 			ArrayList<String> existingFriends = new ArrayList<String>();
 			String query = "SELECT * FROM main.friends WHERE username1 = '" + user + "' OR " +
@@ -719,6 +745,77 @@ public class ServerInputProcessor extends InputProcessor {
 					friendableUsers.add(userInfo);
 				}
 			}
+			
+			// input of format "addFriend" or "addFriend b"
+			if (input.equals("addFriend")) {
+				// list everybody
+				boolean userExist = false;
+				String toFriend = "";
+				
+				while (!userExist) {
+					String command = "print Users in the system:;";
+					for (String[] userInfo: friendableUsers) {
+						command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
+					}
+					command += "print ;print Type the name of the user you wish to friend:;" +
+							"askForInput";
+					out.println(command);
+					
+					toFriend = in.readLine();
+					if (toFriend.equals("cancel")) {
+						out.println();
+						return;
+					}
+					for (String[] userInfo: friendableUsers) {
+						if (userInfo[0].equals(toFriend)) {
+							userExist = true;
+							break;
+						}
+					}
+					if (!userExist) {
+						out.print("print Cannot friend " + toFriend + ";");
+					}
+				}
+				
+				// Gets back name of person to add as friend
+				addFriend(toFriend);
+			} else {
+				// selective list
+				String value = getValue(input);
+				boolean userExist = false;
+				String toFriend = "";
+				
+				while (!userExist) {
+					String command = "print Usernames starting with '" + value + "';";
+					for (String[] userInfo: friendableUsers) {
+						value = value.toLowerCase();
+						if (userInfo[0].toLowerCase().startsWith(value)) {
+							command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
+						}
+					}
+					command += "print ;print Type the name of the user you wish to friend:;" +
+							"askForInput";
+					out.println(command);
+					
+					toFriend = in.readLine();
+					if (toFriend.equals("cancel")) {
+						out.println();
+						return;
+					}
+					for (String[] userInfo: friendableUsers) {
+						if (userInfo[0].equals(toFriend)) {
+							userExist = true;
+							break;
+						}
+					}
+					if (!userExist) {
+						out.print("print Cannot friend " + toFriend + ";");
+					}
+				}
+				
+				// Gets back name of person to add as friend
+				addFriend(toFriend);
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -726,72 +823,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeResultSet(usersResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
-		}
-		// input of format "addFriend" or "addFriend b"
-		if (input.equals("addFriend")) {
-			// list everybody
-			boolean userExist = false;
-			String toFriend = "";
-			
-			while (!userExist) {
-				String command = "print Users in the system:;";
-				for (String[] userInfo: friendableUsers) {
-					command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
-				}
-				command += "print ;print Type the name of the user you wish to friend:;" +
-						"askForInput";
-				out.println(command);
-				
-				toFriend = in.readLine();
-				for (String[] userInfo: friendableUsers) {
-					if (userInfo[0].equals(toFriend)) {
-						userExist = true;
-						break;
-					}
-				}
-				if (!userExist) {
-					out.print("print Cannot friend " + toFriend + ";");
-				}
-			}
-			
-			// Gets back name of person to add as friend
-			addFriend(toFriend);
-		} else {
-			// selective list
-			String value = getValue(input);
-			boolean userExist = false;
-			String toFriend = "";
-			
-			while (!userExist) {
-				String command = "print Usernames starting with '" + value + "';";
-				for (String[] userInfo: friendableUsers) {
-					value = value.toLowerCase();
-					if (userInfo[0].toLowerCase().startsWith(value)) {
-						command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
-					}
-				}
-				command += "print ;print Type the name of the user you wish to friend:;" +
-						"askForInput";
-				out.println(command);
-				
-				toFriend = in.readLine();
-				if (toFriend.equals("cancel")) {
-					out.println();
-					return;
-				}
-				for (String[] userInfo: friendableUsers) {
-					if (userInfo[0].equals(toFriend)) {
-						userExist = true;
-						break;
-					}
-				}
-				if (!userExist) {
-					out.print("print Cannot friend " + toFriend + ";");
-				}
-			}
-			
-			// Gets back name of person to add as friend
-			addFriend(toFriend);
 		}
 	}
 	
@@ -810,6 +841,9 @@ public class ServerInputProcessor extends InputProcessor {
 						"VALUE ('" + username + "','" + user + "')";
 				stmt = conn.createStatement();
 				stmt.executeUpdate(query);
+				
+				// print out confirmation
+				out.println("print Friend request sent to " + username);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -818,8 +852,6 @@ public class ServerInputProcessor extends InputProcessor {
 				DBManager.closeConnection(conn);
 			}
 			
-			// print out confirmation
-			out.println("print Friend request sent to " + username);
 		} else if (input.equals("n")) {
 			out.println("print Canceled.");
 		} else if (input.equals("cancel")) {
@@ -846,6 +878,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			stmt.close();
 		} catch (SQLException e) {
+			count = 0;
 			e.printStackTrace();
 		}
 		finally {
@@ -908,6 +941,16 @@ public class ServerInputProcessor extends InputProcessor {
 				conn = DBManager.getConnection();
 				stmt = conn.createStatement();
 				stmt.executeUpdate(deleteQuery);
+				
+				// confirmation to client
+				String command = "print Friend requests from ";
+				for (String user: usersToDelete) {
+					command += user + ", ";
+				}
+				// substring to take off the last comma
+				command = command.substring(0, command.length()-2) + 
+						" have been deleted.";
+				out.println(command);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -915,15 +958,7 @@ public class ServerInputProcessor extends InputProcessor {
 				DBManager.closeStatement(stmt);
 				DBManager.closeConnection(conn);
 			}
-			// confirmation to client
-			String command = "print Friend requests from ";
-			for (String user: usersToDelete) {
-				command += user + ", ";
-			}
-			// substring to take off the last comma
-			command = command.substring(0, command.length()-2) + 
-					" have been deleted.";
-			out.println(command);
+			
 			return;
 		}
 	}
@@ -970,6 +1005,16 @@ public class ServerInputProcessor extends InputProcessor {
 			stmt.executeUpdate(insertQuery);
 			stmt.executeUpdate(deleteQuery);
 			conn.commit();
+			
+			// confirmation to client
+			String command = "print ";
+			for (String user: approvedUsers) {
+				command += user + ", ";
+			}
+			// substring to take off the last comma
+			command = command.substring(0, command.length()-2) + 
+					" have been added as your friends.";
+			out.println(command);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -979,16 +1024,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
-		// confirmation to client
-		String command = "print ";
-		for (String user: approvedUsers) {
-			command += user + ", ";
-		}
-		// substring to take off the last comma
-		command = command.substring(0, command.length()-2) + 
-				" have been added as your friends.";
-		out.println(command);
 	}
 
 	private String getFriendReq(String username) {
@@ -1009,6 +1044,7 @@ public class ServerInputProcessor extends InputProcessor {
 				requestCount = requests.getInt("count");
 			}
 		} catch (SQLException e) {
+			requestCount = 0;
 			e.printStackTrace();
 		}
 		finally {
@@ -1028,15 +1064,12 @@ public class ServerInputProcessor extends InputProcessor {
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet usersResult = null;
-		try {
-			stmt = conn.createStatement();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 		
 		// Stores a list of deletable users
 		ArrayList<String> deletableUsers = new ArrayList<String>();
 		try {
+			stmt = conn.createStatement();
+			
 			String query = "SELECT username FROM main.users " +
 					"WHERE username != '" + user + "' AND aid = " +
 					"(SELECT aid FROM main.users WHERE username = '" + user + "')";
@@ -1049,6 +1082,34 @@ public class ServerInputProcessor extends InputProcessor {
 			while (usersResult.next()) {
 				deletableUsers.add(usersResult.getString("username"));
 			}
+			
+			boolean userDeletable = false;
+			String toDelete = "";
+			
+			while (!userDeletable) {
+				String command = "print Users in your A Cappella group that you can delete:;";
+				for (String userInfo: deletableUsers) {
+					command += "print " + userInfo + ";";
+				}
+				command += "print ;print Type the name of the user you wish to delete:;" +
+						"askForInput";
+				out.println(command);
+				
+				toDelete = in.readLine();
+				if (toDelete.equals("cancel")) {
+					out.println();
+					return;
+				}
+				if (deletableUsers.contains(toDelete)) {
+					userDeletable = true;
+				}
+				if (!userDeletable) {
+					out.print("print Cannot delete " + toDelete + ";");
+				}
+			}
+			
+			// toDelete is deletable
+			deleteUser(toDelete);	
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -1058,33 +1119,7 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeConnection(conn);
 		}
 		
-		boolean userDeletable = false;
-		String toDelete = "";
-		
-		while (!userDeletable) {
-			String command = "print Users in your A Cappella group that you can delete:;";
-			for (String userInfo: deletableUsers) {
-				command += "print " + userInfo + ";";
-			}
-			command += "print ;print Type the name of the user you wish to delete:;" +
-					"askForInput";
-			out.println(command);
-			
-			toDelete = in.readLine();
-			if (toDelete.equals("cancel")) {
-				out.println();
-				return;
-			}
-			if (deletableUsers.contains(toDelete)) {
-				userDeletable = true;
-			}
-			if (!userDeletable) {
-				out.print("print Cannot delete " + toDelete + ";");
-			}
-		}
-		
-		// toDelete is deletable
-		deleteUser(toDelete);
+
 	}
 
 	private void deleteUser(String username) throws IOException {
@@ -1100,6 +1135,9 @@ public class ServerInputProcessor extends InputProcessor {
 				String query = "DELETE FROM main.users WHERE username = '"+username+"'";
 				stmt = conn.createStatement();
 				stmt.executeUpdate(query);
+				
+				// print out confirmation
+				out.println("print " + username + " has been deleted from the system.");
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -1108,8 +1146,7 @@ public class ServerInputProcessor extends InputProcessor {
 				DBManager.closeConnection(conn);
 			}
 			
-			// print out confirmation
-			out.println("print " + username + " has been deleted from the system.");
+			
 		} else if (input.equals("n")) {
 			out.println("print Canceled.");
 		} else if (input.equals("cancel")) {
@@ -1136,6 +1173,18 @@ public class ServerInputProcessor extends InputProcessor {
 					existingFriends.add(friendsResult.getString("username1"));
 				}
 			}
+			
+			// printing out friend list
+			String command = "print Your friends:;";
+			if (existingFriends.size() == 0) {
+				command = "print You have no friends right now.;" +
+						"print To add a friend: type addFriend";
+			} else {
+				for (String friend: existingFriends) {
+					command += "print " + friend + ";";
+				}
+			}
+			out.println(command);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -1145,17 +1194,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeConnection(conn);
 		}
 		
-		// printing out friend list
-		String command = "print Your friends:;";
-		if (existingFriends.size() == 0) {
-			command = "print You have no friends right now.;" +
-					"print To add a friend: type addFriend";
-		} else {
-			for (String friend: existingFriends) {
-				command += "print " + friend + ";";
-			}
-		}
-		out.println(command);
 	}
 
 	private void processChangeUserRole() throws IOException {
@@ -1165,14 +1203,11 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet usersResult = null;
 		try {
 			stmt = conn.createStatement();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		// Stores a list of changeable users
-		// Users[0]: username, Users[1]: role
-		ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
-		try {
+			
+			// Stores a list of changeable users
+			// Users[0]: username, Users[1]: role
+			ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
+			
 			String query = "SELECT username, role FROM main.users " +
 					"WHERE username != '" + user + "' AND aid = " +
 					"(SELECT aid FROM main.users WHERE username = '" + user + "')";
@@ -1186,6 +1221,43 @@ public class ServerInputProcessor extends InputProcessor {
 				String[] userInfo = {usersResult.getString("username"), usersResult.getString("role").toUpperCase()};
 				changeableUsers.add(userInfo);
 			}
+			
+			boolean userChangeable = false;
+			String toChange = "";
+			String role = "";
+			
+			while (!userChangeable) {
+				String command = "print Users in your A Cappella group that you can change roles for:;";
+				for (String[] userInfo: changeableUsers) {
+					command += "print "+userInfo[0]+" ("+userInfo[1]+");";
+				}
+				command += "print ;print Type the name of the user you wish to change role for:;" +
+						"askForInput";
+				out.println(command);
+				
+				toChange = in.readLine();
+				if (toChange.equals("cancel")) {
+					out.println();
+					return;
+				}
+				for (String[] userInfo: changeableUsers) {
+					if (toChange.equals(userInfo[0])) {
+						if (userInfo[1].equals("ADMIN")) {
+							role = "member";
+						} else {
+							role = "admin";
+						}
+						userChangeable = true;
+						break;
+					}
+				}
+				if (!userChangeable) {
+					out.print("print Cannot change role for " + toChange + ";");
+				}
+			}
+			
+			// toChange is changeable
+			changeRole(toChange, role);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -1195,42 +1267,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeConnection(conn);
 		}
 		
-		boolean userChangeable = false;
-		String toChange = "";
-		String role = "";
-		
-		while (!userChangeable) {
-			String command = "print Users in your A Cappella group that you can change roles for:;";
-			for (String[] userInfo: changeableUsers) {
-				command += "print "+userInfo[0]+" ("+userInfo[1]+");";
-			}
-			command += "print ;print Type the name of the user you wish to change role for:;" +
-					"askForInput";
-			out.println(command);
-			
-			toChange = in.readLine();
-			if (toChange.equals("cancel")) {
-				out.println();
-				return;
-			}
-			for (String[] userInfo: changeableUsers) {
-				if (toChange.equals(userInfo[0])) {
-					if (userInfo[1].equals("ADMIN")) {
-						role = "member";
-					} else {
-						role = "admin";
-					}
-					userChangeable = true;
-					break;
-				}
-			}
-			if (!userChangeable) {
-				out.print("print Cannot change role for " + toChange + ";");
-			}
-		}
-		
-		// toChange is changeable
-		changeRole(toChange, role);
 	}
 
 	private void changeRole(String toChange, String role) {
@@ -1241,6 +1277,15 @@ public class ServerInputProcessor extends InputProcessor {
 		try {
 			stmt = conn.createStatement();
 			stmt.executeUpdate(query);
+			
+			// print out confirmation on client.
+			String from;
+			if (role.equals("admin")) {
+				from = "MEMBER";
+			} else {
+				from = "ADMIN";
+			}
+			out.println("print Role for "+toChange+" has been changed from "+from+" to "+role.toUpperCase());
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -1248,14 +1293,7 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		// print out confirmation on client.
-		String from;
-		if (role.equals("admin")) {
-			from = "MEMBER";
-		} else {
-			from = "ADMIN";
-		}
-		out.println("print Role for "+toChange+" has been changed from "+from+" to "+role.toUpperCase());
+		
 	}
 
 	private void processTransferSA() throws IOException {
@@ -1265,14 +1303,11 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet usersResult = null;
 		try {
 			stmt = conn.createStatement();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		// Stores a list of changeable users
-		// Users[0]: username
-		ArrayList<String> groupAdmins = new ArrayList<String>();
-		try {
+			
+			// Stores a list of changeable users
+			// Users[0]: username
+			ArrayList<String> groupAdmins = new ArrayList<String>();
+			
 			String query = "SELECT username FROM main.users " +
 					"WHERE username != '" + user + "' AND aid = " +
 					"(SELECT aid FROM main.users WHERE username = '" + user + "') AND " +
@@ -1286,6 +1321,34 @@ public class ServerInputProcessor extends InputProcessor {
 			while (usersResult.next()) {
 				groupAdmins.add(usersResult.getString("username"));
 			}
+			
+			boolean transferableUser = false;
+			String toChange = "";
+			
+			while (!transferableUser) {
+				String command = "print Users in your A Cappella group that you can transfer SA tole to:;";
+				for (String userInfo: groupAdmins) {
+					command += "print "+userInfo+" (ADMIN);";
+				}
+				command += "print ;print Type the name of the user you wish to transfer SA role to:;" +
+						"askForInput";
+				out.println(command);
+				
+				toChange = in.readLine();
+				if (toChange.equals("cancel")) {
+					out.println();
+					return;
+				}
+				if (groupAdmins.contains(toChange)) {
+					transferableUser = true;
+				}
+				if (!transferableUser) {
+					out.print("print Cannot transfer SA role to " + toChange + ";");
+				}
+			}
+			
+			// toChange is an admin that can have SA transferred to
+			transferSA(toChange);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -1295,33 +1358,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeConnection(conn);
 		}
 		
-		boolean transferableUser = false;
-		String toChange = "";
-		
-		while (!transferableUser) {
-			String command = "print Users in your A Cappella group that you can transfer SA tole to:;";
-			for (String userInfo: groupAdmins) {
-				command += "print "+userInfo+" (ADMIN);";
-			}
-			command += "print ;print Type the name of the user you wish to transfer SA role to:;" +
-					"askForInput";
-			out.println(command);
-			
-			toChange = in.readLine();
-			if (toChange.equals("cancel")) {
-				out.println();
-				return;
-			}
-			if (groupAdmins.contains(toChange)) {
-				transferableUser = true;
-			}
-			if (!transferableUser) {
-				out.print("print Cannot transfer SA role to " + toChange + ";");
-			}
-		}
-		
-		// toChange is an admin that can have SA transferred to
-		transferSA(toChange);
 	}
 
 	private void transferSA(String toChange) {
@@ -1336,6 +1372,9 @@ public class ServerInputProcessor extends InputProcessor {
 			stmt.executeUpdate(promoteQuery);
 			stmt.executeUpdate(demoteQuery);
 			conn.commit();
+			
+			// Print confirmation to client
+			out.println("print SA role has been transferred to "+toChange);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -1345,8 +1384,6 @@ public class ServerInputProcessor extends InputProcessor {
 			DBManager.closeConnection(conn);
 		}
 		
-		// Print confirmation to client
-		out.println("print SA role has been transferred to "+toChange);
 	}
 
 	private void processParticipants() {

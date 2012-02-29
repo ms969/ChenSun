@@ -43,7 +43,7 @@ public class ClientGUI {
 				processor.processLogin();
 			}
 			
-			while(true) {
+			while(processor.isLoggedIn() && !processor.isExit()) {
 				processor.askForInput();
 			}
 	
