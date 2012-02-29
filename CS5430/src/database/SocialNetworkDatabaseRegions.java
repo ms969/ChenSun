@@ -82,7 +82,7 @@ public class SocialNetworkDatabaseRegions {
 		String regionsAndPosts = "print Regions:;";
 		
 		PreparedStatement regionPstmt = null;
-		String fetchRegionsMember = "SELECT rname, privileges FROM " +
+		String fetchRegionsMember = "SELECT rname, privilege FROM " +
 				boardName + ".regionprivileges " +
 				"WHERE username = ?";
 		
@@ -118,7 +118,7 @@ public class SocialNetworkDatabaseRegions {
 				/*For each region, fetch the two most recent posts*/
 				if (role.equals("member")) {
 					regionsAndPosts += "print \t" + 
-						(regionsResults.getString("privileges").equals("viewpost") ? specialStrPostable : "") +
+						(regionsResults.getString("privilege").equals("viewpost") ? specialStrPostable : "") +
 						regionsResults.getString("rname") + ";";
 				}
 				else {

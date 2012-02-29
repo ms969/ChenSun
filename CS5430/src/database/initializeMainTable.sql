@@ -11,7 +11,7 @@ VALUES ("April", "MJ"),("Brook", "Sam"),("Adam", "Bryan"),("April", "Colin"),
 ("Colin","MJ"),("April","Connie"),("Colin","Connie"),("Connie","MJ"),
 ("April","Jocelyn"),("Colin","Jocelyn"),("Connie","Jocelyn"),("Jocelyn","MJ"),
 ("April","Robert"),("Colin","Robert"),("Connie","Robert"),("Jocelyn","Robert"),("MJ","Robert"),
-("Adam","Steve"),("Bryan","Steve"),("OtherTA","You");
+("Adam","Steve"),("Bryan","Steve"),("OtherTA","You"),("Kevin","MJ");
 INSERT INTO main.friendrequests
 VALUES ("You", "Kevin"),("You", "MJ");
 INSERT INTO main.registrationrequests
