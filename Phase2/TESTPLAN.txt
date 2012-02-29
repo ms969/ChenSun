@@ -4,7 +4,7 @@ perform.
 - multiple clients can run at the same time
 - Only registration and login commands work when a user is not logged in.
 
-registeration:
+registration:
 - tested registering a member. It is successfully inserted into the database as a 
 registration request.
 - tested registering a username that already exist, or is pending registration.
@@ -66,3 +66,33 @@ transferSA
 - when user1 transfers SA role to user2, user1's role changes to admin and user2's
 role changes to SA in one transaction
 
+refresh
+- correctly shows the most recent updates after refreshing.
+- correctly shows the information complying with the user's current path.
+
+goto <destination>
+- goto *inexistantdest* returns an error.
+- using the command with a destination other than .. when in a post returns
+an error.
+- (can still goto places that they don't have "permission to" see because
+ it is a type of authorization)
+- goto .. correctly goes backwards. goto / or goto home goes directly home.
+- current path is correctly shown and adjusted as goto is done in diff. 
+places.
+
+createBoard <boardName>
+- cannot create a board with an existing name.
+- cannot create a board unless in home.
+
+createRegion <regionName>
+- cannot create a region in the freeforall board
+- can only create a region inside a board
+- cannot create a region with an existing name inside the board
+
+post
+- can only post inside a region or in the freeforall board
+- typing cancel correctly cancels.
+
+reply
+- can only reply inside a post.
+- typing cancel correctly cancels
