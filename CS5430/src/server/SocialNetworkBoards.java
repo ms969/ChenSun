@@ -26,7 +26,7 @@ public class SocialNetworkBoards {
 	public static String createBoard(String username, String boardName) 
 	throws IOException {
 		if (boardName.trim().contains("..") || boardName.trim().equals("") 
-				|| boardName.trim().toLowerCase().equals("freefreeall")
+				|| boardName.trim().toLowerCase().equals("freeforall")
 				|| boardName.trim().toLowerCase().equals("main")
 				|| boardName.trim().toLowerCase().equals("home")
 				|| boardName.contains(" ")
