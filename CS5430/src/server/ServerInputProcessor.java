@@ -209,6 +209,9 @@ public class ServerInputProcessor extends InputProcessor {
 	
 	private void processLogout() {
 		user = null;
+		for (int i = 0; i < currentPath.length; i++) {
+			currentPath[i] = null;
+		}
 		out.println("print Logged out.;setLoggedIn false");
 		// TODO: fix setting log in and exit here and processlogin
 	}
