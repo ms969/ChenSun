@@ -64,7 +64,7 @@ public class SocialNetworkDatabaseRegions {
 			DBManager.closePreparedStatement(regionPstmt);
 		}
 		if (success) {
-			return "print Region \"" + regionName + "\" successfully created.";
+			return "print Region \"" + regionName + "\" successfully created.;print Don't forget to add users to the region privileges list!";
 		}
 		else {
 			return sqlexmsg;
@@ -91,10 +91,10 @@ public class SocialNetworkDatabaseRegions {
 				boardName + ".regions";
 		
 		PreparedStatement recentPostsPstmt = null;
-		String fetchRecentPost = "SELECT rname, pid, P.postedBy, R.repliedBy, MAX(R.dateReplied)" +
-				"FROM " + boardName + ".posts AS P INNER JOIN " +
+		String fetchRecentPosts = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(P.dateLastUpdated), MAX(R.dateReplied)" +
+				"FROM " + boardName + ".posts AS P LEFT OUTER JOIN " +
 				boardName + ".replies AS R USING (rname, pid) " +
-				"WHERE rname = ?";
+				"WHERE rname = ? GROUP BY pid ORDER BY P.dateLastUpdated DESC";
 		ResultSet regionsResults = null;
 		ResultSet recentPostsResults = null;
 		
@@ -113,7 +113,7 @@ public class SocialNetworkDatabaseRegions {
 			else { //error occurred while acquiring role
 				return "print Error: Database Error while querying viewable regions. Contact an admin.;";
 			}
-			recentPostsPstmt = conn.prepareStatement(fetchRecentPost);
+			recentPostsPstmt = conn.prepareStatement(fetchRecentPosts);
 			while (regionsResults.next()) {
 				/*For each region, fetch the two most recent posts*/
 				if (role.equals("member")) {
@@ -127,13 +127,21 @@ public class SocialNetworkDatabaseRegions {
 				recentPostsPstmt.setString(1, regionsResults.getString("rname"));
 				recentPostsResults = recentPostsPstmt.executeQuery();
 				if (recentPostsResults.next()) {
-					regionsAndPosts += "print \t\tNo Posts for this Region;";
+					if (recentPostsResults.getTimestamp("P.datePosted") != null) {
+						regionsAndPosts += "print \t\tMost Recent Activity | Post#" + recentPostsResults.getInt("pid") +
+						"[" + recentPostsResults.getString("P.postedBy") + "];";
+						if (recentPostsResults.getTimestamp("MAX(R.dateReplied)") != null) {
+							regionsAndPosts += "print \t\t   " +
+							"Most Recent Reply at " +
+							recentPostsResults.getTimestamp("MAX(R.dateReplied)").toString() + ";";
+						}
+					}
+					else { //LEFT INNER JOIN can return a null row as an answer.
+						regionsAndPosts += "print \t\tNo Posts for this Region;";
+					}
 				}
 				else {
-					regionsAndPosts += "print \t\tMost Recently Updated Post#" + recentPostsResults.getInt("pid") +
-					"[" + recentPostsResults.getString("P.postedBy") + "];print \t\t" +
-					"Most Recent Reply: [" + recentPostsResults.getString("R.repliedBy") + "] " +
-					recentPostsResults.getTimestamp("MAX(R.dateReplied)").toString() + ";";
+					regionsAndPosts += "print \t\tNo Posts for this Region;";
 				}
 			}
 		}
