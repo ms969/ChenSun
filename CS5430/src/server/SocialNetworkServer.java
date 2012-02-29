@@ -51,7 +51,7 @@ public class SocialNetworkServer {
 
 		SocialNetworkProtocol snp = new SocialNetworkProtocol(clientSocket);
 		Thread client = new Thread(snp);
-		client.run();
+		client.start();
 	}
 
 }
