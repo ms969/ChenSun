@@ -34,6 +34,12 @@ Put the password 'root' as your password. Finish.
 	- Enter the password (root) to connect to the database.
 	- Run the 'source' command on the following files in the order given:
 	1) createMainTable.sql
+	2) createFreeForAllTable.sql
+	3) initializeMainTable.sql
+	4) initializeFreeForAllTable.sql
+	5) createInitializeSampleBoard.sql
+	6) createInitializeSampleBoardTwo.sql
+	(Sorry there's this many!)
 	
 	You must feed the path to this file as the argument to 'source'
 
@@ -47,6 +53,12 @@ Put the password 'root' as your password. Finish.
 The client should be connected to the server now! It is ready at your command.
 
 Tutorial
-  First off, you should probably register
+  First, you'll need to submit registration!
+  1) At start up, type 'register'. Follow the prompts and submit
+information accordingly! (username and group you want to join).
+  2) Afterwards, login as "You" (type 'login You')!
+  We have a user set up for you named "You".
+  If you want to use this existing registration, just type 'login You'.
+
   Basic Commands
 	

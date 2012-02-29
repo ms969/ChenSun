@@ -3,7 +3,7 @@ Kevin Chen - kfc35
 run the project and gave the ideas to the group (viewed JDBC tutorials, server-socket implementations (via Oracle), installing mysql). As for 
 program functionalities, he implemented the creation and viewing of boards, 
 regions, post lists, and individual posts with responses (content oriented 
-elements of the system), their "refreshing", and their navigation.
+elements of the system), their "refreshing", and their navigation. He made the board data used in the tutorial!
 	Hours: 36 hours (total).
 
 MJ Sun - ms969
@@ -12,5 +12,6 @@ of the protocol used for the server and client to talk to each other
 (printing to the user, logging in, etc.). As for program functionalities, 
 she implemented user registration/deletion, logon, the friends 
 relationship, role promotion/demotion, and granting privilege to regions 
-(people oriented elements of the system)
+(people oriented elements of the system). She originated the main table
+data used in the tutorial!
 	Hours: 36 hours (total).
