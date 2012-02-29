@@ -1,0 +1,68 @@
+General testing:
+- tested to make sure the commands corresponds to the functions they're suppose to 
+perform.
+- multiple clients can run at the same time
+- Only registration and login commands work when a user is not logged in.
+
+registeration:
+- tested registering a member. It is successfully inserted into the database as a 
+registration request.
+- tested registering a username that already exist, or is pending registration.
+- typing cancel in the middle of registration cancels the registration protocol.
+
+login:
+- "login user" will set user as the user of the current session
+- After logging in, the information displayed is accurate (username, a cappella 
+group, and role) and displayed correctly
+- Tested that if there are requests, then the corresponding "pending requests" 
+messages show up with the correct count of registration per catagory
+
+Registration Requests:
+- if someone registers for a group, all admins and super admins (SA) for the group 
+sees the registration requests and are able to approve it.
+- Once an admin approves the user, all existing members in the a cappella become 
+friends with the new user.
+- If an admin approves multiple users at the same time, they become friends with 
+each other and with existing group members
+- Once an admin approves the user, the registration request record gets deleted 
+from the database.
+- insertion into users table and addition of friends relationships happen as one
+transaction
+
+addFriend
+- typing the command shows a complete list of users in the system who are not 
+currently friends with the current user and whose friendship has not been requested.
+- The information for each user displayed is correct (the right a cappella group)
+- typing the command with an argument (like addFriend c) shows a list of users 
+with usernames starting with the argument (case insensitive)
+- upon completion of the protocol, a friend request from the current user to the
+specified user shows up in the database correctly.
+- a friend request from user2 cannot be sent to user1 if user1 already requested
+user2 as friend
+
+friendRequests
+- when user1 requests user2 as friend, the request shows up when user2 logs in.
+- when user1 approves a friend request from user2, the corresponding friend 
+request gets deleted from the database, and friend tuple gets inserted into the
+database at the same time as a transaction
+
+deleteUser
+- a list with only users from user1's group shows up when user1 (SA) tries to 
+delete a user.
+- when a user is deleted, any friend requests, friends relations involving the
+use is also deleted
+
+showFriends
+- only people the user has friended and approved shows up in the showFriends list.
+- if a friend tuple is removed, it is reflected in the showFriends list
+
+changeUserRole
+- a list with only users from user1's group shows up when user1 (SA) tries to
+change a user's role
+- it is not possible to change anyone's role to SA within this function
+
+transferSA
+- only admins from user1's group shows up when user1 (SA) types in "transferSA"
+- when user1 transfers SA role to user2, user1's role changes to admin and user2's
+role changes to SA in one transaction
+
