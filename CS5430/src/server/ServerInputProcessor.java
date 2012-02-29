@@ -1743,8 +1743,7 @@ public class ServerInputProcessor extends InputProcessor {
 	private void processCreateBoard(String input) throws IOException {
 		/* Ensure the person is in the right place to create a board (on the homepage)*/
 		if (currentPath[0] != null) {
-			out.println("print Must be at Home to create a board;" +
-					"print Current Path: " + SocialNetworkNavigation.printPath(currentPath));
+			out.println("print Must be at Home to create a board");
 		}
 		else {
 			String boardname = input.substring(("createBoard ").length());
