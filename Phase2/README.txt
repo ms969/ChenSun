@@ -61,4 +61,6 @@ information accordingly! (username and group you want to join).
   If you want to use this existing registration, just type 'login You'.
 
   Basic Commands
-	
+
+
+
