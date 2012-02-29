@@ -4,6 +4,7 @@ CREATE TABLE freeforall.posts (
     postedBy VARCHAR(100),
     datePosted DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
+    dateLastUpdated DATETIME NOT NULL,
     PRIMARY KEY(pid)
     /*FOREIGN KEY(postedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );
@@ -17,12 +18,12 @@ CREATE TABLE freeforall.replies (
     FOREIGN KEY(pid) REFERENCES posts(pid) ON DELETE CASCADE
     /*FOREIGN KEY(repliedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );
-CREATE TABLE freeforall.files (
+/*CREATE TABLE freeforall.files (
     pid INT NOT NULL,
     furl INT NOT NULL,
     PRIMARY KEY(pid, furl),
     FOREIGN KEY(pid) REFERENCES posts(pid) ON DELETE CASCADE
-);
+);*/
 CREATE TABLE freeforall.postprivileges (
     pid INT NOT NULL,
     username VARCHAR(100),
