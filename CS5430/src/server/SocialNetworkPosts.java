@@ -72,12 +72,12 @@ public class SocialNetworkPosts {
 				}
 			}
 			else {
-				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				return "print Error: Region does not exist. Refresh. " +
 				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			return "print Error: Board does not exist. Refresh. " +
 			"If the problem persists, contact an admin.";
 		}
 	}
@@ -132,12 +132,12 @@ public class SocialNetworkPosts {
 				}
 			}
 			else {
-				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				return "print Error: Region does not exist. Refresh. " +
 				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			return "print Error: Board does not exist. Refresh. " +
 			"If the problem persists, contact an admin.";
 		}
 	}
@@ -171,12 +171,12 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				return "print Error: Region does not exist. Refresh. " +
 				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			return "print Error: Board does not exist. Refresh. " +
 			"If the problem persists, contact an admin.";
 		}
 	}
@@ -212,12 +212,12 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Error: Encapsulating Region does not exist. Refresh. " +
+				return "print Error: Region does not exist. Refresh. " +
 				"If the problem persists, contact an admin.";
 			}
 		}
 		else {
-			return "print Error: Encapsulating Board does not exist. Refresh. " +
+			return "print Error: Board does not exist. Refresh. " +
 			"If the problem persists, contact an admin.";
 		}
 	}

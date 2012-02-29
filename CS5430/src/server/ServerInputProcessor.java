@@ -1823,7 +1823,8 @@ public class ServerInputProcessor extends InputProcessor {
 					postNum = Integer.parseInt(destination);
 				}
 				catch (NumberFormatException e) {
-					out.println("print You entered an invalid post number. Type \"goto ###\"");
+					out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to " +
+										"go backwards");
 				}
 				if (postNum != null) {
 					out.println(SocialNetworkNavigation.goToPost(user, currentPath, postNum.intValue()));
@@ -1836,9 +1837,7 @@ public class ServerInputProcessor extends InputProcessor {
 						postNum = Integer.parseInt(destination);
 					}
 					catch (NumberFormatException e) {
-						out.println("print You entered an invalid post number. Your current path (" 
-								+ SocialNetworkNavigation.printPath(currentPath) + ")" +
-										"implies you are going to a post. Type \"goto ###\", or \"goto ..\" to " +
+						out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to " +
 										"go backwards");
 					}
 					if (postNum != null) {
