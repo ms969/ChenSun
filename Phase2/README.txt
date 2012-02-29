@@ -52,8 +52,8 @@ Put the password 'root' as your password. Finish.
 	- run that jar by typing 'java -jar ClientGUI.jar'
 The client should be connected to the server now! It is ready at your command.
 
-Tutorial Environment
-Users by A cappella group:
+Tutorial Environment (zzz stuff, can skip down to Tutorial if you'd like)
+Users by A cappella group (You may log in as any of these users)
 	Fantasia: April, Colin, Connie, Jocelyn, MJ, Robert
 	Hangovers: Adam, Bryan Steve
 	CS Majors: Kevin
@@ -116,10 +116,26 @@ information accordingly! (username and group you want to join).
  11) Type "transferSA" to transfer your super admin role to another admin in the 
      group.
  12) You can also log in as a regular member and exercise the regular members
+ 13) Type "createBoard <boardname>" while at Home to create a board. (Must be an
+     admin, but not enforced currently)
+ 14) Type "createRegion <regionname>" when in any board (not the freeforallboard) 
+     to create a region.
+ 15) Type "post" when in any region or in the freeforallboard to create a post. 
+     (You should only post in starred regions! Not enforced currently.) 
+     Type in your content and press enter to submit (or type cancel)
+ 16) Type "reply" when viewing any post to add a reply.
+     (You should only reply to starred posts in the freeforall board, or under
+     starred regions! Not enforced currently.)
+     Type in your content and press enter to submit (or type cancel)
      commands listed below.
-
-
-  
+ 17) Type "refresh" to refresh the page you are on.
+ 18) Type "goto <destination>" to go to the specified place. Typing destination as 
+     "home" or "/" immediately goes home. Typing ".." goes back one in the current path.
+     You may only go forward or backward one unit at a time!
+Suggestion: Try experimenting logging in with different users! Logging in as various Fantasia
+members yields very unique board viewing experiences based on the privileges individuals have for
+the fantasiaboard.
+Suggestion: Go crazy with creating boards, regions, posts, and replies!
 
   Basic Commands
 	- login <username>: log in to the system as user <username>
@@ -134,6 +150,20 @@ information accordingly! (username and group you want to join).
 	show a list of users whose name starts with "Kev"
 	- friendRequests: Shows your pending friend requests.
 	- showFriends: Displays a list of all your friends.
+
+	- refresh: Refreshes the current "page" as listed in the current path.
+	i.e. a refresh on the homepage will refresh the list of boards.
+	- goto <destination>: Based on your current path, heads to the destination.
+	Can only go forward or backward, or straight back home.
+	For posts, input goto ###.
+	- createBoard <boardname>: Creates a board. MUST be at home to do this
+	- createRegion <regionname>: Creates a region. MUST be in a board !=
+	freeforallboard to do this.
+	- post: goes into "posting" mode. MUST be in a board's region or the
+	free for all board to do this command. After typing post, type in your content,
+	or type 'cancel' to cancel posting.
+	- reply: goes into "replying" mode. MUST be inside a post to do this command.
+	After typing reply, type in your content, or type 'cancel' to cancel posting
 	
 	Admin and SA only command:
 		- regRequests: View all the registration requests in your a cappella 
