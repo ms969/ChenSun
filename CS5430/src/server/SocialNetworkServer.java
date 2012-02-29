@@ -11,7 +11,7 @@ import java.io.*;
 
 public class SocialNetworkServer {
 	private static final int LISTEN_PORT_NUM = 5329;
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 
 	public static void main(String[] args) throws IOException {
 
@@ -44,14 +44,12 @@ public class SocialNetworkServer {
 			// connecting to the client
 			clientSocket = serverSocket.accept();
 		} catch (IOException e) {
-			System.err.println("Accept failed.");
 			// TODO exit here?
 			System.exit(1);
 		}
-
 		SocialNetworkProtocol snp = new SocialNetworkProtocol(clientSocket);
 		Thread client = new Thread(snp);
-		client.run();
+		client.start();
 	}
 
 }
