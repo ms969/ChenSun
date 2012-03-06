@@ -1910,15 +1910,34 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canPost) {
-			out.println("print Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
+			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print " +
+					"Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
 			String content = in.readLine();
-			if (!content.trim().equals("cancel")) {
-				out.println(SocialNetworkPosts.createPost(user, content, currentPath[0], currentPath[1]));
+			while (content.equals("")) {
+				out.println("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
+				content = in.readLine();
 			}
-			else {
+			boolean cancelled = content.trim().equals("cancel");
+			String additionalContent = "";
+			while (!cancelled) {
+				out.println("print ;askForInput ");
+				additionalContent = in.readLine();
+				if (additionalContent.equals("")) {
+					break;
+				}
+				else if (additionalContent.trim().equals("cancel")) {
+					cancelled = true;
+				}
+				else {
+					content += ";print \t" + additionalContent;
+				}
+			}
+			if (cancelled) {
 				out.println("print Post Creation cancelled");
 			}
-		
+			else {
+				out.println(SocialNetworkPosts.createPost(user, content, currentPath[0], currentPath[1]));
+			}
 		}
 	}
 	
@@ -1960,14 +1979,35 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canReply) {
-			out.println("print Start typing your content (or enter 'cancel' to cancel). Press enter to submit.");
+			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print " +
+			"Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
 			String content = in.readLine();
-			if (!content.trim().equals("cancel")) {
-				out.println(SocialNetworkPosts.createReply(user, content, 
-						currentPath[0], currentPath[1], Integer.parseInt(postNum)));
+			while (content.equals("")) {
+				out.println("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
+				content = in.readLine();
+			}
+			boolean cancelled = content.trim().equals("cancel");
+			String additionalContent = "";
+			while (!cancelled) {
+				out.println("print ;askForInput ");
+				additionalContent = in.readLine();
+				if (additionalContent.equals("")) {
+					break;
+				}
+				else if (additionalContent.trim().equals("cancel")) {
+					cancelled = true;
+				}
+				else {
+					content += ";print \t" + additionalContent;
+				}
+			}
+			if (cancelled) {
+				out.println("print Reply Creation cancelled");
+				
 			}
 			else {
-				out.println("print Reply Creation cancelled");
+				out.println(SocialNetworkPosts.createReply(user, content, 
+						currentPath[0], currentPath[1], Integer.parseInt(postNum)));
 			}
 		}
 	}
