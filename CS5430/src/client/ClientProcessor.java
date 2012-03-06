@@ -1,8 +1,13 @@
 package client;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.util.Scanner;
 
 import shared.InputProcessor;
 
@@ -72,6 +77,21 @@ public class ClientProcessor extends InputProcessor {
 		System.out.println("To log in, type 'login <username>'");
 		System.out.println("To register, type 'register'");
 		askForInput();
+	}
+	
+	public void processHelp() {
+		try {
+			BufferedReader br = new BufferedReader(new FileReader("HELP.txt"));
+			String line;
+			while ((line = br.readLine()) != null) {
+				System.out.println(line);
+			}
+		} catch (FileNotFoundException e) {
+			// TODO: do this?
+			System.out.println("Help file not found. Contact system admin.");
+		} catch (IOException e) {
+			System.out.println("Help file may be corrupted. Contact system admin.");
+		}
 	}
 	
 	public boolean isLoggedIn() {

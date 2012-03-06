@@ -6,14 +6,12 @@ Contents
 
 	TEAM.txt - required by phase description
 	README.txt - required by phase description. You're in it!
-	sql (folder) [
-	  - createNewBoardDB.sql - A script used by the program
-	  - createMainTable.sql* - Used to create the main table, which stores existing boards, users, a cappella groups, and friends
-	  - createFreeForAllTable.sql* - Used to create a board accessible to all.
-	  - initializeMainTable.sql* - Used to create the main table, which 
-	]
-	socialNetworkServer.jar* - Used to run the server.
-	clientGUI.jar* - Used to run the client.
+	sql* (folder) - Contains sql scripts, one used by the program, and
+	others needed to initialize the database.
+	src (folder) - Contains our source code.
+	jars (folder) - Contains the JDBC pckg we used.
+	SocialNetworkServer.jar* - Used to run the server.
+	ClientGUI.jar* - Used to run the client.
 	TESTPLAN.txt - required by phase description.
 
 Installation

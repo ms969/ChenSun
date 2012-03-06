@@ -213,7 +213,6 @@ public class ServerInputProcessor extends InputProcessor {
 			currentPath[i] = null;
 		}
 		out.println("print Logged out.;setLoggedIn false");
-		// TODO: fix setting log in and exit here and processlogin
 	}
 
 	public ServerInputProcessor(PrintWriter out, BufferedReader in) {

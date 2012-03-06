@@ -1,0 +1,41 @@
+-------------------------------------------------------------------
+commands							functionalities				
+-------------------------------------------------------------------
+goto					Command for moving between boards, regions,
+						and posts. If the current page contains 
+						board1, goto board1 will take you into 
+						board1.
+
+refresh					Refreshes the current page.
+
+createBoard				Creates a posting board.
+
+createRegion			Creates a region within a board. Does not
+						work in freeforall board because it doesn't
+						contain regions.
+
+post					Creates a post in the freeforall board or 
+						in a region in another board.
+
+reply					Creates a reply in a post.
+
+showFriends				Displays your friend list.
+
+addFriend				Displays a list of users that you could 
+						friend. addFriend fr will display a list
+						of usernames starting with fr.
+
+friendRequests			View friend requests.
+
+logout					Signs out the current user.
+-------------------------------------------------------------------
+regRequests				Admin and SA only command. View 
+						registration requests for your group.
+-------------------------------------------------------------------
+changeUserRole			SA only command. Change an user's role.
+
+deleteUser				SA only command. Displays a list of users
+						from your group that you can delete.
+
+transferSA				SA only command. Transfer your SA role to
+						another admin in your group.
