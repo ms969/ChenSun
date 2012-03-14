@@ -54,6 +54,7 @@ public class ClientProcessor extends InputProcessor {
 				String value = getValue(commands[i]);
 				setExit(Boolean.parseBoolean(value));
 			}
+			
 			/*if (commands[i].matches("^setUser.+")) {
 				String value = getValue(commands[i]);
 				setUser(value);
@@ -66,8 +67,12 @@ public class ClientProcessor extends InputProcessor {
 		System.out.print(">> ");
 		try {
 			String input = keyboard.readLine();
-			serverOut.println(input);
-			processCommands(serverIn.readLine());
+			if (input.trim().equals("help")) {
+				processHelp();
+			} else {
+				serverOut.println(input);
+				processCommands(serverIn.readLine());
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

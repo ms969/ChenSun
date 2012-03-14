@@ -1,7 +1,13 @@
 package server;
 
 import java.net.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.io.*;
+
+import javax.crypto.KeyGenerator;
+
+import crypto.SharedKeyCrypto;
 
 /* Setup code and Connection code courtesy of 
  * tutorials in docs.oracle.com
@@ -16,12 +22,13 @@ public class SocialNetworkServer {
 	public static void main(String[] args) throws IOException {
 
 		ServerSocket serverSocket = initializeSocket();
-
+		
+		
 		while (true) {
 			acceptClient(serverSocket);
 		}
 		
-		 
+		
 	}
 
 	private static ServerSocket initializeSocket() {
