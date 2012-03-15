@@ -6,6 +6,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.Arrays;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -37,7 +38,7 @@ public class PublicKeyCrypto {
 	private final static int NONCE_LENGTH = (64/8);
 	/*DES Key length is in bytes*/
 	private final static int DES_KEY_LENGTH = 56;
-	private final static int DES_KEY_LENGTH_BYTES = (56/8);
+	private final static int DES_KEY_LENGTH_BYTES = (DES_KEY_LENGTH/8);
 	
 	
 
@@ -88,7 +89,7 @@ public class PublicKeyCrypto {
 	 * is and os are the inputstream and outputstream of the Socket
 	 * used to connect to the client.
 	 */
-	public static void serverSideAuth(InputStream is, OutputStream os) throws NoSuchAlgorithmException, NoSuchPaddingException, 
+	public static SecretKey serverSideAuth(InputStream is, OutputStream os) throws NoSuchAlgorithmException, NoSuchPaddingException, 
 	InvalidKeySpecException, InvalidKeyException, IOException {
 		/*Initialize a cipher to accept the incoming message first message*/
 		Cipher c = null;
@@ -112,7 +113,12 @@ public class PublicKeyCrypto {
 		//get the first nonce, and add 1
 		byte[] recvNonce = new byte[NONCE_LENGTH];
 		System.arraycopy(firstmsg, 0, recvNonce, 0, NONCE_LENGTH);
-		//TODO how do we add by one.
+		BigInteger firstNonceNum = new BigInteger(recvNonce);
+		System.out.println(firstNonceNum);
+		firstNonceNum = firstNonceNum.add(BigInteger.ONE);
+		//TODO What if this increases the number of bits?
+		//Should be fine... we only copy the first NONCE_LENGTH bytes anyway
+		recvNonce = firstNonceNum.toByteArray();
 		
 		byte[] recvkey = new byte[DES_KEY_LENGTH_BYTES];
 		System.arraycopy(firstmsg, NONCE_LENGTH, recvkey, 0, DES_KEY_LENGTH_BYTES);
@@ -137,8 +143,19 @@ public class PublicKeyCrypto {
 		c.init(Cipher.DECRYPT_MODE, key);
 		byte[] thirdmsg = new byte[NONCE_LENGTH];
 		cis.read(thirdmsg);
-		
-		//TODO check the nonce thing..
+		BigInteger secondNonceNum = new BigInteger(sendNonce);
+		System.out.println(secondNonceNum);
+		secondNonceNum = secondNonceNum.shiftLeft(1);
+		System.out.println(secondNonceNum);
+		byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
+		byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
+		System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
+		if (Arrays.equals(thirdmsg, secondNonceTimesTwoCorrectLen)) {
+			return key;
+		}
+		else {
+			return null;
+		}
 	}
 	
 	/**
@@ -147,7 +164,7 @@ public class PublicKeyCrypto {
 	 * used to connect to the server
 	 * @throws IOException 
 	 */
-	public static void clientSideAuth(InputStream is, OutputStream os) throws NoSuchAlgorithmException, 
+	public static SecretKey clientSideAuth(InputStream is, OutputStream os) throws NoSuchAlgorithmException, 
 	NoSuchPaddingException, InvalidKeySpecException, InvalidKeyException, IOException {
 		/*Fetch the server's public key*/
 		PublicKey serverPubK = serverPublicKeyRSA();
@@ -190,17 +207,35 @@ public class PublicKeyCrypto {
 		cis.read(secondmsg);
 		
 		/*Verify that the first nonce is nonce + 1*/
-		//TODO, calculate nonce+1 somehow...
 		byte[] recvnonce = new byte[NONCE_LENGTH];
 		System.arraycopy(secondmsg, 0, recvnonce, 0, NONCE_LENGTH);
-		
-		//TODO, calculate nonce*2
-		byte[] thirdmsg = new byte[NONCE_LENGTH];
-		System.arraycopy(secondmsg, NONCE_LENGTH, thirdmsg, 0, NONCE_LENGTH);
-		
-		c.init(Cipher.ENCRYPT_MODE, key);
-		cos.write(thirdmsg);
-		cos.flush();
+		BigInteger firstNonceNum = new BigInteger(nonce);
+		firstNonceNum = firstNonceNum.add(BigInteger.ONE);
+		byte[] firstNonceNumPlusOne = firstNonceNum.toByteArray();
+		byte[] firstNonceNumPlusOneCorrectLen = new byte[NONCE_LENGTH];
+		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
+		if (!Arrays.equals(recvnonce, firstNonceNumPlusOneCorrectLen)) {
+			return null;
+		}
+		else {
+			/*Calculate second nonce * 2*/
+			byte[] secondNonce = new byte[NONCE_LENGTH];
+			System.arraycopy(secondmsg, NONCE_LENGTH, secondNonce, 0, NONCE_LENGTH);
+			BigInteger secondNonceNum = new BigInteger(secondNonce);
+			System.out.println(secondNonceNum);
+			secondNonceNum = secondNonceNum.shiftLeft(1);
+			byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
+			byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
+			System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
+			byte[] thirdmsg = new byte[NONCE_LENGTH];
+			System.arraycopy(secondNonceTimesTwoCorrectLen, 0, thirdmsg, 0, NONCE_LENGTH);
+			
+			c.init(Cipher.ENCRYPT_MODE, key);
+			cos.write(thirdmsg);
+			cos.flush();
+			
+			return key;
+		}
 	}
 	
 	/*
@@ -209,6 +244,5 @@ public class PublicKeyCrypto {
 		return pkf.generateKeyPair(); 
 	}*/
 	
-	//use OAEP with RSA?
 	//TODO the default for RSA uses ECB...
 }
