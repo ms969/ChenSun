@@ -158,7 +158,7 @@ public class PublicKeyCrypto {
 		byte[] secondmsg = new byte[NONCE_LENGTH + NONCE_LENGTH];
 		System.arraycopy(firstNonceNumPlusOneCorrectLen, 0, secondmsg, 0, NONCE_LENGTH);
 		System.arraycopy(sendNonce, 0, secondmsg, NONCE_LENGTH, NONCE_LENGTH);
-		CipherOutputStream cos = new CipherOutputStream(os, c);
+		CipherOutputStream cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
 		cos.write(secondmsg);
 		//c.doFinal();
 		cos.flush();
@@ -234,12 +234,11 @@ public class PublicKeyCrypto {
 		System.arraycopy(sendkey, 0, firstmsg, NONCE_LENGTH, DES_KEY_LENGTH_BYTES);
 		
 		/*Encrypt */
-		CipherOutputStream cos = new CipherOutputStream(os, c);
+		CipherOutputStream cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
 		
 		//PrintWriter ps = new PrintWriter(cos, true);
 		//ps.println(new String(firstmsg, "UTF8"));
 		cos.write(firstmsg);
-		//c.doFinal();
 		cos.flush();
 		cos.close();
 		//ps.flush();
@@ -292,6 +291,7 @@ public class PublicKeyCrypto {
 			System.arraycopy(secondNonceTimesTwoCorrectLen, 0, thirdmsg, 0, NONCE_LENGTH);
 			
 			c.init(Cipher.ENCRYPT_MODE, key);
+			cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
 			cos.write(thirdmsg);
 			cos.flush();
 			cos.close();
