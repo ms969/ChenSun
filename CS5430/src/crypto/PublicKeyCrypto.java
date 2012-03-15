@@ -9,6 +9,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class PublicKeyCrypto {
@@ -38,7 +39,7 @@ public class PublicKeyCrypto {
 	private final static int NONCE_LENGTH = (64/8);
 	/*DES Key length is in bytes*/
 	private final static int DES_KEY_LENGTH = 56;
-	private final static int DES_KEY_LENGTH_BYTES = (DES_KEY_LENGTH/8);
+	private final static int DES_KEY_LENGTH_BYTES = (64/8);
 	
 	
 
@@ -88,9 +89,13 @@ public class PublicKeyCrypto {
 	 * Implements the authentication protocol on the server side
 	 * is and os are the inputstream and outputstream of the Socket
 	 * used to connect to the client.
+	 * @throws BadPaddingException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws InvalidAlgorithmParameterException 
+	 * @throws InterruptedException 
 	 */
 	public static SecretKey serverSideAuth(InputStream is, OutputStream os) throws NoSuchAlgorithmException, NoSuchPaddingException, 
-	InvalidKeySpecException, InvalidKeyException, IOException {
+	InvalidKeySpecException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException{
 		/*Initialize a cipher to accept the incoming message first message*/
 		Cipher c = null;
 		//try {
@@ -107,53 +112,81 @@ public class PublicKeyCrypto {
 		}*/
 		
 		CipherInputStream cis = new CipherInputStream(is, c);
+		//BufferedReader br = new BufferedReader(new InputStreamReader(is));
 		byte[] firstmsg = new byte[NONCE_LENGTH + DES_KEY_LENGTH_BYTES];
-		cis.read(firstmsg);
+		System.out.println("About to read the first msg");
+
+		int bytesRead = cis.read(firstmsg);
+		while (bytesRead != NONCE_LENGTH + DES_KEY_LENGTH_BYTES) {
+			bytesRead += cis.read(firstmsg, bytesRead, NONCE_LENGTH + DES_KEY_LENGTH_BYTES - bytesRead);
+		}
+		//String msg = br.readLine();
+		//System.out.println(msg);
+		
+		System.out.println("Server received first message: " + 
+				new String(firstmsg, "UTF8"));
 		
 		//get the first nonce, and add 1
 		byte[] recvNonce = new byte[NONCE_LENGTH];
 		System.arraycopy(firstmsg, 0, recvNonce, 0, NONCE_LENGTH);
 		BigInteger firstNonceNum = new BigInteger(recvNonce);
-		System.out.println(firstNonceNum);
+		System.out.println("First nonce recv: " + firstNonceNum);
 		firstNonceNum = firstNonceNum.add(BigInteger.ONE);
-		//TODO What if this increases the number of bits?
-		//Should be fine... we only copy the first NONCE_LENGTH bytes anyway
-		recvNonce = firstNonceNum.toByteArray();
+		System.out.println("First nonce recv + 1: " + firstNonceNum);
+		byte[] firstNonceNumPlusOne = firstNonceNum.toByteArray();
+		byte[] firstNonceNumPlusOneCorrectLen = new byte[8];
+		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		
 		byte[] recvkey = new byte[DES_KEY_LENGTH_BYTES];
 		System.arraycopy(firstmsg, NONCE_LENGTH, recvkey, 0, DES_KEY_LENGTH_BYTES);
-		SecretKey key = new SecretKeySpec(recvkey, 0, recvkey.length, "DES");
+		SecretKey key = (SecretKey) new SecretKeySpec(recvkey, 0, DES_KEY_LENGTH_BYTES, "DES");
+		System.out.println("Key received: " + new String(key.getEncoded(), "UTF8"));
 		
 		//create a second nonce to authenticate the client
 		SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 		byte[] sendNonce = new byte[NONCE_LENGTH];
 		sr.nextBytes(sendNonce);
+		System.out.println("Second nonce created: " + new BigInteger(sendNonce));
+		
+		byte[] iv = new byte[8];
+		sr.nextBytes(iv);
+		IvParameterSpec ivp = new IvParameterSpec(iv);
 		
 		/*Construct the second message*/
-		c = Cipher.getInstance("DES/CBC/PKCS5Padding");
-		c.init(Cipher.ENCRYPT_MODE, key);
+		c = Cipher.getInstance("DES/CFB8/PKCS5Padding");
+		c.init(Cipher.ENCRYPT_MODE, key, ivp);
 		byte[] secondmsg = new byte[NONCE_LENGTH + NONCE_LENGTH];
-		System.arraycopy(recvNonce, 0, secondmsg, 0, NONCE_LENGTH);
+		System.arraycopy(firstNonceNumPlusOneCorrectLen, 0, secondmsg, 0, NONCE_LENGTH);
 		System.arraycopy(sendNonce, 0, secondmsg, NONCE_LENGTH, NONCE_LENGTH);
 		CipherOutputStream cos = new CipherOutputStream(os, c);
 		cos.write(secondmsg);
+		//c.doFinal();
 		cos.flush();
+		cos.close();
+		System.out.println("Server sent the second message: " + new String(secondmsg, "UTF8"));
+		
+		iv = new byte[8];
+		sr.nextBytes(iv);
+		ivp = new IvParameterSpec(iv);
 		
 		/*Receive the third message, check that nonce = nonce*2*/
-		c.init(Cipher.DECRYPT_MODE, key);
+		c.init(Cipher.DECRYPT_MODE, key, ivp);
 		byte[] thirdmsg = new byte[NONCE_LENGTH];
-		cis.read(thirdmsg);
+		bytesRead = cis.read(thirdmsg);
+		while (bytesRead != NONCE_LENGTH) {
+			bytesRead += cis.read(thirdmsg, bytesRead, NONCE_LENGTH - bytesRead);
+		}
 		BigInteger secondNonceNum = new BigInteger(sendNonce);
-		System.out.println(secondNonceNum);
 		secondNonceNum = secondNonceNum.shiftLeft(1);
-		System.out.println(secondNonceNum);
 		byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
 		byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
 		System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
 		if (Arrays.equals(thirdmsg, secondNonceTimesTwoCorrectLen)) {
+			System.out.println("Success");
 			return key;
 		}
 		else {
+			System.out.println("Failure");
 			return null;
 		}
 	}
@@ -163,22 +196,25 @@ public class PublicKeyCrypto {
 	 * is and os are the inputstream and output stream of the Socket
 	 * used to connect to the server
 	 * @throws IOException 
+	 * @throws BadPaddingException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws InvalidAlgorithmParameterException 
 	 */
 	public static SecretKey clientSideAuth(InputStream is, OutputStream os) throws NoSuchAlgorithmException, 
-	NoSuchPaddingException, InvalidKeySpecException, InvalidKeyException, IOException {
+	NoSuchPaddingException, InvalidKeySpecException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException {
 		/*Fetch the server's public key*/
 		PublicKey serverPubK = serverPublicKeyRSA();
 		
 		/*Generate a symmetric session key. 
 		 * For DES, the default is 56 bit length*/
 		KeyGenerator kg = KeyGenerator.getInstance("DES"); //algorithm is valid
-		kg.init(56);
+		kg.init(DES_KEY_LENGTH);
 		SecretKey key = kg.generateKey();
 		byte[] sendkey = key.getEncoded();
+		System.out.println("Encoded Key: " + new String(sendkey, "UTF8"));
 		
 		/*Prepare to encrypt a message for the server 
-		 * using the server's public key
-		 */
+		 * using the server's public key */
 		Cipher c = null;
 		c = Cipher.getInstance("RSA");
 		c.init(Cipher.ENCRYPT_MODE, serverPubK);
@@ -188,25 +224,47 @@ public class PublicKeyCrypto {
 		SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 		byte[] nonce = new byte[NONCE_LENGTH];
 		sr.nextBytes(nonce);
+		if (debug) {
+			System.out.println("First Nonce created on client side: " + new BigInteger(nonce));
+		}
 		
 		/*Construct the first message*/
-		byte[] firstmsg = new byte[DES_KEY_LENGTH_BYTES + NONCE_LENGTH];
-		System.arraycopy(sendkey, 0, firstmsg, 0, DES_KEY_LENGTH_BYTES);
-		System.arraycopy(nonce, 0, firstmsg, DES_KEY_LENGTH_BYTES, NONCE_LENGTH);
+		byte[] firstmsg = new byte[NONCE_LENGTH + DES_KEY_LENGTH_BYTES];
+		System.arraycopy(nonce, 0, firstmsg, 0, NONCE_LENGTH);
+		System.arraycopy(sendkey, 0, firstmsg, NONCE_LENGTH, DES_KEY_LENGTH_BYTES);
 		
 		/*Encrypt */
 		CipherOutputStream cos = new CipherOutputStream(os, c);
+		
+		//PrintWriter ps = new PrintWriter(cos, true);
+		//ps.println(new String(firstmsg, "UTF8"));
 		cos.write(firstmsg);
+		//c.doFinal();
 		cos.flush();
+		cos.close();
+		//ps.flush();
+		
+		System.out.println("Sent first message from client: " + new String(firstmsg, "UTF8"));
 		
 		/*Receive the second message*/
-		c = Cipher.getInstance("DES/CBC/PKCS5Padding");
-		c.init(Cipher.DECRYPT_MODE, key);
+		
+		c = Cipher.getInstance("DES/CFB8/PKCS5Padding");
+		
+		byte[] iv = new byte[8];
+		sr.nextBytes(iv);
+		IvParameterSpec ivp = new IvParameterSpec(iv);
+		
+		c.init(Cipher.DECRYPT_MODE, key, ivp);
 		CipherInputStream cis = new CipherInputStream(is, c);
 		byte[] secondmsg = new byte[NONCE_LENGTH + NONCE_LENGTH];
-		cis.read(secondmsg);
+		int bytesRead = cis.read(secondmsg);
+		while (bytesRead != NONCE_LENGTH + NONCE_LENGTH) {
+			bytesRead += cis.read(secondmsg, bytesRead, NONCE_LENGTH + NONCE_LENGTH - bytesRead);
+		}
+		System.out.println("Second msg received: " + new String(secondmsg, "UTF8"));
 		
 		/*Verify that the first nonce is nonce + 1*/
+		
 		byte[] recvnonce = new byte[NONCE_LENGTH];
 		System.arraycopy(secondmsg, 0, recvnonce, 0, NONCE_LENGTH);
 		BigInteger firstNonceNum = new BigInteger(nonce);
@@ -215,15 +273,18 @@ public class PublicKeyCrypto {
 		byte[] firstNonceNumPlusOneCorrectLen = new byte[NONCE_LENGTH];
 		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		if (!Arrays.equals(recvnonce, firstNonceNumPlusOneCorrectLen)) {
+			System.out.println("Failure");
 			return null;
 		}
 		else {
 			/*Calculate second nonce * 2*/
+		
 			byte[] secondNonce = new byte[NONCE_LENGTH];
 			System.arraycopy(secondmsg, NONCE_LENGTH, secondNonce, 0, NONCE_LENGTH);
 			BigInteger secondNonceNum = new BigInteger(secondNonce);
-			System.out.println(secondNonceNum);
+			System.out.println("Second nonce received: " + secondNonceNum);
 			secondNonceNum = secondNonceNum.shiftLeft(1);
+			System.out.println("Second nonce * 2: " + secondNonceNum);
 			byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
 			byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
 			System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
@@ -233,6 +294,7 @@ public class PublicKeyCrypto {
 			c.init(Cipher.ENCRYPT_MODE, key);
 			cos.write(thirdmsg);
 			cos.flush();
+			cos.close();
 			
 			return key;
 		}
