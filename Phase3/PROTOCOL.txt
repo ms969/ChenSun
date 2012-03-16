@@ -1,6 +1,8 @@
 Kevin Chen - kfc35
 MJ Sun - ms969
 
+Goal of Protocol:
+
 Authentication Protocol:
 	1) Ensure that the ClientGUI is talking to the 
 	genuine server.
