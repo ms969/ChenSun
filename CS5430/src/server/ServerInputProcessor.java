@@ -3,7 +3,6 @@ package server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,45 +11,42 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import crypto.CryptoUtil;
-import crypto.Hash;
-
 import shared.InputProcessor;
-
+import crypto.Hash;
+import crypto.SharedKeyCrypto;
 import database.DBManager;
-
 
 public class ServerInputProcessor extends InputProcessor {
 	private PrintWriter out;
 	private BufferedReader in;
-	
+	private SharedKeyCrypto skc;
+
 	private String user = null;
 	private String[] currentPath;
-	
-	public static final String[] COMMANDS = {
-		"^login .+",		// 0
-		"^register$",		// 1
-		"^regRequests$",	// 2
-		"^addFriend.*",		// 3
-		"^createBoard .+",  // 4
-		"^refresh$",        // 5
-		"^goto .+",         // 6
-		"^createRegion .+", // 7
-		"^post$",           // 8
-		"^reply$",          // 9
-		"^friendRequests$",	// 10
-		"^deleteUser$",		// 11
-		"^showFriends$",	// 12
-		"^changeUserRole$", // 13
-		"^transferSA$",		// 14
-		//"^participants$",	// 15
-		//"^addParticipants$",	// 16
-		//"^removeParticipants$",	// 17
-		//"^editParticipants$",	// 18
-		"^logout$",			// 15
-		"^help$",			// 16
+
+	public static final String[] COMMANDS = { "^login .+", // 0
+			"^register$", // 1
+			"^regRequests$", // 2
+			"^addFriend.*", // 3
+			"^createBoard .+", // 4
+			"^refresh$", // 5
+			"^goto .+", // 6
+			"^createRegion .+", // 7
+			"^post$", // 8
+			"^reply$", // 9
+			"^friendRequests$", // 10
+			"^deleteUser$", // 11
+			"^showFriends$", // 12
+			"^changeUserRole$", // 13
+			"^transferSA$", // 14
+			// "^participants$", // 15
+			// "^addParticipants$", // 16
+			// "^removeParticipants$", // 17
+			// "^editParticipants$", // 18
+			"^logout$", // 15
+			"^help$", // 16
 	};
-	
+
 	public void processCommand(String inputLine) throws IOException {
 		if (inputLine.matches(COMMANDS[0])) {
 			if (user == null) {
@@ -170,38 +166,16 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
-		/*if (inputLine.matches(COMMANDS[15])) {
-			if (user != null) {
-				processParticipants();
-			} else {
-				out.println();
-			}
-			return;
-		}
-		if (inputLine.matches(COMMANDS[16])) {
-			if (user != null) {
-				processAddParticipants();
-			} else {
-				out.println();
-			}
-			return;
-		}
-		if (inputLine.matches(COMMANDS[17])) {
-			if (user != null) {
-				processRemoveParticipants();
-			} else {
-				out.println();
-			}
-			return;
-		}
-		if (inputLine.matches(COMMANDS[18])) {
-			if (user != null) {
-				processEditParticipants();
-			} else {
-				out.println();
-			}
-			return;
-		}*/
+		/*
+		 * if (inputLine.matches(COMMANDS[15])) { if (user != null) {
+		 * processParticipants(); } else { out.println(); } return; } if
+		 * (inputLine.matches(COMMANDS[16])) { if (user != null) {
+		 * processAddParticipants(); } else { out.println(); } return; } if
+		 * (inputLine.matches(COMMANDS[17])) { if (user != null) {
+		 * processRemoveParticipants(); } else { out.println(); } return; } if
+		 * (inputLine.matches(COMMANDS[18])) { if (user != null) {
+		 * processEditParticipants(); } else { out.println(); } return; }
+		 */
 		if (inputLine.matches(COMMANDS[15])) {
 			if (user != null) {
 				processLogout();
@@ -220,7 +194,7 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		out.println();
 	}
-	
+
 	private void processLogout() {
 		user = null;
 		for (int i = 0; i < currentPath.length; i++) {
@@ -239,10 +213,8 @@ public class ServerInputProcessor extends InputProcessor {
 	}
 
 	/**
-	 * return an array with the logged in user's info
-	 * user[0] = username
-	 * user[1] = a cappella name
-	 * user[2] = role
+	 * return an array with the logged in user's info user[0] = username user[1]
+	 * = a cappella name user[2] = role
 	 */
 	private String[] getCurrentUserInfo() {
 		Connection conn = DBManager.getConnection();
@@ -251,8 +223,8 @@ public class ServerInputProcessor extends InputProcessor {
 		String[] user = new String[3];
 		try {
 			stmt = conn.createStatement();
-			String query = "SELECT username, aname, role FROM main.users NATURAL JOIN " +
-					"main.acappella WHERE username = '"+user+"'";
+			String query = "SELECT username, aname, role FROM main.users NATURAL JOIN "
+					+ "main.acappella WHERE username = '" + user + "'";
 			result = stmt.executeQuery(query);
 			while (result.next()) {
 				user[0] = result.getString("username");
@@ -261,8 +233,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeResultSet(result);
 			DBManager.closeConnection(conn);
@@ -277,8 +248,8 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet results = null;
 		try {
 			stmt = conn.createStatement();
-			String query = "SELECT * FROM main.friends WHERE username1 = '"+
-					user+"' OR username2 = '"+user+"'";
+			String query = "SELECT * FROM main.friends WHERE username1 = '"
+					+ user + "' OR username2 = '" + user + "'";
 			results = stmt.executeQuery(query);
 			while (results.next()) {
 				if (results.getString("username1").equals(user)) {
@@ -289,8 +260,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeResultSet(results);
 			DBManager.closeConnection(conn);
@@ -305,11 +275,11 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		String board = currentPath[0];
 		ArrayList<String> admins = new ArrayList<String>();
-		
+
 		Connection conn = DBManager.getConnection();
 		try {
 			Statement stmt = conn.createStatement();
-			String query = "SELECT * FROM "+board+".admins";
+			String query = "SELECT * FROM " + board + ".admins";
 			ResultSet adminResults = stmt.executeQuery(query);
 			while (adminResults.next()) {
 				admins.add(adminResults.getString("username"));
@@ -327,7 +297,7 @@ public class ServerInputProcessor extends InputProcessor {
 		char[] pwdChar = null;
 		try {
 			int i = in.read(charBuff);
-			pwdChar = Arrays.copyOfRange(charBuff, 0, i-2);
+			pwdChar = Arrays.copyOfRange(charBuff, 0, i - 2);
 			Arrays.fill(charBuff, ' ');
 		} catch (IOException e1) {
 			Arrays.fill(charBuff, ' ');
@@ -337,20 +307,20 @@ public class ServerInputProcessor extends InputProcessor {
 		Statement stmt = null;
 		ResultSet userTuple = null;
 		String username = getValue(inputLine);
-		
+
 		boolean userExist = false;
 		boolean pwMatch = false;
 		String pwhash = "";
 		String role = "";
 		String aname = "";
-		
+
 		// Querying database
 		try {
 			conn = DBManager.getConnection();
 			stmt = null;
-			String query = "SELECT username, pwhash, aname, role " +
-					"FROM main.users NATURAL JOIN main.acappella " +
-					"WHERE username = '" + username + "'";
+			String query = "SELECT username, pwhash, aname, role "
+					+ "FROM main.users NATURAL JOIN main.acappella "
+					+ "WHERE username = '" + username + "'";
 			stmt = conn.createStatement();
 			userTuple = stmt.executeQuery(query);
 			if (userTuple.next()) {
@@ -365,41 +335,39 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeResultSet(userTuple);
 			DBManager.closeConnection(conn);
 		}
-		
+
 		// Output for Client
 		if (userExist && pwMatch) {
 			user = username;
-			out.print("setLoggedIn true;" + 
-					"print Logged in as: " + username + ";" + 
-					"print Role: " + role.toUpperCase() + ";" +
-					"print A Cappella Group: " + aname + ";print ;");
-			
+			out.print("setLoggedIn true;" + "print Logged in as: " + username
+					+ ";" + "print Role: " + role.toUpperCase() + ";"
+					+ "print A Cappella Group: " + aname + ";print ;");
+
 			// Get friend requests
 			String friendReqCommand = getFriendReq(username);
 			out.print(friendReqCommand);
-			
+
 			// if admin or SA, get pending registration requests
 			if (role.equals("admin") || role.equals("sa")) {
 				String regReqCommand = getRegReq(username);
 				out.print(regReqCommand + ";");
 			}
-			
+
 			String hr = getHR(80);
 			out.print(hr + "print ;");
-			
+
 			// printing out boards
-			out.println(SocialNetworkNavigation.printPath(currentPath) +
-					 SocialNetworkBoards.viewBoards(user));
+			out.println(SocialNetworkNavigation.printPath(currentPath)
+					+ SocialNetworkBoards.viewBoards(user));
 		} else {
 			out.println("print username does not exist or invalid password.");
 		}
-		
+
 	}
 
 	private void processRegistration() throws IOException {
@@ -410,16 +378,16 @@ public class ServerInputProcessor extends InputProcessor {
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet existingUser = null;
-		
-		while(userExist) {
+
+		while (userExist) {
 			newUser = in.readLine();
 			if (newUser.equals("cancel")) {
 				out.println();
 				return;
 			}
-			
-			String query = "SELECT username FROM main.users WHERE username = '" +
-					newUser + "'";
+
+			String query = "SELECT username FROM main.users WHERE username = '"
+					+ newUser + "'";
 			try {
 				stmt = conn.createStatement();
 				existingUser = stmt.executeQuery(query);
@@ -429,20 +397,19 @@ public class ServerInputProcessor extends InputProcessor {
 			} catch (SQLException e) {
 				userExist = false;
 				e.printStackTrace();
-			}
-			finally {
+			} finally {
 				DBManager.closeStatement(stmt);
 				DBManager.closeResultSet(existingUser);
 			}
-			
+
 			// TODO: check that username is legal and isn't keywords like cancel
-			
+
 			if (userExist) {
-				out.println("print Username already exist. Choose a different one.;" +
-						"askForInput");
+				out.println("print Username already exist. Choose a different one.;"
+						+ "askForInput");
 			}
 		}
-		
+
 		// username isn't already in the DB
 		boolean groupExist = false;
 		String command = "";
@@ -456,18 +423,18 @@ public class ServerInputProcessor extends InputProcessor {
 				groupList.put(groups.getString("aname"), groups.getInt("aid"));
 				command = command + ";print " + groups.getString("aname");
 			}
-			
+
 			String group = "";
 			int aid = 0;
 			while (!groupExist) {
-				out.println("print Choose a cappella group for " + newUser + ":" +
-						command + ";askForInput");
+				out.println("print Choose a cappella group for " + newUser
+						+ ":" + command + ";askForInput");
 				group = in.readLine();
 				if (group.equals("cancel")) {
 					out.println();
 					return;
 				}
-				
+
 				if (!groupList.containsKey(group)) {
 					out.print("print Please choose a group from the list.;");
 				} else {
@@ -475,7 +442,7 @@ public class ServerInputProcessor extends InputProcessor {
 					aid = groupList.get(group);
 				}
 			}
-			
+
 			// choose password
 			boolean pwdValid = false;
 			char[] pwdChar1 = null;
@@ -485,50 +452,56 @@ public class ServerInputProcessor extends InputProcessor {
 				char[] charBuff = new char[24];
 				try {
 					int i = in.read(charBuff);
-					pwdChar1 = Arrays.copyOfRange(charBuff, 0, i-2);
+					pwdChar1 = Arrays.copyOfRange(charBuff, 0, i - 2);
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
-				
+
 				out.println("print Confirm new password:;getPassword");
 				charBuff = new char[24];
 				try {
 					int i = in.read(charBuff);
-					pwdChar2 = Arrays.copyOfRange(charBuff, 0, i-2);
+					pwdChar2 = Arrays.copyOfRange(charBuff, 0, i - 2);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 				pwdValid = pwdsMatch(pwdChar1, pwdChar2);
-				
+
 				if (!pwdValid) {
 					out.print("print Invalid passwords.;");
 				}
 			}
-			
+
 			// both checks out
 			String pwdStore = Hash.createPwdHashStore(pwdChar1);
-			
+
 			// group exists
-			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) " +
-					"VALUE ('" + newUser + "', " + aid + ", '" + pwdStore + "')";
-			
+			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) "
+					+ "VALUE ('"
+					+ newUser
+					+ "', "
+					+ aid
+					+ ", '"
+					+ pwdStore
+					+ "')";
+
 			stmt.executeUpdate(query);
-			out.println("print Registration request for " + newUser + " from " +
-					group + " has been sent.;print Once an admin from your group " +
-					"approves, you will be added to the system.;print ;");
+			out.println("print Registration request for " + newUser + " from "
+					+ group
+					+ " has been sent.;print Once an admin from your group "
+					+ "approves, you will be added to the system.;print ;");
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
 				out.println("print User is already in the system. Choose a different username.;print ;");
 			} else {
 				e.printStackTrace();
 			}
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(groups);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
-		}	
+		}
 
 	}
 
@@ -536,13 +509,12 @@ public class ServerInputProcessor extends InputProcessor {
 		if (pwdChar1.length != pwdChar2.length) {
 			return false;
 		}
-		for (int i=0; i<pwdChar1.length; i++) {
-			if (pwdChar1[i] != pwdChar2[i]) 
+		for (int i = 0; i < pwdChar1.length; i++) {
+			if (pwdChar1[i] != pwdChar2[i])
 				return false;
 		}
 		return true;
 	}
-
 
 	private void processRegRequests() throws IOException {
 		// TODO: Check if user is an admin
@@ -553,10 +525,10 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet requests = null;
 		try {
 			stmt = conn.createStatement();
-			String query = "SELECT username " +
-				"FROM main.registrationrequests " +
-				"WHERE aid = (SELECT aid FROM main.users WHERE username = '" +
-				user + "')";
+			String query = "SELECT username "
+					+ "FROM main.registrationrequests "
+					+ "WHERE aid = (SELECT aid FROM main.users WHERE username = '"
+					+ user + "')";
 			requests = stmt.executeQuery(query);
 			while (requests.next()) {
 				pendingUsers.add(requests.getString("username"));
@@ -565,28 +537,27 @@ public class ServerInputProcessor extends InputProcessor {
 		} catch (SQLException e) {
 			count = 0;
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(requests);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 		if (count > 0) {
-			String command = "print Pending User Registration Requests (" + 
-					count + "):";
-			for (int i=0; i < pendingUsers.size(); i++) {
+			String command = "print Pending User Registration Requests ("
+					+ count + "):";
+			for (int i = 0; i < pendingUsers.size(); i++) {
 				command = command + ";print " + pendingUsers.get(i);
 			}
-			command = command + ";print ;print [To approve: approve " +
-					"<username1>, <username2>];print [To remove: " +
-					"remove <username1>, <username2>];askForInput";
+			command = command + ";print ;print [To approve: approve "
+					+ "<username1>, <username2>];print [To remove: "
+					+ "remove <username1>, <username2>];askForInput";
 			out.println(command);
 			regApproval(in.readLine());
 		} else {
 			out.println("print No pending registration requests at the moment.");
 		}
-	
+
 	}
 
 	private void regApproval(String input) {
@@ -605,14 +576,14 @@ public class ServerInputProcessor extends InputProcessor {
 			String value = getValue(input);
 			String delim = ",";
 			String[] usersToDelete = value.split(delim);
-			
+
 			// Building queries
 			String deleteQuery = "DELETE FROM main.registrationrequests WHERE ";
-			for (int i=0; i < usersToDelete.length; i++) {
+			for (int i = 0; i < usersToDelete.length; i++) {
 				usersToDelete[i] = usersToDelete[i].trim();
-				
+
 				deleteQuery += "username = " + quote(usersToDelete[i]);
-				if (i != usersToDelete.length -1) {
+				if (i != usersToDelete.length - 1) {
 					deleteQuery += " OR ";
 				}
 			}
@@ -624,37 +595,37 @@ public class ServerInputProcessor extends InputProcessor {
 				stmt.executeUpdate(deleteQuery);
 				// confirmation to client
 				String command = "print ";
-				for (String user: usersToDelete) {
+				for (String user : usersToDelete) {
 					command += user + ", ";
 				}
 				// substring to take off the last comma
-				command = command.substring(0, command.length()-2) + 
-						" has been deleted from the system.";
+				command = command.substring(0, command.length() - 2)
+						+ " has been deleted from the system.";
 				out.println(command);
 			} catch (SQLException e) {
 				e.printStackTrace();
-			}
-			finally {
+			} finally {
 				DBManager.closeStatement(stmt);
 				DBManager.closeConnection(conn);
 			}
-			
+
 			return;
 		}
 	}
 
 	private void regApprove(String[] approvedUsers) {
-		// Building queries: select info from regrequests and delete from regreqests
-		
+		// Building queries: select info from regrequests and delete from
+		// regreqests
+
 		String selectQuery = "SELECT * FROM main.registrationrequests WHERE ";
 		String deleteQuery = "DELETE FROM main.registrationrequests WHERE ";
-		
-		for (int i=0; i < approvedUsers.length; i++) {
+
+		for (int i = 0; i < approvedUsers.length; i++) {
 			approvedUsers[i] = approvedUsers[i].trim();
-			
+
 			selectQuery += "username = " + quote(approvedUsers[i]);
 			deleteQuery += "username = " + quote(approvedUsers[i]);
-			if (i != approvedUsers.length -1) {
+			if (i != approvedUsers.length - 1) {
 				selectQuery += " OR ";
 				deleteQuery += " OR ";
 			}
@@ -667,64 +638,65 @@ public class ServerInputProcessor extends InputProcessor {
 			conn = DBManager.getConnection();
 			conn.setAutoCommit(false);
 			stmt = conn.createStatement();
-			
+
 			selectResult = stmt.executeQuery(selectQuery);
-			
+
 			ArrayList<String[]> pendingUserInfo = new ArrayList<String[]>();
 			while (selectResult.next()) {
-				String[] userInfo = {selectResult.getString("username"), selectResult.getString("aid"), selectResult.getString("pwhash")};
+				String[] userInfo = { selectResult.getString("username"),
+						selectResult.getString("aid"),
+						selectResult.getString("pwhash") };
 				pendingUserInfo.add(userInfo);
 			}
-			for (String[] userInfo: pendingUserInfo) {
-				String insertQuery = "INSERT INTO main.users (username, aid, pwhash, role) " +
-						"VALUE " + "('" + userInfo[0] + "'," + 
-						userInfo[1] + ", '" + userInfo[2] + "','member')";
-				String addFriendQuery = addFriendsFromGroupQuery(userInfo[0], Integer.parseInt(userInfo[1]));
-				
+			for (String[] userInfo : pendingUserInfo) {
+				String insertQuery = "INSERT INTO main.users (username, aid, pwhash, role) "
+					+ "VALUE " + "('" + userInfo[0] + "'," + userInfo[1] + ", '" 
+					+ userInfo[2] + "','member')";
+				String addFriendQuery = addFriendsFromGroupQuery(userInfo[0],
+						Integer.parseInt(userInfo[1]));
+
 				if (SocialNetworkServer.DEBUG) {
-					
+
 				}
-				
+
 				stmt.executeUpdate(insertQuery);
 				stmt.executeUpdate(addFriendQuery);
 				conn.commit();
 			}
 			stmt.executeUpdate(deleteQuery);
 			conn.commit();
-			
 
-			
 			if (SocialNetworkServer.DEBUG) {
 				System.out.println(selectQuery);
 				System.out.println(deleteQuery);
 			}
-			
+
 			// confirmation to client
 			String command = "print ";
-			for (String user: approvedUsers) {
+			for (String user : approvedUsers) {
 				command += user + ", ";
 			}
 			// substring to take off the last comma
-			command = command.substring(0, command.length()-2) + 
-					" has been added to the system.";
+			command = command.substring(0, command.length() - 2)
+					+ " has been added to the system.";
 			out.println(command);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
-		}
-		finally {
+		} finally {
 			DBManager.trueAutoCommit(conn);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 	}
 
 	private String addFriendsFromGroupQuery(String username, int aid) {
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet acappellaResult = null;
-		String acappellaUsers = "SELECT username FROM main.users WHERE aid = " + aid;
+		String acappellaUsers = "SELECT username FROM main.users WHERE aid = "
+				+ aid;
 		try {
 			stmt = conn.createStatement();
 			acappellaResult = stmt.executeQuery(acappellaUsers);
@@ -735,19 +707,19 @@ public class ServerInputProcessor extends InputProcessor {
 					user1 = username;
 					user2 = acappellaResult.getString("username");
 					addQuery += "('" + user1 + "','" + user2 + "'), ";
-				} else if (username.compareTo(acappellaResult.getString("username")) > 0) {
+				} else if (username.compareTo(acappellaResult
+						.getString("username")) > 0) {
 					user1 = acappellaResult.getString("username");
 					user2 = username;
 					addQuery += "('" + user1 + "','" + user2 + "'), ";
 				}
 			}
 			// taking off the last comma, SQL doesn't like it
-			return addQuery.substring(0, addQuery.length()-2);
+			return addQuery.substring(0, addQuery.length() - 2);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return null;
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(acappellaResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
@@ -763,10 +735,10 @@ public class ServerInputProcessor extends InputProcessor {
 		try {
 			conn = DBManager.getConnection();
 			stmt = conn.createStatement();
-			String query = "SELECT COUNT(username) as count " +
-					"FROM main.registrationrequests " +
-					"WHERE aid = (SELECT aid FROM main.users WHERE username = '" +
-					username + "')";
+			String query = "SELECT COUNT(username) as count "
+					+ "FROM main.registrationrequests "
+					+ "WHERE aid = (SELECT aid FROM main.users WHERE username = '"
+					+ username + "')";
 			requests = stmt.executeQuery(query);
 			while (requests.next()) {
 				requestCount = requests.getInt("count");
@@ -774,15 +746,14 @@ public class ServerInputProcessor extends InputProcessor {
 		} catch (SQLException e) {
 			requestCount = 0;
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(requests);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
 		if (requestCount != 0) {
-			command = ";print Pending User Registration Requests (" +
-					requestCount + ") [To view: regRequests]";
+			command = ";print Pending User Registration Requests ("
+					+ requestCount + ") [To view: regRequests]";
 		}
 		return command;
 	}
@@ -793,15 +764,16 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet usersResult = null;
 		try {
 			stmt = conn.createStatement();
-			// Stores a list of users that is not the current user, who is not a friend of the 
+			// Stores a list of users that is not the current user, who is not a
+			// friend of the
 			// current user, and has not requested current user as friend
 			// Users[0]: username. Users[1]: group name
 			ArrayList<String[]> friendableUsers = new ArrayList<String[]>();
-			
+
 			// existing friends of user
 			ArrayList<String> existingFriends = new ArrayList<String>();
-			String query = "SELECT * FROM main.friends WHERE username1 = '" + user + "' OR " +
-					"username2 = '" + user + "'";
+			String query = "SELECT * FROM main.friends WHERE username1 = '"
+					+ user + "' OR " + "username2 = '" + user + "'";
 			ResultSet friendsResult = stmt.executeQuery(query);
 			while (friendsResult.next()) {
 				if (friendsResult.getString("username1").equals(user)) {
@@ -810,43 +782,48 @@ public class ServerInputProcessor extends InputProcessor {
 					existingFriends.add(friendsResult.getString("username1"));
 				}
 			}
-			
-			// list of users that is not the current user and who have not requested 
+
+			// list of users that is not the current user and who have not
+			// requested
 			// current user as friend
-			query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella " +
-					"WHERE username != '" + user + "' AND username NOT IN " +
-							"(SELECT requester FROM main.friendrequests " +
-							"WHERE requestee = '" + user + "')";
+			query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella "
+					+ "WHERE username != '"
+					+ user
+					+ "' AND username NOT IN "
+					+ "(SELECT requester FROM main.friendrequests "
+					+ "WHERE requestee = '" + user + "')";
 			usersResult = stmt.executeQuery(query);
 			while (usersResult.next()) {
-				if (!existingFriends.contains(usersResult.getString("username"))) {
-					String[] userInfo = {usersResult.getString("username"), 
-							usersResult.getString("aname")};
+				if (!existingFriends
+						.contains(usersResult.getString("username"))) {
+					String[] userInfo = { usersResult.getString("username"),
+							usersResult.getString("aname") };
 					friendableUsers.add(userInfo);
 				}
 			}
-			
+
 			// input of format "addFriend" or "addFriend b"
 			if (input.equals("addFriend")) {
 				// list everybody
 				boolean userExist = false;
 				String toFriend = "";
-				
+
 				while (!userExist) {
 					String command = "print Users in the system:;";
-					for (String[] userInfo: friendableUsers) {
-						command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
+					for (String[] userInfo : friendableUsers) {
+						command += "print " + userInfo[0] + " (" + userInfo[1]
+								+ ");";
 					}
-					command += "print ;print Type the name of the user you wish to friend:;" +
-							"askForInput";
+					command += "print ;print Type the name of the user you wish to friend:;"
+							+ "askForInput";
 					out.println(command);
-					
+
 					toFriend = in.readLine();
 					if (toFriend.equals("cancel")) {
 						out.println();
 						return;
 					}
-					for (String[] userInfo: friendableUsers) {
+					for (String[] userInfo : friendableUsers) {
 						if (userInfo[0].equals(toFriend)) {
 							userExist = true;
 							break;
@@ -856,7 +833,7 @@ public class ServerInputProcessor extends InputProcessor {
 						out.print("print Cannot friend " + toFriend + ";");
 					}
 				}
-				
+
 				// Gets back name of person to add as friend
 				addFriend(toFriend);
 			} else {
@@ -864,25 +841,27 @@ public class ServerInputProcessor extends InputProcessor {
 				String value = getValue(input);
 				boolean userExist = false;
 				String toFriend = "";
-				
+
 				while (!userExist) {
-					String command = "print Usernames starting with '" + value + "';";
-					for (String[] userInfo: friendableUsers) {
+					String command = "print Usernames starting with '" + value
+							+ "';";
+					for (String[] userInfo : friendableUsers) {
 						value = value.toLowerCase();
 						if (userInfo[0].toLowerCase().startsWith(value)) {
-							command += "print " + userInfo[0] + " (" + userInfo[1] + ");";
+							command += "print " + userInfo[0] + " ("
+									+ userInfo[1] + ");";
 						}
 					}
-					command += "print ;print Type the name of the user you wish to friend:;" +
-							"askForInput";
+					command += "print ;print Type the name of the user you wish to friend:;"
+							+ "askForInput";
 					out.println(command);
-					
+
 					toFriend = in.readLine();
 					if (toFriend.equals("cancel")) {
 						out.println();
 						return;
 					}
-					for (String[] userInfo: friendableUsers) {
+					for (String[] userInfo : friendableUsers) {
 						if (userInfo[0].equals(toFriend)) {
 							userExist = true;
 							break;
@@ -892,24 +871,23 @@ public class ServerInputProcessor extends InputProcessor {
 						out.print("print Cannot friend " + toFriend + ";");
 					}
 				}
-				
+
 				// Gets back name of person to add as friend
 				addFriend(toFriend);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(usersResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
 	}
-	
+
 	private void addFriend(String username) throws IOException {
 		// username exists in the system.
-		out.println("print Are you sure you want to add " + username + 
-				" as a friend? (y/n);askForInput");
+		out.println("print Are you sure you want to add " + username
+				+ " as a friend? (y/n);askForInput");
 		String input = in.readLine();
 		Connection conn = null;
 		Statement stmt = null;
@@ -917,21 +895,20 @@ public class ServerInputProcessor extends InputProcessor {
 			try {
 				conn = DBManager.getConnection();
 				stmt = null;
-				String query = "INSERT INTO main.friendrequests (requestee, requester) " +
-						"VALUE ('" + username + "','" + user + "')";
+				String query = "INSERT INTO main.friendrequests (requestee, requester) "
+						+ "VALUE ('" + username + "','" + user + "')";
 				stmt = conn.createStatement();
 				stmt.executeUpdate(query);
-				
+
 				// print out confirmation
 				out.println("print Friend request sent to " + username);
 			} catch (SQLException e) {
 				e.printStackTrace();
-			}
-			finally {
+			} finally {
 				DBManager.closeStatement(stmt);
 				DBManager.closeConnection(conn);
 			}
-			
+
 		} else if (input.equals("n")) {
 			out.println("print Canceled.");
 		} else if (input.equals("cancel")) {
@@ -948,9 +925,8 @@ public class ServerInputProcessor extends InputProcessor {
 		try {
 			conn = DBManager.getConnection();
 			stmt = conn.createStatement();
-			String query = "SELECT requester " +
-				"FROM main.friendrequests " +
-				"WHERE requestee = '" + user + "'";
+			String query = "SELECT requester " + "FROM main.friendrequests "
+					+ "WHERE requestee = '" + user + "'";
 			requests = stmt.executeQuery(query);
 			while (requests.next()) {
 				pendingFriends.add(requests.getString("requester"));
@@ -960,22 +936,20 @@ public class ServerInputProcessor extends InputProcessor {
 		} catch (SQLException e) {
 			count = 0;
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(requests);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 		if (count > 0) {
-			String command = "print Pending Friend Requests (" + 
-					count + "):";
-			for (int i=0; i < pendingFriends.size(); i++) {
+			String command = "print Pending Friend Requests (" + count + "):";
+			for (int i = 0; i < pendingFriends.size(); i++) {
 				command = command + ";print " + pendingFriends.get(i);
 			}
-			command = command + ";print ;print [To approve: approve " +
-					"<username1>, <username2>];print [To remove: " +
-					"remove <username1>, <username2>];askForInput";
+			command = command + ";print ;print [To approve: approve "
+					+ "<username1>, <username2>];print [To remove: "
+					+ "remove <username1>, <username2>];askForInput";
 			out.println(command);
 			friendApproval(in.readLine());
 		} else {
@@ -999,19 +973,19 @@ public class ServerInputProcessor extends InputProcessor {
 			String value = getValue(input);
 			String delim = ",";
 			String[] usersToDelete = value.split(delim);
-			
+
 			// Building queries
 			String deleteQuery = "DELETE FROM main.friendrequests WHERE ";
-			for (int i=0; i < usersToDelete.length; i++) {
+			for (int i = 0; i < usersToDelete.length; i++) {
 				usersToDelete[i] = usersToDelete[i].trim();
-				
-				deleteQuery += "(requester = " + quote(usersToDelete[i]) + 
-						" AND requestee = " + quote(user) + ")";
-				if (i != usersToDelete.length -1) {
+
+				deleteQuery += "(requester = " + quote(usersToDelete[i])
+						+ " AND requestee = " + quote(user) + ")";
+				if (i != usersToDelete.length - 1) {
 					deleteQuery += " OR ";
 				}
 			}
-			
+
 			if (SocialNetworkServer.DEBUG) {
 				System.out.println(deleteQuery);
 			}
@@ -1021,24 +995,23 @@ public class ServerInputProcessor extends InputProcessor {
 				conn = DBManager.getConnection();
 				stmt = conn.createStatement();
 				stmt.executeUpdate(deleteQuery);
-				
+
 				// confirmation to client
 				String command = "print Friend requests from ";
-				for (String user: usersToDelete) {
+				for (String user : usersToDelete) {
 					command += user + ", ";
 				}
 				// substring to take off the last comma
-				command = command.substring(0, command.length()-2) + 
-						" have been deleted.";
+				command = command.substring(0, command.length() - 2)
+						+ " have been deleted.";
 				out.println(command);
 			} catch (SQLException e) {
 				e.printStackTrace();
-			}
-			finally {
+			} finally {
 				DBManager.closeStatement(stmt);
 				DBManager.closeConnection(conn);
 			}
-			
+
 			return;
 		}
 	}
@@ -1047,12 +1020,12 @@ public class ServerInputProcessor extends InputProcessor {
 		// Building queries
 		String deleteQuery = "DELETE FROM main.friendrequests WHERE ";
 		String insertQuery = "INSERT INTO main.friends (username1, username2) VALUES ";
-		
-		for (int i=0; i < approvedUsers.length; i++) {
+
+		for (int i = 0; i < approvedUsers.length; i++) {
 			approvedUsers[i] = approvedUsers[i].trim();
-			
-			deleteQuery += "(requester = " + quote(approvedUsers[i]) + 
-					" AND requestee = " + quote(user) + ")";
+
+			deleteQuery += "(requester = " + quote(approvedUsers[i])
+					+ " AND requestee = " + quote(user) + ")";
 			String user1, user2;
 			if (user.compareTo(approvedUsers[i]) < 0) {
 				user1 = quote(user);
@@ -1061,13 +1034,13 @@ public class ServerInputProcessor extends InputProcessor {
 				user1 = quote(approvedUsers[i]);
 				user2 = quote(user);
 			}
-			insertQuery += "(" + user1+ "," + user2 + "), ";
-			if (i != approvedUsers.length -1) {
+			insertQuery += "(" + user1 + "," + user2 + "), ";
+			if (i != approvedUsers.length - 1) {
 				deleteQuery += " OR ";
 			}
 		}
 		// taking off the last comma, SQL doesn't like it
-		insertQuery = insertQuery.substring(0, insertQuery.length()-2);
+		insertQuery = insertQuery.substring(0, insertQuery.length() - 2);
 		Connection conn = null;
 		Statement stmt = null;
 		try {
@@ -1080,26 +1053,25 @@ public class ServerInputProcessor extends InputProcessor {
 				System.out.println(insertQuery);
 				System.out.println(deleteQuery);
 			}
-			
+
 			// execute insertion and deletion queries
 			stmt.executeUpdate(insertQuery);
 			stmt.executeUpdate(deleteQuery);
 			conn.commit();
-			
+
 			// confirmation to client
 			String command = "print ";
-			for (String user: approvedUsers) {
+			for (String user : approvedUsers) {
 				command += user + ", ";
 			}
 			// substring to take off the last comma
-			command = command.substring(0, command.length()-2) + 
-					" have been added as your friends.";
+			command = command.substring(0, command.length() - 2)
+					+ " have been added as your friends.";
 			out.println(command);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
-		}
-		finally {
+		} finally {
 			DBManager.trueAutoCommit(conn);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
@@ -1115,10 +1087,9 @@ public class ServerInputProcessor extends InputProcessor {
 		try {
 			conn = DBManager.getConnection();
 			stmt = conn.createStatement();
-			String query = "SELECT COUNT(requestee) as count " +
-					"FROM main.friendrequests " +
-					"WHERE requestee = '" +
-					username + "'";
+			String query = "SELECT COUNT(requestee) as count "
+					+ "FROM main.friendrequests " + "WHERE requestee = '"
+					+ username + "'";
 			requests = stmt.executeQuery(query);
 			while (requests.next()) {
 				requestCount = requests.getInt("count");
@@ -1126,15 +1097,14 @@ public class ServerInputProcessor extends InputProcessor {
 		} catch (SQLException e) {
 			requestCount = 0;
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(requests);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
 		if (requestCount != 0) {
-			command = ";print Pending Friend Requests (" +
-					requestCount + ") [To view: friendRequests]";
+			command = ";print Pending Friend Requests (" + requestCount
+					+ ") [To view: friendRequests]";
 		}
 		return command;
 	}
@@ -1144,37 +1114,39 @@ public class ServerInputProcessor extends InputProcessor {
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet usersResult = null;
-		
+
 		// Stores a list of deletable users
 		ArrayList<String> deletableUsers = new ArrayList<String>();
 		try {
 			stmt = conn.createStatement();
-			
-			String query = "SELECT username FROM main.users " +
-					"WHERE username != '" + user + "' AND aid = " +
-					"(SELECT aid FROM main.users WHERE username = '" + user + "')";
-			
+
+			String query = "SELECT username FROM main.users "
+					+ "WHERE username != '" + user + "' AND aid = "
+					+ "(SELECT aid FROM main.users WHERE username = '" + user
+					+ "')";
+
 			if (SocialNetworkServer.DEBUG) {
-				System.out.println("Delete User deletable user query: " + query);
+				System.out
+						.println("Delete User deletable user query: " + query);
 			}
-			
+
 			usersResult = stmt.executeQuery(query);
 			while (usersResult.next()) {
 				deletableUsers.add(usersResult.getString("username"));
 			}
-			
+
 			boolean userDeletable = false;
 			String toDelete = "";
-			
+
 			while (!userDeletable) {
 				String command = "print Users in your A Cappella group that you can delete:;";
-				for (String userInfo: deletableUsers) {
+				for (String userInfo : deletableUsers) {
 					command += "print " + userInfo + ";";
 				}
-				command += "print ;print Type the name of the user you wish to delete:;" +
-						"askForInput";
+				command += "print ;print Type the name of the user you wish to delete:;"
+						+ "askForInput";
 				out.println(command);
-				
+
 				toDelete = in.readLine();
 				if (toDelete.equals("cancel")) {
 					out.println();
@@ -1187,46 +1159,44 @@ public class ServerInputProcessor extends InputProcessor {
 					out.print("print Cannot delete " + toDelete + ";");
 				}
 			}
-			
+
 			// toDelete is deletable
-			deleteUser(toDelete);	
+			deleteUser(toDelete);
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(usersResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
 
 	}
 
 	private void deleteUser(String username) throws IOException {
 		// username is a deletable user
-		out.println("print User deletions cannot be undone.;" + 
-				"print Are you sure you want to delete this user? (y/n);askForInput");
+		out.println("print User deletions cannot be undone.;"
+				+ "print Are you sure you want to delete this user? (y/n);askForInput");
 		String input = in.readLine();
 		Connection conn = null;
 		Statement stmt = null;
 		if (input.equals("y")) {
 			try {
 				conn = DBManager.getConnection();
-				String query = "DELETE FROM main.users WHERE username = '"+username+"'";
+				String query = "DELETE FROM main.users WHERE username = '"
+						+ username + "'";
 				stmt = conn.createStatement();
 				stmt.executeUpdate(query);
-				
+
 				// print out confirmation
-				out.println("print " + username + " has been deleted from the system.");
+				out.println("print " + username
+						+ " has been deleted from the system.");
 			} catch (SQLException e) {
 				e.printStackTrace();
-			}
-			finally {
+			} finally {
 				DBManager.closeStatement(stmt);
 				DBManager.closeConnection(conn);
 			}
-			
-			
+
 		} else if (input.equals("n")) {
 			out.println("print Canceled.");
 		} else if (input.equals("cancel")) {
@@ -1242,8 +1212,8 @@ public class ServerInputProcessor extends InputProcessor {
 		// get the list of friends for the current user
 		ArrayList<String> existingFriends = new ArrayList<String>();
 		try {
-			String query = "SELECT * FROM main.friends WHERE username1 = '" + user + "' OR " +
-					"username2 = '" + user + "'";
+			String query = "SELECT * FROM main.friends WHERE username1 = '"
+					+ user + "' OR " + "username2 = '" + user + "'";
 			stmt = conn.createStatement();
 			friendsResult = stmt.executeQuery(query);
 			while (friendsResult.next()) {
@@ -1253,27 +1223,26 @@ public class ServerInputProcessor extends InputProcessor {
 					existingFriends.add(friendsResult.getString("username1"));
 				}
 			}
-			
+
 			// printing out friend list
 			String command = "print Your friends:;";
 			if (existingFriends.size() == 0) {
-				command = "print You have no friends right now.;" +
-						"print To add a friend: type addFriend";
+				command = "print You have no friends right now.;"
+						+ "print To add a friend: type addFriend";
 			} else {
-				for (String friend: existingFriends) {
+				for (String friend : existingFriends) {
 					command += "print " + friend + ";";
 				}
 			}
 			out.println(command);
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(friendsResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 	}
 
 	private void processChangeUserRole() throws IOException {
@@ -1283,44 +1252,47 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet usersResult = null;
 		try {
 			stmt = conn.createStatement();
-			
+
 			// Stores a list of changeable users
 			// Users[0]: username, Users[1]: role
 			ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
-			
-			String query = "SELECT username, role FROM main.users " +
-					"WHERE username != '" + user + "' AND aid = " +
-					"(SELECT aid FROM main.users WHERE username = '" + user + "')";
-			
+
+			String query = "SELECT username, role FROM main.users "
+					+ "WHERE username != '" + user + "' AND aid = "
+					+ "(SELECT aid FROM main.users WHERE username = '" + user
+					+ "')";
+
 			if (SocialNetworkServer.DEBUG) {
 				System.out.println("role: changeable role query: " + query);
 			}
-			
+
 			usersResult = stmt.executeQuery(query);
 			while (usersResult.next()) {
-				String[] userInfo = {usersResult.getString("username"), usersResult.getString("role").toUpperCase()};
+				String[] userInfo = { usersResult.getString("username"),
+						usersResult.getString("role").toUpperCase() };
 				changeableUsers.add(userInfo);
 			}
-			
+
 			boolean userChangeable = false;
 			String toChange = "";
 			String role = "";
-			
+
 			while (!userChangeable) {
 				String command = "print Users in your A Cappella group that you can change roles for:;";
-				for (String[] userInfo: changeableUsers) {
-					command += "print "+userInfo[0]+" ("+userInfo[1]+");";
+				for (String[] userInfo : changeableUsers) {
+					command += "print " + userInfo[0] + " (" + userInfo[1]
+							+ ");";
 				}
-				command += "print ;print Type the name of the user you wish to change role for:;" +
-						"askForInput";
+				command += "print ;print Type the name of the user you wish to change role for:;"
+						+ "askForInput";
 				out.println(command);
-				
+
 				toChange = in.readLine();
 				if (toChange.equals("cancel")) {
 					out.println();
 					return;
 				}
-				for (String[] userInfo: changeableUsers) {
+				for (String[] userInfo : changeableUsers) {
 					if (toChange.equals(userInfo[0])) {
 						if (userInfo[1].equals("ADMIN")) {
 							role = "member";
@@ -1335,29 +1307,29 @@ public class ServerInputProcessor extends InputProcessor {
 					out.print("print Cannot change role for " + toChange + ";");
 				}
 			}
-			
+
 			// toChange is changeable
 			changeRole(toChange, role);
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(usersResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 	}
 
 	private void changeRole(String toChange, String role) {
 		// change user's role in the DB to 'role'
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
-		String query = "UPDATE main.users SET role = '"+role+"' WHERE username = '"+toChange+"'";
+		String query = "UPDATE main.users SET role = '" + role
+				+ "' WHERE username = '" + toChange + "'";
 		try {
 			stmt = conn.createStatement();
 			stmt.executeUpdate(query);
-			
+
 			// print out confirmation on client.
 			String from;
 			if (role.equals("admin")) {
@@ -1365,15 +1337,16 @@ public class ServerInputProcessor extends InputProcessor {
 			} else {
 				from = "ADMIN";
 			}
-			out.println("print Role for "+toChange+" has been changed from "+from+" to "+role.toUpperCase());
+			out.println("print Role for " + toChange
+					+ " has been changed from " + from + " to "
+					+ role.toUpperCase());
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 	}
 
 	private void processTransferSA() throws IOException {
@@ -1383,37 +1356,37 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet usersResult = null;
 		try {
 			stmt = conn.createStatement();
-			
+
 			// Stores a list of changeable users
 			// Users[0]: username
 			ArrayList<String> groupAdmins = new ArrayList<String>();
-			
-			String query = "SELECT username FROM main.users " +
-					"WHERE username != '" + user + "' AND aid = " +
-					"(SELECT aid FROM main.users WHERE username = '" + user + "') AND " +
-					"role = 'admin'";
-			
+
+			String query = "SELECT username FROM main.users "
+					+ "WHERE username != '" + user + "' AND aid = "
+					+ "(SELECT aid FROM main.users WHERE username = '" + user
+					+ "') AND " + "role = 'admin'";
+
 			if (SocialNetworkServer.DEBUG) {
 				System.out.println("transfer: adminUser query: " + query);
 			}
-			
+
 			usersResult = stmt.executeQuery(query);
 			while (usersResult.next()) {
 				groupAdmins.add(usersResult.getString("username"));
 			}
-			
+
 			boolean transferableUser = false;
 			String toChange = "";
-			
+
 			while (!transferableUser) {
 				String command = "print Users in your A Cappella group that you can transfer SA tole to:;";
-				for (String userInfo: groupAdmins) {
-					command += "print "+userInfo+" (ADMIN);";
+				for (String userInfo : groupAdmins) {
+					command += "print " + userInfo + " (ADMIN);";
 				}
-				command += "print ;print Type the name of the user you wish to transfer SA role to:;" +
-						"askForInput";
+				command += "print ;print Type the name of the user you wish to transfer SA role to:;"
+						+ "askForInput";
 				out.println(command);
-				
+
 				toChange = in.readLine();
 				if (toChange.equals("cancel")) {
 					out.println();
@@ -1423,47 +1396,48 @@ public class ServerInputProcessor extends InputProcessor {
 					transferableUser = true;
 				}
 				if (!transferableUser) {
-					out.print("print Cannot transfer SA role to " + toChange + ";");
+					out.print("print Cannot transfer SA role to " + toChange
+							+ ";");
 				}
 			}
-			
+
 			// toChange is an admin that can have SA transferred to
 			transferSA(toChange);
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			DBManager.closeResultSet(usersResult);
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 	}
 
 	private void transferSA(String toChange) {
 		// transfer SA-ship
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
-		String promoteQuery = "UPDATE main.users SET role = 'sa' WHERE username = '"+toChange+"'";
-		String demoteQuery = "UPDATE main.users SET role = 'admin' WHERE username = '"+user+"';";
+		String promoteQuery = "UPDATE main.users SET role = 'sa' WHERE username = '"
+				+ toChange + "'";
+		String demoteQuery = "UPDATE main.users SET role = 'admin' WHERE username = '"
+				+ user + "';";
 		try {
 			conn.setAutoCommit(false);
 			stmt = conn.createStatement();
 			stmt.executeUpdate(promoteQuery);
 			stmt.executeUpdate(demoteQuery);
 			conn.commit();
-			
+
 			// Print confirmation to client
-			out.println("print SA role has been transferred to "+toChange);
+			out.println("print SA role has been transferred to " + toChange);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
-		}
-		finally {
+		} finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
-		
+
 	}
 
 	private void processParticipants() {
@@ -1473,13 +1447,14 @@ public class ServerInputProcessor extends InputProcessor {
 			String board = currentPath[0];
 			String region = currentPath[1];
 			String command = "print Displaying participants:;";
-			
+
 			// print a list of participants of the region
 			Connection conn = DBManager.getConnection();
 			Statement stmt = null;
 			try {
 				stmt = conn.createStatement();
-				String query = "SELECT username, privilege FROM "+board+".regionprivileges WHERE rname = '"+region+"'";
+				String query = "SELECT username, privilege FROM " + board
+						+ ".regionprivileges WHERE rname = '" + region + "'";
 				ResultSet partResult = stmt.executeQuery(query);
 				while (partResult.next()) {
 					command += "print " + partResult.getString("username");
@@ -1492,8 +1467,9 @@ public class ServerInputProcessor extends InputProcessor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			
-			// print Commands: addParticipants, removeParticipants, editParticipants, addAdmin
+
+			// print Commands: addParticipants, removeParticipants,
+			// editParticipants, addAdmin
 			command += "print ;print Other Commands: addParticipants, removeParticipants";
 			// TODO: add edit and addAdmin to this list of commands
 			out.println(command);
@@ -1508,14 +1484,15 @@ public class ServerInputProcessor extends InputProcessor {
 		if (admins.contains(user)) {
 			// get a list of the user's friends
 			ArrayList<String> usersFriends = getCurrentUsersFriends();
-			
+
 			// get a list of participants
 			String board = currentPath[0];
 			String region = currentPath[1];
 			ArrayList<String> participants = new ArrayList<String>();
 			Connection conn = DBManager.getConnection();
 			Statement stmt = null;
-			String query = "SELECT username, privilege FROM "+board+".regionprivileges WHERE rname = '"+region+"'";
+			String query = "SELECT username, privilege FROM " + board
+					+ ".regionprivileges WHERE rname = '" + region + "'";
 			try {
 				stmt = conn.createStatement();
 				ResultSet partResult = stmt.executeQuery(query);
@@ -1527,21 +1504,21 @@ public class ServerInputProcessor extends InputProcessor {
 				e.printStackTrace();
 			}
 			ArrayList<String> addableUsers = new ArrayList<String>();
-			for (String friend: usersFriends) {
+			for (String friend : usersFriends) {
 				if (!participants.contains(friend)) {
 					addableUsers.add(friend);
 				}
 			}
 			boolean userAddable = false;
 			ArrayList<String[]> addInfo = new ArrayList<String[]>();
-			
+
 			while (!userAddable) {
 				String command = "print List of people you could add:;";
-				for (String user: addableUsers) {
+				for (String user : addableUsers) {
 					command += "print " + user + ";";
 				}
-				command += "print ;print [To add user: (<user1>, <privilege>), " +
-					"(<user2>, <privilege>) where <privilege> = view or viewpost];askForInput";
+				command += "print ;print [To add user: (<user1>, <privilege>), "
+						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];askForInput";
 				out.println(command);
 				String input = in.readLine();
 				if (input.equals("cancel")) {
@@ -1551,15 +1528,17 @@ public class ServerInputProcessor extends InputProcessor {
 				addInfo = parseAddUserInfo(input);
 				String notOkUsers = "";
 				userAddable = true;
-				for (String[] userInfo: addInfo) {
+				for (String[] userInfo : addInfo) {
 					if (!addableUsers.contains(userInfo[0])) {
 						userAddable = false;
 						notOkUsers += userInfo[0] + ", ";
 					}
 				}
 				if (!userAddable) {
-					notOkUsers = notOkUsers.substring(0, notOkUsers.length()-2);
-					out.print("print Cannot add "+notOkUsers+" as participants of this region.;");
+					notOkUsers = notOkUsers.substring(0,
+							notOkUsers.length() - 2);
+					out.print("print Cannot add " + notOkUsers
+							+ " as participants of this region.;");
 				}
 			}
 
@@ -1573,12 +1552,13 @@ public class ServerInputProcessor extends InputProcessor {
 	private ArrayList<String[]> parseAddUserInfo(String input) {
 		ArrayList<String[]> addInfo = new ArrayList<String[]>();
 		String[] infoPairs = input.split(" *, *");
-		for (String pair: infoPairs) {
+		for (String pair : infoPairs) {
 			pair = pair.trim();
-			String[] userInfo = pair.substring(1, pair.length()-1).trim().split(" *, *");
+			String[] userInfo = pair.substring(1, pair.length() - 1).trim()
+					.split(" *, *");
 			addInfo.add(userInfo);
 		}
-		
+
 		return addInfo;
 	}
 
@@ -1587,15 +1567,16 @@ public class ServerInputProcessor extends InputProcessor {
 		String region = currentPath[1];
 		Connection conn = DBManager.getConnection();
 		String query = "INSERT INTO board.regionprivileges (rname, username, privilege, grantedBy) VALUES ";
-		for (String[] userInfo: addInfo) {
-			query += "('"+region+"', '"+userInfo[0]+"', '"+userInfo[1]+"', '"+user+"'), ";
+		for (String[] userInfo : addInfo) {
+			query += "('" + region + "', '" + userInfo[0] + "', '"
+					+ userInfo[1] + "', '" + user + "'), ";
 		}
-		query = query.substring(0, query.length()-2);
-		
+		query = query.substring(0, query.length() - 2);
+
 		if (SocialNetworkServer.DEBUG) {
 			System.out.println("addParticipants query: " + query);
 		}
-		
+
 		try {
 			Statement stmt = conn.createStatement();
 			stmt.executeUpdate(query);
@@ -1609,7 +1590,7 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void processRemoveParticipants() throws IOException {
 		// TODO: What's the policy for deleting admins from a board?
-		
+
 		// check if user is admin
 		ArrayList<String> admins = getBoardAdmins();
 		if (admins.contains(user)) {
@@ -1619,7 +1600,8 @@ public class ServerInputProcessor extends InputProcessor {
 			ArrayList<String> participants = new ArrayList<String>();
 			Connection conn = DBManager.getConnection();
 			Statement stmt = null;
-			String query = "SELECT username, privilege FROM "+board+".regionprivileges WHERE rname = '"+region+"'";
+			String query = "SELECT username, privilege FROM " + board
+					+ ".regionprivileges WHERE rname = '" + region + "'";
 			try {
 				stmt = conn.createStatement();
 				ResultSet partResult = stmt.executeQuery(query);
@@ -1630,13 +1612,13 @@ public class ServerInputProcessor extends InputProcessor {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			
+
 			boolean userRemovable = false;
 			String[] toRemove = null;
-			
+
 			while (!userRemovable) {
 				String command = "print List of people you could remove:;";
-				for (String user: participants) {
+				for (String user : participants) {
 					command += "print " + user + ";";
 				}
 				command += "print ;print [To remove participants: <user1>, <user2>];askForInput";
@@ -1647,18 +1629,20 @@ public class ServerInputProcessor extends InputProcessor {
 					return;
 				}
 				toRemove = input.trim().split(" *, *");
-				
+
 				String notOkUsers = "";
 				userRemovable = true;
-				for (String userInfo: toRemove) {
+				for (String userInfo : toRemove) {
 					if (!participants.contains(userInfo)) {
 						userRemovable = false;
 						notOkUsers += userInfo + ", ";
 					}
 				}
 				if (!userRemovable) {
-					notOkUsers = notOkUsers.substring(0, notOkUsers.length()-2);
-					out.print("print Cannot remove "+notOkUsers+" from this region.;");
+					notOkUsers = notOkUsers.substring(0,
+							notOkUsers.length() - 2);
+					out.print("print Cannot remove " + notOkUsers
+							+ " from this region.;");
 				}
 			}
 
@@ -1674,19 +1658,20 @@ public class ServerInputProcessor extends InputProcessor {
 		String region = currentPath[1];
 		String board = currentPath[0];
 		Connection conn = DBManager.getConnection();
-		String query = "DELETE FROM "+board+".regionprivileges WHERE rname = '"+region+"' AND (";
-		for (int i=0; i < toRemove.length; i++) {
+		String query = "DELETE FROM " + board
+				+ ".regionprivileges WHERE rname = '" + region + "' AND (";
+		for (int i = 0; i < toRemove.length; i++) {
 			query += "username = '" + toRemove[i] + "'";
-			if (i != toRemove.length-1) {
+			if (i != toRemove.length - 1) {
 				query += " OR ";
 			}
 		}
 		query += ")";
-		
+
 		if (SocialNetworkServer.DEBUG) {
 			System.out.println("remove participant query: " + query);
 		}
-		
+
 		try {
 			Statement stmt = conn.createStatement();
 			stmt.executeUpdate(query);
@@ -1706,50 +1691,51 @@ public class ServerInputProcessor extends InputProcessor {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
+
 		String board = currentPath[0];
 		String region = currentPath[1];
-		
+
 		// Stores a list of changeable users
 		// Users[0]: username, Users[1]: permission
 		ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
 		try {
-			String query = "SELECT username, privilege FROM "+board+".regionprivileges " +
-					"WHERE rname = '"+region+"'";
-			
+			String query = "SELECT username, privilege FROM " + board
+					+ ".regionprivileges " + "WHERE rname = '" + region + "'";
+
 			if (SocialNetworkServer.DEBUG) {
 				System.out.println("Edit participant query: " + query);
 			}
-			
+
 			ResultSet usersResult = stmt.executeQuery(query);
 			while (usersResult.next()) {
-				String[] userInfo = {usersResult.getString("username"), usersResult.getString("privilege")};
+				String[] userInfo = { usersResult.getString("username"),
+						usersResult.getString("privilege") };
 				changeableUsers.add(userInfo);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
+
 		boolean userChangeable = false;
 		String input = "";
 		ArrayList<String[]> changingUsersInfo = new ArrayList<String[]>();
 		String[] usersToChange = null;
-		
+
 		while (!userChangeable) {
 			String command = "print List of people you can edit permission for:;";
-			for (String[] userInfo: changeableUsers) {
+			for (String[] userInfo : changeableUsers) {
 				String permission = null;
 				if (userInfo[1].equals("view")) {
 					permission = "View Only";
 				} else {
 					permission = "View and Post";
 				}
-				command += "print "+userInfo[0]+" ("+permission+");";
+				command += "print " + userInfo[0] + " (" + permission + ");";
 			}
-			command += "print ;print [To toggle permission status: <user1>, <user2>];" +
-					"askForInput";
+			command += "print ;print [To toggle permission status: <user1>, <user2>];"
+					+ "askForInput";
 			out.println(command);
-			
+
 			input = in.readLine();
 			if (input.equals("cancel")) {
 				out.println();
@@ -1758,9 +1744,9 @@ public class ServerInputProcessor extends InputProcessor {
 			String toChange = "";
 			usersToChange = input.trim().split(" *, *");
 			userChangeable = true;
-			for (String user: usersToChange) {
+			for (String user : usersToChange) {
 				boolean userChangeable2 = false;
-				for (String[] userInfo: changeableUsers) {
+				for (String[] userInfo : changeableUsers) {
 					if (user.equals(userInfo[0])) {
 						changingUsersInfo.add(userInfo);
 						userChangeable2 = true;
@@ -1773,11 +1759,12 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 			if (!userChangeable) {
-				toChange = toChange.substring(0, toChange.length()-2);
-				out.print("print Cannot change permission for " + toChange + ";");
+				toChange = toChange.substring(0, toChange.length() - 2);
+				out.print("print Cannot change permission for " + toChange
+						+ ";");
 			}
 		}
-		
+
 		// toChange is changeable
 		changePermission(usersToChange);
 	}
@@ -1788,21 +1775,22 @@ public class ServerInputProcessor extends InputProcessor {
 		String board = currentPath[0];
 		String region = currentPath[1];
 		Connection conn = DBManager.getConnection();
-		
-		String query = "UPDATE "+board+".regionprivileges WHERE rname = '"+region+"' AND (";
+
+		String query = "UPDATE " + board + ".regionprivileges WHERE rname = '"
+				+ region + "' AND (";
 		// (username = 'userInfo' OR username = 'userInfo')
-		for (int i=0; i < usersToChange.length; i++) {
+		for (int i = 0; i < usersToChange.length; i++) {
 			query += "username = '" + usersToChange[i] + "'";
-			if (i != usersToChange.length-1) {
+			if (i != usersToChange.length - 1) {
 				query += " OR ";
 			}
 		}
 		query += ")";
-		
+
 		if (SocialNetworkServer.DEBUG) {
 			System.out.println("remove participant query: " + query);
 		}
-		
+
 		try {
 			Statement stmt = conn.createStatement();
 			stmt.executeUpdate(query);
@@ -1818,178 +1806,176 @@ public class ServerInputProcessor extends InputProcessor {
 	 * Creates a board. MUST be in the home directory.
 	 */
 	private void processCreateBoard(String input) throws IOException {
-		/* Ensure the person is in the right place to create a board (on the homepage)*/
+		/*
+		 * Ensure the person is in the right place to create a board (on the
+		 * homepage)
+		 */
 		if (currentPath[0] != null) {
 			out.println("print Must be at Home to create a board");
-		}
-		else {
+		} else {
 			String boardname = input.substring(("createBoard ").length());
 			out.println(SocialNetworkBoards.createBoard(user, boardname));
 		}
 	}
-	
+
 	/**
 	 * Depending on where the user is, fetches the correct view of information.
-	 * The user prints their current path and the information associated with it.
+	 * The user prints their current path and the information associated with
+	 * it.
 	 */
 	private void processRefresh() {
 		String boardName = currentPath[0];
 		if (boardName == null) {
-			out.println(SocialNetworkNavigation.printPath(currentPath) + 
-					"print ;" + SocialNetworkBoards.viewBoards(user));
-		}
-		else if (boardName.equals("freeforall")) {
-			/*No regions*/
+			out.println(SocialNetworkNavigation.printPath(currentPath)
+					+ "print ;" + SocialNetworkBoards.viewBoards(user));
+		} else if (boardName.equals("freeforall")) {
+			/* No regions */
 			String postNum = currentPath[1];
-			if (postNum == null) { //Merely in the board
-				out.println(SocialNetworkNavigation.printPath(currentPath) + 
-						"print ;" + SocialNetworkPosts.viewPostList(user, boardName, null));
-			}
-			else { //Inside the post
-				out.println(SocialNetworkNavigation.printPath(currentPath) + 
-						"print ;" + SocialNetworkPosts.viewPost(user, boardName, null, 
+			if (postNum == null) { // Merely in the board
+				out.println(SocialNetworkNavigation.printPath(currentPath)
+						+ "print ;"
+						+ SocialNetworkPosts
+								.viewPostList(user, boardName, null));
+			} else { // Inside the post
+				out.println(SocialNetworkNavigation.printPath(currentPath)
+						+ "print ;"
+						+ SocialNetworkPosts.viewPost(user, boardName, null,
 								Integer.parseInt(postNum)));
 			}
-		}
-		else { //a regular board
+		} else { // a regular board
 			String regionName = currentPath[1];
-			if (regionName == null) { //Merely in the board
-				out.println(SocialNetworkNavigation.printPath(currentPath) + 
-						"print ;" + SocialNetworkRegions.viewRegions(user, boardName));
-			}
-			else {
+			if (regionName == null) { // Merely in the board
+				out.println(SocialNetworkNavigation.printPath(currentPath)
+						+ "print ;"
+						+ SocialNetworkRegions.viewRegions(user, boardName));
+			} else {
 				String postNum = currentPath[2];
-				if (postNum == null) { //Merely in the region
-					out.println(SocialNetworkNavigation.printPath(currentPath) + 
-							"print ;" + SocialNetworkPosts.viewPostList(user, boardName, regionName));
-				}
-				else { //Inside the post
-					out.println(SocialNetworkNavigation.printPath(currentPath) + 
-							"print ;" + SocialNetworkPosts.viewPost(user, boardName, regionName,
-									Integer.parseInt(postNum)));
+				if (postNum == null) { // Merely in the region
+					out.println(SocialNetworkNavigation.printPath(currentPath)
+							+ "print ;"
+							+ SocialNetworkPosts.viewPostList(user, boardName,
+									regionName));
+				} else { // Inside the post
+					out.println(SocialNetworkNavigation.printPath(currentPath)
+							+ "print ;"
+							+ SocialNetworkPosts.viewPost(user, boardName,
+									regionName, Integer.parseInt(postNum)));
 				}
 			}
 		}
 	}
-	
+
 	/**
 	 * Depending on where the user is, processes where the user should go.
 	 */
 	private void processGoto(String inputLine) {
 		String destination = inputLine.substring(("goto ").length());
-		int validDest = SocialNetworkNavigation.validDestination(currentPath, destination);
+		int validDest = SocialNetworkNavigation.validDestination(currentPath,
+				destination);
 		switch (validDest) {
-		case -1: /*Go backwards*/
+		case -1: /* Go backwards */
 			SocialNetworkNavigation.goBack(currentPath);
 			processRefresh();
 			break;
-		case 2: /*Go immediately home*/
+		case 2: /* Go immediately home */
 			for (int i = 0; i < currentPath.length; i++) {
 				currentPath[i] = null;
 			}
 			processRefresh();
 			break;
-		case 1: /*Go forward in the hierarchy to destination*/
-			/*Have different cases depending on the current path*/
+		case 1: /* Go forward in the hierarchy to destination */
+			/* Have different cases depending on the current path */
 			if (currentPath[0] == null) {
-				out.println(SocialNetworkNavigation.goToBoard(user, currentPath, destination));
-			}
-			else if (currentPath[0].equals("freeforall")) {
+				out.println(SocialNetworkNavigation.goToBoard(user,
+						currentPath, destination));
+			} else if (currentPath[0].equals("freeforall")) {
 				Integer postNum = null;
 				try {
 					postNum = Integer.parseInt(destination);
-				}
-				catch (NumberFormatException e) {
-					out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to " +
-										"go backwards");
+				} catch (NumberFormatException e) {
+					out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+							+ "go backwards");
 				}
 				if (postNum != null) {
-					out.println(SocialNetworkNavigation.goToPost(user, currentPath, postNum.intValue()));
+					out.println(SocialNetworkNavigation.goToPost(user,
+							currentPath, postNum.intValue()));
 				}
-			}
-			else {
+			} else {
 				if (currentPath[1] != null) {
 					Integer postNum = null;
 					try {
 						postNum = Integer.parseInt(destination);
-					}
-					catch (NumberFormatException e) {
-						out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to " +
-										"go backwards");
+					} catch (NumberFormatException e) {
+						out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+								+ "go backwards");
 					}
 					if (postNum != null) {
-						out.println(SocialNetworkNavigation.goToPost(user, currentPath, postNum));
+						out.println(SocialNetworkNavigation.goToPost(user,
+								currentPath, postNum));
 					}
-				}
-				else {
-					out.println(SocialNetworkNavigation.goToRegion(user, currentPath, destination));
+				} else {
+					out.println(SocialNetworkNavigation.goToRegion(user,
+							currentPath, destination));
 				}
 			}
 			break;
 		default:
-			out.println("print Invalid destination given your current path: " + 
-					SocialNetworkNavigation.printPath(currentPath) + ".; " +
-							"print You can go backwards by typing \"..\" ");
-			
+			out.println("print Invalid destination given your current path: "
+					+ SocialNetworkNavigation.printPath(currentPath) + ".; "
+					+ "print You can go backwards by typing \"..\" ");
+
 		}
 	}
-	
+
 	/**
-	 * Creates a region for the user.
-	 * The user must be in a board (except freeforall) to execute the command.
+	 * Creates a region for the user. The user must be in a board (except
+	 * freeforall) to execute the command.
 	 */
 	private void processCreateRegion(String inputLine) {
 		String boardName = currentPath[0];
 		String regionName = inputLine.substring(("createRegion ").length());
 		if (boardName == null) {
 			out.println("print Must be in the desired board in order to create the region.");
-		}
-		else if (boardName.equals("freeforall")) {
+		} else if (boardName.equals("freeforall")) {
 			out.println("print Cannot create regions in the freeforall board.");
-		}
-		else if (currentPath[1] != null) {
-			out.println("print Must be exactly in the desired board (i.e., not inside a region in the board) " +
-					"in order to create the region");
-		}
-		else {
-			out.println(SocialNetworkRegions.createRegion(user, currentPath[0], regionName));
+		} else if (currentPath[1] != null) {
+			out.println("print Must be exactly in the desired board (i.e., not inside a region in the board) "
+					+ "in order to create the region");
+		} else {
+			out.println(SocialNetworkRegions.createRegion(user, currentPath[0],
+					regionName));
 		}
 	}
 
 	private void processPost() throws IOException {
-		/*Verify the user is in the right place to create a post*/
+		/* Verify the user is in the right place to create a post */
 		String boardName = currentPath[0];
 		boolean canPost = false;
 		if (boardName == null) {
 			out.println("print Must be within a board's region or in the freeforall board to create a post");
-		}
-		else if (boardName.equals("freeforall")) {
+		} else if (boardName.equals("freeforall")) {
 			String postNum = currentPath[1];
 			if (postNum == null) {
 				canPost = true;
-			}
-			else {
+			} else {
 				out.println("print Must go back to the board page to create a post (not inside a post)");
 			}
-		}
-		else { //in a regular board
+		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
 				out.println("print Must be within a board's region or in the freeforall board to create a post");
-			}
-			else {
+			} else {
 				String postNum = currentPath[2];
-				if (postNum == null) { //in a board, region, not in a post
+				if (postNum == null) { // in a board, region, not in a post
 					canPost = true;
-				}
-				else {
+				} else {
 					out.println("print Must go back to the region page to create a post (not inside a post)");
 				}
 			}
 		}
 		if (canPost) {
-			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print " +
-					"Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
+			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
 			String content = in.readLine();
 			while (content.equals("")) {
 				out.println("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
@@ -2002,63 +1988,56 @@ public class ServerInputProcessor extends InputProcessor {
 				additionalContent = in.readLine();
 				if (additionalContent.equals("")) {
 					break;
-				}
-				else if (additionalContent.trim().equals("cancel")) {
+				} else if (additionalContent.trim().equals("cancel")) {
 					cancelled = true;
-				}
-				else {
+				} else {
 					content += ";print \t" + additionalContent;
 				}
 			}
 			if (cancelled) {
 				out.println("print Post Creation cancelled");
-			}
-			else {
-				out.println(SocialNetworkPosts.createPost(user, content, currentPath[0], currentPath[1]));
+			} else {
+				out.println(SocialNetworkPosts.createPost(user, content,
+						currentPath[0], currentPath[1]));
 			}
 		}
 	}
-	
+
 	/**
-	 * Similar to processPost basically... except that you must be in
-	 * a post
-	 * @throws IOException 
+	 * Similar to processPost basically... except that you must be in a post
+	 * 
+	 * @throws IOException
 	 */
 	private void processReply() throws IOException {
-		/*Verify the user is in the right place to create a post*/
+		/* Verify the user is in the right place to create a post */
 		String boardName = currentPath[0];
 		String postNum = "";
 		boolean canReply = false;
 		if (boardName == null) {
 			out.println("print Must be within a post to create a reply");
-		}
-		else if (boardName.equals("freeforall")) {
+		} else if (boardName.equals("freeforall")) {
 			postNum = currentPath[1];
 			if (postNum == null) {
 				out.println("print Must be within a post to create a reply");
-			}
-			else {
+			} else {
 				canReply = true;
 			}
-		}
-		else { //in a regular board
+		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
 				out.println("print Must be within a post to create a reply");
-			}
-			else {
+			} else {
 				postNum = currentPath[2];
-				if (postNum == null) { //in a board, region, not in a post
+				if (postNum == null) { // in a board, region, not in a post
 					out.println("print Must be within a post to create a reply");
-				}
-				else {
+				} else {
 					canReply = true;
 				}
 			}
 		}
 		if (canReply) {
-			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print " +
-			"Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
+			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
 			String content = in.readLine();
 			while (content.equals("")) {
 				out.println("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
@@ -2071,21 +2050,19 @@ public class ServerInputProcessor extends InputProcessor {
 				additionalContent = in.readLine();
 				if (additionalContent.equals("")) {
 					break;
-				}
-				else if (additionalContent.trim().equals("cancel")) {
+				} else if (additionalContent.trim().equals("cancel")) {
 					cancelled = true;
-				}
-				else {
+				} else {
 					content += ";print \t" + additionalContent;
 				}
 			}
 			if (cancelled) {
 				out.println("print Reply Creation cancelled");
-				
-			}
-			else {
-				out.println(SocialNetworkPosts.createReply(user, content, 
-						currentPath[0], currentPath[1], Integer.parseInt(postNum)));
+
+			} else {
+				out.println(SocialNetworkPosts.createReply(user, content,
+						currentPath[0], currentPath[1],
+						Integer.parseInt(postNum)));
 			}
 		}
 	}

@@ -12,6 +12,7 @@ import shared.InputProcessor;
 public class ClientProcessor extends InputProcessor {
 	private boolean loggedIn = false;
 	private boolean exit = false;
+	private String salt;
 	// private String user = null;
 
 	private BufferedReader keyboard;
@@ -59,6 +60,10 @@ public class ClientProcessor extends InputProcessor {
 			}
 			if (commands[i].equals("getPassword")) {
 				getPassword();
+			}
+			if (commands[i].matches("^setSalt.+")) {
+				String value = getValue(commands[i]);
+				setSalt(value);
 			}
 
 			/*
@@ -120,6 +125,10 @@ public class ClientProcessor extends InputProcessor {
 			System.out
 					.println("Help file may be corrupted. Contact system admin.");
 		}
+	}
+	
+	private void setSalt(String salt) {
+		this.salt = salt;
 	}
 
 	public boolean isLoggedIn() {
