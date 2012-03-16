@@ -29,9 +29,9 @@ public class SharedKeyCrypto {
 	private static final String KEY_STRING = "92LlYoVU1hU="; // TODO: need to take this out
 	private Key key;
 	
-	public SharedKeyCrypto() {
+	public SharedKeyCrypto(String key_string) {
 		try {
-			this.key = unwrapKey(KEY_STRING);
+			this.key = unwrapKey(key_string);
 		} catch (InvalidKeyException e) {
 			if (DEBUG) e.printStackTrace();
 		} catch (InvalidKeySpecException e) {
