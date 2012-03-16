@@ -125,8 +125,8 @@ public class PublicKeyCryptoClient {
 			catch (Exception e) {/*valid enc*/}
 		}
 		//Zero out arrays that contained RAW keys
-		CryptoUtil.zeroArray(sendkey);
-		CryptoUtil.zeroArray(firstmsg);
+		Arrays.fill(sendkey, (byte) 0x00);
+		Arrays.fill(firstmsg, (byte) 0x00);
 		
 		/*Receive the second message*/
 		
