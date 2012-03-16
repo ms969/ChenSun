@@ -21,7 +21,6 @@ import javax.crypto.*;
 public class ServerInputProcessor extends InputProcessor {
 	private OutputStream os;
 	private InputStream is;
-	private BufferedReader br;
 	private Cipher c;
 	private SecretKey sk;
 	private SharedKeyCrypto skc;
@@ -209,10 +208,9 @@ public class ServerInputProcessor extends InputProcessor {
 		SharedKeyCryptoComm.send("print Logged out.;setLoggedIn false", os, c, sk);
 	}
 
-	public ServerInputProcessor(OutputStream os, BufferedReader br, InputStream is, 
+	public ServerInputProcessor(OutputStream os, InputStream is, 
 			Cipher c, SecretKey sk) {
 		this.os = os;
-		this.br = br;
 		this.is = is;
 		this.c = c;
 		this.sk = sk;
@@ -335,7 +333,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			command += "print Input password:;getPassword";
 			SharedKeyCryptoComm.send(command, os, c, sk);
-			String enteredPwdHash = SharedKeyCryptoComm.receive(br, is, c, sk);
+			String enteredPwdHash = SharedKeyCryptoComm.receive(is, c, sk);
 			
 			if (userExist) {
 				pwMatch = Hash.comparePwd(pwhash, enteredPwdHash);
@@ -386,7 +384,7 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet existingUser = null;
 
 		while (userExist) {
-			newUser = SharedKeyCryptoComm.receive(br, is, c, sk);
+			newUser = SharedKeyCryptoComm.receive(is, c, sk);
 			if (newUser.equals("cancel")) {
 				SharedKeyCryptoComm.send("", os, c, sk);
 				return;
@@ -437,7 +435,7 @@ public class ServerInputProcessor extends InputProcessor {
 				command += "print Choose a cappella group for " + newUser
 						+ ":" + list + ";askForInput";
 				SharedKeyCryptoComm.send(command, os, c, sk);
-				group = SharedKeyCryptoComm.receive(br, is, c, sk);
+				group = SharedKeyCryptoComm.receive(is, c, sk);
 				if (group.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
@@ -453,7 +451,7 @@ public class ServerInputProcessor extends InputProcessor {
 
 			SharedKeyCryptoComm.send("createPassword", os, c, sk);
 			// choose password
-			String pwdStore = SharedKeyCryptoComm.receive(br, is, c, sk);
+			String pwdStore = SharedKeyCryptoComm.receive(is, c, sk);
 
 			// group exists
 			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) "
@@ -533,7 +531,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "<username1>, <username2>];print [To remove: "
 					+ "remove <username1>, <username2>];askForInput";
 			SharedKeyCryptoComm.send(command, os, c, sk);
-			regApproval(SharedKeyCryptoComm.receive(br, is, c, sk));
+			regApproval(SharedKeyCryptoComm.receive(is, c, sk));
 		} else {
 			SharedKeyCryptoComm.send("print No pending registration requests at the moment.", os, c, sk);
 		}
@@ -798,7 +796,7 @@ public class ServerInputProcessor extends InputProcessor {
 							+ "askForInput";
 					SharedKeyCryptoComm.send(command, os, c, sk);
 
-					toFriend = SharedKeyCryptoComm.receive(br, is, c, sk);
+					toFriend = SharedKeyCryptoComm.receive(is, c, sk);
 					if (toFriend.equals("cancel")) {
 						SharedKeyCryptoComm.send("", os, c, sk);
 						return;
@@ -836,7 +834,7 @@ public class ServerInputProcessor extends InputProcessor {
 							+ "askForInput";
 					SharedKeyCryptoComm.send(command, os, c, sk);
 
-					toFriend = SharedKeyCryptoComm.receive(br, is, c, sk);
+					toFriend = SharedKeyCryptoComm.receive(is, c, sk);
 					if (toFriend.equals("cancel")) {
 						SharedKeyCryptoComm.send("", os, c, sk);
 						return;
@@ -868,7 +866,7 @@ public class ServerInputProcessor extends InputProcessor {
 		// username exists in the system.
 		SharedKeyCryptoComm.send("print Are you sure you want to add " + username
 				+ " as a friend? (y/n);askForInput", os, c, sk);
-		String input = SharedKeyCryptoComm.receive(br, is, c, sk);
+		String input = SharedKeyCryptoComm.receive(is, c, sk);
 		Connection conn = null;
 		Statement stmt = null;
 		if (input.equals("y")) {
@@ -931,7 +929,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "<username1>, <username2>];print [To remove: "
 					+ "remove <username1>, <username2>];askForInput";
 			SharedKeyCryptoComm.send(command, os, c, sk);
-			friendApproval(SharedKeyCryptoComm.receive(br, is, c, sk));
+			friendApproval(SharedKeyCryptoComm.receive(is, c, sk));
 		} else {
 			SharedKeyCryptoComm.send("print No pending friend requests at the moment.", os, c, sk);
 		}
@@ -1127,7 +1125,7 @@ public class ServerInputProcessor extends InputProcessor {
 						+ "askForInput";
 				SharedKeyCryptoComm.send(command, os, c, sk);
 
-				toDelete = SharedKeyCryptoComm.receive(br, is, c, sk);
+				toDelete = SharedKeyCryptoComm.receive(is, c, sk);
 				if (toDelete.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
@@ -1156,7 +1154,7 @@ public class ServerInputProcessor extends InputProcessor {
 		// username is a deletable user
 		SharedKeyCryptoComm.send("print User deletions cannot be undone.;"
 				+ "print Are you sure you want to delete this user? (y/n);askForInput", os, c, sk);
-		String input = SharedKeyCryptoComm.receive(br, is, c, sk);
+		String input = SharedKeyCryptoComm.receive(is, c, sk);
 		Connection conn = null;
 		Statement stmt = null;
 		if (input.equals("y")) {
@@ -1267,7 +1265,7 @@ public class ServerInputProcessor extends InputProcessor {
 						+ "askForInput";
 				SharedKeyCryptoComm.send(command, os, c, sk);
 
-				toChange = SharedKeyCryptoComm.receive(br, is, c, sk);
+				toChange = SharedKeyCryptoComm.receive(is, c, sk);
 				if (toChange.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
@@ -1367,7 +1365,7 @@ public class ServerInputProcessor extends InputProcessor {
 						+ "askForInput";
 				SharedKeyCryptoComm.send(command, os, c, sk);
 
-				toChange = SharedKeyCryptoComm.receive(br, is, c, sk);
+				toChange = SharedKeyCryptoComm.receive(is, c, sk);
 				if (toChange.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
@@ -1500,7 +1498,7 @@ public class ServerInputProcessor extends InputProcessor {
 				command += "print ;print [To add user: (<user1>, <privilege>), "
 						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];askForInput";
 				SharedKeyCryptoComm.send(command, os, c, sk);
-				String input = SharedKeyCryptoComm.receive(br, is, c, sk);
+				String input = SharedKeyCryptoComm.receive(is, c, sk);
 				if (input.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
@@ -1603,7 +1601,7 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print [To remove participants: <user1>, <user2>];askForInput";
 				SharedKeyCryptoComm.send(command, os, c, sk);
-				String input = SharedKeyCryptoComm.receive(br, is, c, sk);
+				String input = SharedKeyCryptoComm.receive(is, c, sk);
 				if (input.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
@@ -1716,7 +1714,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "askForInput";
 			SharedKeyCryptoComm.send(command, os, c, sk);
 
-			input = SharedKeyCryptoComm.receive(br, is, c, sk);
+			input = SharedKeyCryptoComm.receive(is, c, sk);
 			if (input.equals("cancel")) {
 				SharedKeyCryptoComm.send("", os, c, sk);
 				return;
@@ -1956,16 +1954,16 @@ public class ServerInputProcessor extends InputProcessor {
 		if (canPost) {
 			SharedKeyCryptoComm.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
-			String content = SharedKeyCryptoComm.receive(br, is, c, sk);
+			String content = SharedKeyCryptoComm.receive(is, c, sk);
 			while (content.equals("")) {
 				SharedKeyCryptoComm.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
-				content = SharedKeyCryptoComm.receive(br, is, c, sk);
+				content = SharedKeyCryptoComm.receive(is, c, sk);
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
 				SharedKeyCryptoComm.send("print ;askForInput ", os, c, sk);
-				additionalContent = SharedKeyCryptoComm.receive(br, is, c, sk);
+				additionalContent = SharedKeyCryptoComm.receive(is, c, sk);
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -2018,16 +2016,16 @@ public class ServerInputProcessor extends InputProcessor {
 		if (canReply) {
 			SharedKeyCryptoComm.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
-			String content = SharedKeyCryptoComm.receive(br, is, c, sk);
+			String content = SharedKeyCryptoComm.receive(is, c, sk);
 			while (content.equals("")) {
 				SharedKeyCryptoComm.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
-				content = SharedKeyCryptoComm.receive(br, is, c, sk);
+				content = SharedKeyCryptoComm.receive(is, c, sk);
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
 				SharedKeyCryptoComm.send("print ;askForInput ", os, c, sk);
-				additionalContent = SharedKeyCryptoComm.receive(br, is, c, sk);
+				additionalContent = SharedKeyCryptoComm.receive(is, c, sk);
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
