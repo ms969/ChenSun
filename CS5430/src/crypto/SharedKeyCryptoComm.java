@@ -52,7 +52,7 @@ public class SharedKeyCryptoComm {
 		return true;
 	}
 	
-	private static Cipher createCipher(String alg) {
+	public static Cipher createCipher(String alg) {
 		Cipher c = null;
 		try {
 			c = Cipher.getInstance(ALG);
@@ -64,8 +64,7 @@ public class SharedKeyCryptoComm {
 		return c;
 	}
 	
-	public static boolean send(String msg, OutputStream os, SecretKey sk) throws InvalidKeyException, InvalidAlgorithmParameterException {
-		Cipher c = createCipher(ALG); //valid alg.
+	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
@@ -75,9 +74,11 @@ public class SharedKeyCryptoComm {
 		try {
 			//iv and msg
 			byte[] iv = createIV(sr, blockSize);
-			System.out.println(new String(iv, "UTF8"));
 			IvParameterSpec ivp = new IvParameterSpec(iv);
-			c.init(Cipher.ENCRYPT_MODE, sk, ivp);
+			try {
+				c.init(Cipher.ENCRYPT_MODE, sk, ivp);
+			}
+			catch (Exception e) {/*This cannot happen*/}
 			os.write(iv);
 			pw.println(msg);
 			pw.flush();
@@ -91,22 +92,21 @@ public class SharedKeyCryptoComm {
 		return true;
 	}
 	
-	public static String receive(InputStream is, SecretKey sk) throws InvalidKeyException, InvalidAlgorithmParameterException {
-		Cipher c = createCipher(ALG); //valid alg.
+	public static String receive(BufferedReader br, InputStream is, Cipher c, SecretKey sk) {
 		int blockSize = c.getBlockSize();
 		byte[] iv = new byte[blockSize];
 		
-		CipherInputStream cis = new CipherInputStream(is, c);
-		BufferedReader br = new BufferedReader(new InputStreamReader(cis));
 		try {
 			//fetch iv
 			if (!readIV(is, iv)) {
 				System.out.println("Error/Timeout receiving the message.");
 				return null;
 			}
-			System.out.println(new String(iv, "UTF8"));
 			IvParameterSpec ivp = new IvParameterSpec(iv);
-			c.init(Cipher.DECRYPT_MODE, sk, ivp);
+			try {
+				c.init(Cipher.DECRYPT_MODE, sk, ivp);
+			}
+			catch (Exception e) {/*cannot happen*/}
 
 			//get msg
 			return br.readLine();

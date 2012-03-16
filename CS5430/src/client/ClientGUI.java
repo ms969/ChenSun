@@ -1,11 +1,13 @@
 package client;
 
+
 import java.io.*;
 import java.net.*;
 import java.security.*;
+import javax.crypto.*;
 
 import crypto.PublicKeyCryptoClient;
-import crypto.PublicKeyCryptoServer;
+import crypto.SharedKeyCryptoComm;
 
 public class ClientGUI {
 	private static final int SERVER_PORT = 5329;
@@ -15,20 +17,24 @@ public class ClientGUI {
 	public static void main(String[] args) throws Exception {
 		// Connecting to server
 		Socket kkSocket = null;
-		PrintWriter serverOut = null;
-		BufferedReader serverIn = null;
+		OutputStream serverOut = null;
+		InputStream serverIn = null;
+		SecretKey sk = null;
+		Cipher c = null;
 
 		try {
 			kkSocket = new Socket(InetAddress.getByName(SERVER_HOST_NAME),
 					SERVER_PORT);
+			
 			PublicKey pubk = PublicKeyCryptoClient.serverPublicKeyRSA();
 			if (pubk == null) {
 				System.exit( 1 );
 			}
-			PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
-			serverOut = new PrintWriter(kkSocket.getOutputStream(), true);
-			serverIn = new BufferedReader(new InputStreamReader(
-					kkSocket.getInputStream()));
+			sk = PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
+			c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
+			
+			serverOut = kkSocket.getOutputStream();
+			serverIn = kkSocket.getInputStream();
 		} catch (UnknownHostException e) {
 			System.err.println("Don't know about host: " + SERVER_HOST_NAME);
 			System.exit(1);
@@ -41,13 +47,14 @@ public class ClientGUI {
 				+ SERVER_PORT);
 		
 		BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
-		ClientProcessor processor = new ClientProcessor(serverOut, serverIn, keyboard);
+		ClientProcessor processor = new ClientProcessor(serverOut, serverIn, keyboard, c, sk);
 		
 		// System welcome message
 		System.out.println("Welcome to the system.");
 		
 		/** LOGGING IN **/
 		while (true) {
+			
 			while (!processor.isLoggedIn() && !processor.isExit()) {
 				processor.processLogin();
 			}
