@@ -450,37 +450,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 
 			// choose password
-			boolean pwdValid = false;
-			char[] pwdChar1 = null;
-			char[] pwdChar2 = null;
-			while (!pwdValid) {
-				SharedKeyCryptoComm.send("print Create a password for your account:;getPassword", os, c, sk);
-				char[] charBuff = new char[24];
-				try {
-					int i = in.read(charBuff);
-					pwdChar1 = Arrays.copyOfRange(charBuff, 0, i - 2);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-
-				SharedKeyCryptoComm.send("print Confirm new password:;getPassword", os, c, sk);
-				charBuff = new char[24];
-				try {
-					int i = in.read(charBuff);
-					pwdChar2 = Arrays.copyOfRange(charBuff, 0, i - 2);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				pwdValid = pwdsMatch(pwdChar1, pwdChar2);
-
-				if (!pwdValid) {
-					SharedKeyCryptoComm.send("print Invalid passwords.;", os, c, sk);
-				}
-			}
-
-			// both checks out
-			String pwdStore = Hash.createPwdHashStore(pwdChar1);
+			String pwdStore = SharedKeyCryptoComm.receive(br, is, c, sk);
 
 			// group exists
 			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) "
@@ -511,16 +481,16 @@ public class ServerInputProcessor extends InputProcessor {
 
 	}
 
-	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
-		if (pwdChar1.length != pwdChar2.length) {
-			return false;
-		}
-		for (int i = 0; i < pwdChar1.length; i++) {
-			if (pwdChar1[i] != pwdChar2[i])
-				return false;
-		}
-		return true;
-	}
+//	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
+//		if (pwdChar1.length != pwdChar2.length) {
+//			return false;
+//		}
+//		for (int i = 0; i < pwdChar1.length; i++) {
+//			if (pwdChar1[i] != pwdChar2[i])
+//				return false;
+//		}
+//		return true;
+//	}
 
 	private void processRegRequests() throws IOException {
 		// TODO: Check if user is an admin
