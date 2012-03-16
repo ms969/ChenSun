@@ -76,6 +76,9 @@ public class ClientProcessor extends InputProcessor {
 				String value = getValue(commands[i]);
 				setSalt(value);
 			}
+			if (commands[i].equals("createPassword")) {
+				createPassword();
+			}
 
 			/*
 			 * if (commands[i].matches("^setUser.+")) { String value =
@@ -88,7 +91,7 @@ public class ClientProcessor extends InputProcessor {
 	public void getPassword() {
 		// XXX working here
 		char[] charBuff = new char[24];
-		System.out.print(">>");
+		System.out.print(">> ");
 		try {
 			String hashedPwd = "";
 			int i = keyboard.read(charBuff);

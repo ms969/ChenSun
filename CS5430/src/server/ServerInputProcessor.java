@@ -448,6 +448,7 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 
+			SharedKeyCryptoComm.send("createPassword", os, c, sk);
 			// choose password
 			String pwdStore = SharedKeyCryptoComm.receive(br, is, c, sk);
 
