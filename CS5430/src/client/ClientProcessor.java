@@ -21,7 +21,6 @@ public class ClientProcessor extends InputProcessor {
 	private BufferedReader keyboard;
 	private OutputStream serverOut;
 	private InputStream serverIn;
-	private BufferedReader br;
 	private Cipher c;
 	private SecretKey sk;
 	
@@ -31,8 +30,6 @@ public class ClientProcessor extends InputProcessor {
 		this.keyboard = keyboard;
 		this.serverOut = serverOut;
 		this.serverIn = serverIn;
-		br = new BufferedReader(new InputStreamReader(new CipherInputStream(
-				serverIn, c)));
 		this.c = c;
 		this.sk = sk;
 	}
@@ -105,7 +102,7 @@ public class ClientProcessor extends InputProcessor {
 			SharedKeyCryptoComm.send(hashedPwd, serverOut, c, sk);
 			Arrays.fill(charBuff, ' ');
 			Arrays.fill(pwd, ' ');
-			processCommands(SharedKeyCryptoComm.receive(br, serverIn, c, sk));
+			processCommands(SharedKeyCryptoComm.receive(serverIn, c, sk));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -165,7 +162,7 @@ public class ClientProcessor extends InputProcessor {
 			String input = keyboard.readLine();
 			SharedKeyCryptoComm.send(input, serverOut, c, sk);
 			System.out.println("Done sending input");
-			processCommands(SharedKeyCryptoComm.receive(br, serverIn, c, sk));
+			processCommands(SharedKeyCryptoComm.receive(serverIn, c, sk));
 
 		} catch (IOException e) {
 			e.printStackTrace();

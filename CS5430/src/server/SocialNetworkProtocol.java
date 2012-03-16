@@ -25,22 +25,20 @@ public class SocialNetworkProtocol implements Runnable {
 		SecretKey sk = PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
 		Cipher c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
 		// Getting client socket's input and output streams
-		BufferedReader in = new BufferedReader(new InputStreamReader(new CipherInputStream(
-				clientSocket.getInputStream(), c)));
 		
-		iprocessor = new ServerInputProcessor(clientSocket.getOutputStream(), in, 
+		iprocessor = new ServerInputProcessor(clientSocket.getOutputStream(),
 				clientSocket.getInputStream(), c, sk);
 		
 		// request input
 		
 		
 		String inputLine;
-		while ((inputLine = in.readLine()) != null) {
+		while ((inputLine = SharedKeyCryptoComm.receive(clientSocket.getInputStream(), c, sk)) != null) {
+			System.out.println(inputLine);
 			iprocessor.processCommand(inputLine);
 		}
 
 		// closing the connection
-		in.close();
 		clientSocket.close();
 	}
 
