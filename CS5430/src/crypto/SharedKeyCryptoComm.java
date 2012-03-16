@@ -65,7 +65,7 @@ public class SharedKeyCryptoComm {
 	}
 	
 	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
-		System.out.println(msg);
+		//System.out.println(msg);
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
