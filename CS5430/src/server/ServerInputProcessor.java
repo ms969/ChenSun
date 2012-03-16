@@ -43,6 +43,7 @@ public class ServerInputProcessor extends InputProcessor {
 		//"^removeParticipants$",	// 17
 		//"^editParticipants$",	// 18
 		"^logout$",			// 15
+		"^help$",			// 16
 	};
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -204,6 +205,14 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
+		if (inputLine.matches(COMMANDS[16])) {
+			if (user != null) {
+				out.println("help");
+			} else {
+				out.println();
+			}
+			return;
+		}
 		out.println();
 	}
 	
@@ -311,8 +320,11 @@ public class ServerInputProcessor extends InputProcessor {
 		Statement stmt = null;
 		ResultSet userTuple = null;
 		String username = getValue(inputLine);
+		byte[] pwd = "something".getBytes();
 		
 		boolean userExist = false;
+		boolean pwMatch = false;
+		String pwhash = "";
 		String role = "";
 		String aname = "";
 		
@@ -320,15 +332,19 @@ public class ServerInputProcessor extends InputProcessor {
 		try {
 			conn = DBManager.getConnection();
 			stmt = null;
-			String query = "SELECT username, aname, role " +
+			String query = "SELECT username, pwhash, aname, role " +
 					"FROM main.users NATURAL JOIN main.acappella " +
 					"WHERE username = '" + username + "'";
 			stmt = conn.createStatement();
 			userTuple = stmt.executeQuery(query);
 			if (userTuple.next()) {
 				userExist = true;
+				pwhash = userTuple.getString("pwhash");
 				role = userTuple.getString("role");
 				aname = userTuple.getString("aname");
+			}
+			if (userExist) {
+				
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -340,7 +356,7 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		
 		// Output for Client
-		if (userExist) {
+		if (userExist && pwMatch) {
 			user = username;
 			out.print("setLoggedIn true;" + 
 					"print Logged in as: " + username + ";" + 
@@ -364,7 +380,7 @@ public class ServerInputProcessor extends InputProcessor {
 			out.println(SocialNetworkNavigation.printPath(currentPath) +
 					 SocialNetworkBoards.viewBoards(user));
 		} else {
-			out.println("print " + username + " does not exist.");
+			out.println("print username does not exist or invalid password.");
 		}
 		
 	}
