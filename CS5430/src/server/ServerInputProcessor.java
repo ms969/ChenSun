@@ -432,7 +432,7 @@ public class ServerInputProcessor extends InputProcessor {
 			String group = "";
 			int aid = 0;
 			while (!groupExist) {
-				SharedKeyCryptoComm.send(command + "print Choose a cappella group for " + newUser
+				SharedKeyCryptoComm.send("print Choose a cappella group for " + newUser
 						+ ":" + command + ";askForInput", os, c, sk);
 				group = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (group.equals("cancel")) {
