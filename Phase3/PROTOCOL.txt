@@ -34,5 +34,52 @@ Set-Up Assumptions
 	as their own ACapella groups.
 	
 Authenticating the Client-Server Connection
+Client					Server
+{r_1, k_cs}K_s		->
+					Decrypt msg using k_s provided by operator
+			<-		{r_1 + 1, r_2}k_cs
+{(r_2) * 2}k_cs		->
+
+Using the Public Key of the server, the client sends a shared session key
+with a challenge.
+The server responds back with the original challenge + 1, and sends
+a challenge back to ensure that the client is following protocol
+The client returns back the new challenge * 2.
+
+
+
+Nonce Sizes: 64 bits. Not many people will be using the system at a time.
+Our estimated population 20 * 10 = 200 people. If everyone logs in everyday,
+it would be 73,000 hypothetical sessions (73,000 * 2 nonces).
+Key Size: For Blowfish: 128 bits, the default. 128 Bits is
+supposedly sufficient for good security. (http://www.openssl.org/docs/crypto/blowfish.html)
+
+Crypto Package
+NonClosingCipherOutputStream
+	Sometimes, closing a CipherOutputStream is desired, but 
+the underlying socket stream should not be closed. This FilterOutputStream
+is an intermediate to restrict the lower output streams from being closed.
+
+PublicKeyCryptoClient
+	Implements the Client side of the authentication protocol involving
+it and the server. This method is "clientSideAuth". Also contains a method
+for retrieving the server's Public Key: "serverPublicKeyRSA"
+
+PublicKeyCryptoServer
+	Implements the Server side of the authentication protocol involving
+it and the server. This method is "serverSideAuth". Also contains a method
+for retrieving the server's Public Key: "serverPublicKeyRSA", the server's
+Private Key (given the secret): "serverPrivateKeyRSA", and a method for
+checking whether the two key's form a key pair (authenticatePrivateKeyRSA)
+
+SharedKeyCryptoComm
+	To provide confidential communication between the client and the server,
+the send and receive methods use a cipheroutputstream and cipherinputstream 
+respectively to encode and decode String messages. It utilizes the shared
+session key between the two. There are various helpful methods that
+generate random IV's, as well as reading IV's from the stream for deciphering.
+It also contains the method "createCipher", which wraps the creation of
+a Cipher in a try catch block to suppress warnings of "illegal lag", etc.
+	
 
 	
