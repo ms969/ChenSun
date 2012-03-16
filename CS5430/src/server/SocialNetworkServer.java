@@ -48,11 +48,28 @@ public class SocialNetworkServer {
 			catch (Exception e) {
 				
 			}
-			if (privk == null) {
+			if (privk == null && numRetries != 1) {
 				System.out.println("Incorrect. Please try again");
 				System.out.print(">> ");
-				numRetries--;
 			}
+			numRetries--;
+		}
+		if (numRetries == 0) {
+			System.out.println("Too many incorrect tries. Exiting.");
+			System.exit( 1 );
+		}
+		
+		System.out.println("Input the second secret");
+		System.out.print(">> ");
+		numRetries = 5;
+		boolean valid = false;
+		while (!valid && numRetries > 0) {
+			valid = SharedKeyCrypto.initSharedKeyCrypto(br.readLine());
+			if (!valid && numRetries != 1) {
+				System.out.println("Incorrect. Please try again");
+				System.out.print(">> ");
+			}
+			numRetries--;
 		}
 		if (numRetries == 0) {
 			System.out.println("Too many incorrect tries. Exiting.");
