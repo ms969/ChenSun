@@ -1,6 +1,7 @@
 package client;
 
 import java.io.*;
+
 import javax.crypto.*;
 
 import crypto.Hash;
@@ -106,6 +107,52 @@ public class ClientProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	public void createPassword() {
+		boolean pwdValid = false;
+		char[] pwdChar1 = null;
+		char[] pwdChar2 = null;
+		while (!pwdValid) {
+			System.out.println("Create a password for your account:");
+			System.out.print(">>");
+			char[] charBuff = new char[24];
+			try {
+				int i = keyboard.read(charBuff);
+				pwdChar1 = Arrays.copyOfRange(charBuff, 0, i - 2);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+			System.out.println("Confirm new password:");
+			System.out.print(">>");
+			charBuff = new char[24];
+			try {
+				int i = keyboard.read(charBuff);
+				pwdChar2 = Arrays.copyOfRange(charBuff, 0, i - 2);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			pwdValid = pwdsMatch(pwdChar1, pwdChar2);
+			if (!pwdValid) {
+				System.out.println("Invalid passwords. Please re-enter.");
+			}
+		}
+		
+		String pwdHash = Hash.createPwdHashStore(pwdChar1);
+		SharedKeyCryptoComm.send(pwdHash, serverOut, c, sk);
+	}
+		
+	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
+		if (pwdChar1.length != pwdChar2.length) {
+			return false;
+		}
+		for (int i = 0; i < pwdChar1.length; i++) {
+			if (pwdChar1[i] != pwdChar2[i])
+				return false;
+		}
+		return true;
 	}
 
 	public void askForInput() {
