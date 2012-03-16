@@ -359,7 +359,7 @@ public class ServerInputProcessor extends InputProcessor {
 			// if admin or SA, get pending registration requests
 			if (role.equals("admin") || role.equals("sa")) {
 				String regReqCommand = getRegReq(username);
-				command += regReqCommand;
+				command += regReqCommand + ";";
 			}
 
 			String hr = getHR(80);

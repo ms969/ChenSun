@@ -5,7 +5,7 @@ CREATE TABLE main.acappella (
 );
 CREATE TABLE main.users (
     username VARCHAR(100) NOT NULL PRIMARY KEY,
-    pwhash VARCHAR(100) NOT NULL,
+    pwhash VARCHAR(200) NOT NULL,
     aid INT NOT NULL,
     role ENUM('sa', 'admin', 'member') NOT NULL DEFAULT 'member',
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
@@ -26,7 +26,7 @@ CREATE TABLE main.friendrequests (
 );
 CREATE TABLE main.registrationrequests (
     username VARCHAR(100) NOT NULL PRIMARY KEY,
-    pwhash VARCHAR(100) NOT NULL,
+    pwhash VARCHAR(200) NOT NULL,
     aid INT NOT NULL,
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
 );

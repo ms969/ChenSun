@@ -143,6 +143,7 @@ public class ClientProcessor extends InputProcessor {
 		
 		String pwdHash = Hash.createPwdHashStore(pwdChar1);
 		SharedKeyCryptoComm.send(pwdHash, serverOut, c, sk);
+		processCommands(SharedKeyCryptoComm.receive(serverIn, c, sk));
 	}
 		
 	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
