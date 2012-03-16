@@ -84,7 +84,7 @@ public class SharedKeyCrypto {
 		return null;
 	}
 	
-	public static String encrypt(String txt) throws InvalidKeyException, IllegalBlockSizeException {
+	public static String encrypt(String txt) {
 		Cipher cipher = null;
 		try {
 			cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
@@ -100,11 +100,15 @@ public class SharedKeyCrypto {
 			if (DEBUG) e.printStackTrace();
 		} catch (NoSuchPaddingException e) {
 			if (DEBUG) e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			if (DEBUG) e.printStackTrace();
+		} catch (IllegalBlockSizeException e) {
+			if (DEBUG) e.printStackTrace();
 		}
 		return null;
 	}
 	
-	public static String decrypt(String secret) throws InvalidKeyException, IllegalBlockSizeException {
+	public static String decrypt(String secret) {
 		Cipher cipher;
 		try {
 			byte[] iv = decode(secret.substring(0, IV_STRING_LENGTH));
@@ -124,6 +128,10 @@ public class SharedKeyCrypto {
 		} catch (BadPaddingException e) {
 			if (DEBUG) e.printStackTrace();
 		} catch (InvalidAlgorithmParameterException e) {
+			if (DEBUG) e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			if (DEBUG) e.printStackTrace();
+		} catch (IllegalBlockSizeException e) {
 			if (DEBUG) e.printStackTrace();
 		}
 		return null;
