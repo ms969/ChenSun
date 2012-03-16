@@ -2,13 +2,17 @@ package client;
 
 import java.io.*;
 import java.net.*;
+import java.security.*;
+
+import crypto.PublicKeyCryptoClient;
+import crypto.PublicKeyCryptoServer;
 
 public class ClientGUI {
 	private static final int SERVER_PORT = 5329;
 	private static final String SERVER_HOST_NAME = "localhost";
 
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		// Connecting to server
 		Socket kkSocket = null;
 		PrintWriter serverOut = null;
@@ -17,6 +21,11 @@ public class ClientGUI {
 		try {
 			kkSocket = new Socket(InetAddress.getByName(SERVER_HOST_NAME),
 					SERVER_PORT);
+			PublicKey pubk = PublicKeyCryptoClient.serverPublicKeyRSA();
+			if (pubk == null) {
+				System.exit( 1 );
+			}
+			PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
 			serverOut = new PrintWriter(kkSocket.getOutputStream(), true);
 			serverIn = new BufferedReader(new InputStreamReader(
 					kkSocket.getInputStream()));
