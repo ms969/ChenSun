@@ -452,7 +452,7 @@ public class ServerInputProcessor extends InputProcessor {
 			SharedKeyCryptoComm.send("createPassword", os, c, sk);
 			// choose password
 			String pwdStore = SharedKeyCryptoComm.receive(is, c, sk);
-
+			System.out.println("pwdStore: "+pwdStore);
 			// group exists
 			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) "
 					+ "VALUE ('"

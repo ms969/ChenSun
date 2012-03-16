@@ -81,5 +81,16 @@ generate random IV's, as well as reading IV's from the stream for deciphering.
 It also contains the method "createCipher", which wraps the creation of
 a Cipher in a try catch block to suppress warnings of "illegal lag", etc.
 	
+CryptoUtil
+	Provides common utility functions for cryptography and security, like 
+translating from byte[] to string.
 
+Hash
+	Provides hash functionalities for passwords. Uses MessageDigest and
+MD5 hashing to hash passwords. Passwords are also salted. The salt is
+generated using a secure random number generator.
+
+SharedKeyCrypto
+	Implements DES secret key encrypting. This class is used for 
+encrypting and decrypting sensitive data stored in the database.
 	
