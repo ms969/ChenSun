@@ -15,4 +15,4 @@ VALUES ("April", "MJ"),("Brook", "Sam"),("Adam", "Bryan"),("April", "Colin"),
 INSERT INTO main.friendrequests
 VALUES ("You", "Kevin"),("You", "MJ");
 INSERT INTO main.registrationrequests
-VALUES ("fbs", 5);
+VALUES ("fbs", "hwfJMWs9u7VDDKnfHlEbAg==bYb21OyGkXgMzeEj35CtlA==", 5);
