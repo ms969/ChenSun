@@ -1,8 +1,6 @@
 package server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,11 +12,18 @@ import java.util.HashMap;
 import shared.InputProcessor;
 import crypto.Hash;
 import crypto.SharedKeyCrypto;
+import crypto.SharedKeyCryptoComm;
 import database.DBManager;
 
+import java.security.*;
+import javax.crypto.*;
+
 public class ServerInputProcessor extends InputProcessor {
-	private PrintWriter out;
-	private BufferedReader in;
+	private OutputStream os;
+	private InputStream is;
+	private BufferedReader br;
+	private Cipher c;
+	private SecretKey sk;
 	private SharedKeyCrypto skc;
 
 	private String user = null;
@@ -52,7 +57,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user == null) {
 				processLogin(inputLine);
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -60,7 +65,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user == null) {
 				processRegistration();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -68,7 +73,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processRegRequests();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -76,7 +81,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processAddFriend(inputLine);
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -84,7 +89,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processCreateBoard(inputLine);
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -92,7 +97,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processRefresh();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -100,7 +105,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processGoto(inputLine);
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -108,7 +113,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processCreateRegion(inputLine);
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -116,7 +121,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processPost();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -124,7 +129,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processReply();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -132,7 +137,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processFriendRequests();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -140,7 +145,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processDeleteUser();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -154,7 +159,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processChangeUserRole();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -162,7 +167,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processTransferSA();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
@@ -180,19 +185,19 @@ public class ServerInputProcessor extends InputProcessor {
 			if (user != null) {
 				processLogout();
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("" , os, c, sk);
 			}
 			return;
 		}
 		if (inputLine.matches(COMMANDS[16])) {
 			if (user != null) {
-				out.println("help");
+				SharedKeyCryptoComm.send("help", os, c, sk);
 			} else {
-				out.println();
+				SharedKeyCryptoComm.send("", os, c, sk);
 			}
 			return;
 		}
-		out.println();
+		SharedKeyCryptoComm.send("", os, c, sk);
 	}
 
 	private void processLogout() {
@@ -200,12 +205,16 @@ public class ServerInputProcessor extends InputProcessor {
 		for (int i = 0; i < currentPath.length; i++) {
 			currentPath[i] = null;
 		}
-		out.println("print Logged out.;setLoggedIn false");
+		SharedKeyCryptoComm.send("print Logged out.;setLoggedIn false", os, c, sk);
 	}
 
-	public ServerInputProcessor(PrintWriter out, BufferedReader in) {
-		this.out = out;
-		this.in = in;
+	public ServerInputProcessor(OutputStream os, BufferedReader br, InputStream is, 
+			Cipher c, SecretKey sk) {
+		this.os = os;
+		this.br = br;
+		this.is = is;
+		this.c = c;
+		this.sk = sk;
 		this.currentPath = new String[3];
 		for (int i = 0; i < currentPath.length; i++) {
 			currentPath[i] = null;
@@ -321,19 +330,16 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			
 			if (userExist) {
-				out.print("setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH));
+				SharedKeyCryptoComm.send("setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH), os, c, sk);
 			}
 			
-			out.println("print Input password:;getPassword");
-			String enteredPwdHash = in.readLine();
+			SharedKeyCryptoComm.send("print Input password:;getPassword", os, c, sk);
+			String enteredPwdHash = SharedKeyCryptoComm.receive(br, is, c, sk);
 			
 			if (userExist) {
 				pwMatch = Hash.comparePwd(pwhash, enteredPwdHash);
 			}
 		} catch (SQLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 			DBManager.closeStatement(stmt);
@@ -344,35 +350,35 @@ public class ServerInputProcessor extends InputProcessor {
 		// Output for Client
 		if (userExist && pwMatch) {
 			user = username;
-			out.print("setLoggedIn true;" + "print Logged in as: " + username
+			SharedKeyCryptoComm.send("setLoggedIn true;" + "print Logged in as: " + username
 					+ ";" + "print Role: " + role.toUpperCase() + ";"
-					+ "print A Cappella Group: " + aname + ";print ;");
+					+ "print A Cappella Group: " + aname + ";print ;", os, c, sk);
 
 			// Get friend requests
 			String friendReqCommand = getFriendReq(username);
-			out.print(friendReqCommand);
+			SharedKeyCryptoComm.send(friendReqCommand, os, c, sk);
 
 			// if admin or SA, get pending registration requests
 			if (role.equals("admin") || role.equals("sa")) {
 				String regReqCommand = getRegReq(username);
-				out.print(regReqCommand + ";");
+				SharedKeyCryptoComm.send(regReqCommand + ";", os, c, sk);
 			}
 
 			String hr = getHR(80);
-			out.print(hr + "print ;");
+			SharedKeyCryptoComm.send(hr + "print ;", os, c, sk);
 
 			// printing out boards
-			out.println(SocialNetworkNavigation.printPath(currentPath)
-					+ SocialNetworkBoards.viewBoards(user));
+			SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+					+ SocialNetworkBoards.viewBoards(user), os, c, sk);
 		} else {
-			out.println("print username does not exist or invalid password.");
+			SharedKeyCryptoComm.send("print username does not exist or invalid password.", os, c, sk);
 		}
 
 	}
 
 	private void processRegistration() throws IOException {
 		String newUser = "";
-		out.println("print Choose a username:;askForInput");
+		SharedKeyCryptoComm.send("print Choose a username:;askForInput", os, c, sk);
 
 		boolean userExist = true;
 		Connection conn = DBManager.getConnection();
@@ -380,9 +386,9 @@ public class ServerInputProcessor extends InputProcessor {
 		ResultSet existingUser = null;
 
 		while (userExist) {
-			newUser = in.readLine();
+			newUser = SharedKeyCryptoComm.receive(br, is, c, sk);
 			if (newUser.equals("cancel")) {
-				out.println();
+				SharedKeyCryptoComm.send("", os, c, sk);
 				return;
 			}
 
@@ -405,8 +411,8 @@ public class ServerInputProcessor extends InputProcessor {
 			// TODO: check that username is legal and isn't keywords like cancel
 
 			if (userExist) {
-				out.println("print Username already exist. Choose a different one.;"
-						+ "askForInput");
+				SharedKeyCryptoComm.send("print Username already exist. Choose a different one.;"
+						+ "askForInput", os, c, sk);
 			}
 		}
 
@@ -427,16 +433,16 @@ public class ServerInputProcessor extends InputProcessor {
 			String group = "";
 			int aid = 0;
 			while (!groupExist) {
-				out.println("print Choose a cappella group for " + newUser
-						+ ":" + command + ";askForInput");
-				group = in.readLine();
+				SharedKeyCryptoComm.send("print Choose a cappella group for " + newUser
+						+ ":" + command + ";askForInput", os, c, sk);
+				group = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (group.equals("cancel")) {
-					out.println();
+					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
 				}
 
 				if (!groupList.containsKey(group)) {
-					out.print("print Please choose a group from the list.;");
+					SharedKeyCryptoComm.send("print Please choose a group from the list.;", os, c, sk);
 				} else {
 					groupExist = true;
 					aid = groupList.get(group);
@@ -448,7 +454,7 @@ public class ServerInputProcessor extends InputProcessor {
 			char[] pwdChar1 = null;
 			char[] pwdChar2 = null;
 			while (!pwdValid) {
-				out.println("print Create a password for your account:;getPassword");
+				SharedKeyCryptoComm.send("print Create a password for your account:;getPassword", os, c, sk);
 				char[] charBuff = new char[24];
 				try {
 					int i = in.read(charBuff);
@@ -458,7 +464,7 @@ public class ServerInputProcessor extends InputProcessor {
 					e1.printStackTrace();
 				}
 
-				out.println("print Confirm new password:;getPassword");
+				SharedKeyCryptoComm.send("print Confirm new password:;getPassword", os, c, sk);
 				charBuff = new char[24];
 				try {
 					int i = in.read(charBuff);
@@ -469,7 +475,7 @@ public class ServerInputProcessor extends InputProcessor {
 				pwdValid = pwdsMatch(pwdChar1, pwdChar2);
 
 				if (!pwdValid) {
-					out.print("print Invalid passwords.;");
+					SharedKeyCryptoComm.send("print Invalid passwords.;", os, c, sk);
 				}
 			}
 
@@ -487,13 +493,13 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "')";
 
 			stmt.executeUpdate(query);
-			out.println("print Registration request for " + newUser + " from "
+			SharedKeyCryptoComm.send("print Registration request for " + newUser + " from "
 					+ group
 					+ " has been sent.;print Once an admin from your group "
-					+ "approves, you will be added to the system.;print ;");
+					+ "approves, you will be added to the system.;print ;", os, c, sk);
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
-				out.println("print User is already in the system. Choose a different username.;print ;");
+				SharedKeyCryptoComm.send("print User is already in the system. Choose a different username.;print ;", os, c, sk);
 			} else {
 				e.printStackTrace();
 			}
@@ -552,17 +558,17 @@ public class ServerInputProcessor extends InputProcessor {
 			command = command + ";print ;print [To approve: approve "
 					+ "<username1>, <username2>];print [To remove: "
 					+ "remove <username1>, <username2>];askForInput";
-			out.println(command);
-			regApproval(in.readLine());
+			SharedKeyCryptoComm.send(command, os, c, sk);
+			regApproval(SharedKeyCryptoComm.receive(br, is, c, sk));
 		} else {
-			out.println("print No pending registration requests at the moment.");
+			SharedKeyCryptoComm.send("print No pending registration requests at the moment.", os, c, sk);
 		}
 
 	}
 
 	private void regApproval(String input) {
 		if (input.equals("cancel")) {
-			out.println();
+			SharedKeyCryptoComm.send("", os, c, sk);
 			return;
 		}
 		if (input.matches("^approve.+")) {
@@ -601,7 +607,7 @@ public class ServerInputProcessor extends InputProcessor {
 				// substring to take off the last comma
 				command = command.substring(0, command.length() - 2)
 						+ " has been deleted from the system.";
-				out.println(command);
+				SharedKeyCryptoComm.send(command, os, c, sk);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
@@ -679,7 +685,7 @@ public class ServerInputProcessor extends InputProcessor {
 			// substring to take off the last comma
 			command = command.substring(0, command.length() - 2)
 					+ " has been added to the system.";
-			out.println(command);
+			SharedKeyCryptoComm.send(command, os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -816,11 +822,11 @@ public class ServerInputProcessor extends InputProcessor {
 					}
 					command += "print ;print Type the name of the user you wish to friend:;"
 							+ "askForInput";
-					out.println(command);
+					SharedKeyCryptoComm.send(command, os, c, sk);
 
-					toFriend = in.readLine();
+					toFriend = SharedKeyCryptoComm.receive(br, is, c, sk);
 					if (toFriend.equals("cancel")) {
-						out.println();
+						SharedKeyCryptoComm.send("", os, c, sk);
 						return;
 					}
 					for (String[] userInfo : friendableUsers) {
@@ -830,7 +836,7 @@ public class ServerInputProcessor extends InputProcessor {
 						}
 					}
 					if (!userExist) {
-						out.print("print Cannot friend " + toFriend + ";");
+						SharedKeyCryptoComm.send("print Cannot friend " + toFriend + ";", os, c, sk);
 					}
 				}
 
@@ -854,11 +860,11 @@ public class ServerInputProcessor extends InputProcessor {
 					}
 					command += "print ;print Type the name of the user you wish to friend:;"
 							+ "askForInput";
-					out.println(command);
+					SharedKeyCryptoComm.send(command, os, c, sk);
 
-					toFriend = in.readLine();
+					toFriend = SharedKeyCryptoComm.receive(br, is, c, sk);
 					if (toFriend.equals("cancel")) {
-						out.println();
+						SharedKeyCryptoComm.send("", os, c, sk);
 						return;
 					}
 					for (String[] userInfo : friendableUsers) {
@@ -868,7 +874,7 @@ public class ServerInputProcessor extends InputProcessor {
 						}
 					}
 					if (!userExist) {
-						out.print("print Cannot friend " + toFriend + ";");
+						SharedKeyCryptoComm.send("print Cannot friend " + toFriend + ";", os, c, sk);
 					}
 				}
 
@@ -886,9 +892,9 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void addFriend(String username) throws IOException {
 		// username exists in the system.
-		out.println("print Are you sure you want to add " + username
-				+ " as a friend? (y/n);askForInput");
-		String input = in.readLine();
+		SharedKeyCryptoComm.send("print Are you sure you want to add " + username
+				+ " as a friend? (y/n);askForInput", os, c, sk);
+		String input = SharedKeyCryptoComm.receive(br, is, c, sk);
 		Connection conn = null;
 		Statement stmt = null;
 		if (input.equals("y")) {
@@ -901,7 +907,7 @@ public class ServerInputProcessor extends InputProcessor {
 				stmt.executeUpdate(query);
 
 				// print out confirmation
-				out.println("print Friend request sent to " + username);
+				SharedKeyCryptoComm.send("print Friend request sent to " + username, os, c, sk);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
@@ -910,9 +916,9 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 
 		} else if (input.equals("n")) {
-			out.println("print Canceled.");
+			SharedKeyCryptoComm.send("print Canceled.", os, c, sk);
 		} else if (input.equals("cancel")) {
-			out.println();
+			SharedKeyCryptoComm.send("", os, c, sk);
 		}
 	}
 
@@ -950,16 +956,16 @@ public class ServerInputProcessor extends InputProcessor {
 			command = command + ";print ;print [To approve: approve "
 					+ "<username1>, <username2>];print [To remove: "
 					+ "remove <username1>, <username2>];askForInput";
-			out.println(command);
-			friendApproval(in.readLine());
+			SharedKeyCryptoComm.send(command, os, c, sk);
+			friendApproval(SharedKeyCryptoComm.receive(br, is, c, sk));
 		} else {
-			out.println("print No pending friend requests at the moment.");
+			SharedKeyCryptoComm.send("print No pending friend requests at the moment.", os, c, sk);
 		}
 	}
 
 	private void friendApproval(String input) {
 		if (input.equals("cancel")) {
-			out.println();
+			SharedKeyCryptoComm.send("", os, c, sk);
 			return;
 		}
 		if (input.matches("^approve.+")) {
@@ -1004,7 +1010,7 @@ public class ServerInputProcessor extends InputProcessor {
 				// substring to take off the last comma
 				command = command.substring(0, command.length() - 2)
 						+ " have been deleted.";
-				out.println(command);
+				SharedKeyCryptoComm.send(command, os, c, sk);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
@@ -1067,7 +1073,7 @@ public class ServerInputProcessor extends InputProcessor {
 			// substring to take off the last comma
 			command = command.substring(0, command.length() - 2)
 					+ " have been added as your friends.";
-			out.println(command);
+			SharedKeyCryptoComm.send(command, os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -1145,18 +1151,18 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print Type the name of the user you wish to delete:;"
 						+ "askForInput";
-				out.println(command);
+				SharedKeyCryptoComm.send(command, os, c, sk);
 
-				toDelete = in.readLine();
+				toDelete = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (toDelete.equals("cancel")) {
-					out.println();
+					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
 				}
 				if (deletableUsers.contains(toDelete)) {
 					userDeletable = true;
 				}
 				if (!userDeletable) {
-					out.print("print Cannot delete " + toDelete + ";");
+					SharedKeyCryptoComm.send("print Cannot delete " + toDelete + ";", os, c, sk);
 				}
 			}
 
@@ -1174,9 +1180,9 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void deleteUser(String username) throws IOException {
 		// username is a deletable user
-		out.println("print User deletions cannot be undone.;"
-				+ "print Are you sure you want to delete this user? (y/n);askForInput");
-		String input = in.readLine();
+		SharedKeyCryptoComm.send("print User deletions cannot be undone.;"
+				+ "print Are you sure you want to delete this user? (y/n);askForInput", os, c, sk);
+		String input = SharedKeyCryptoComm.receive(br, is, c, sk);
 		Connection conn = null;
 		Statement stmt = null;
 		if (input.equals("y")) {
@@ -1188,8 +1194,8 @@ public class ServerInputProcessor extends InputProcessor {
 				stmt.executeUpdate(query);
 
 				// print out confirmation
-				out.println("print " + username
-						+ " has been deleted from the system.");
+				SharedKeyCryptoComm.send("print " + username
+						+ " has been deleted from the system.", os, c, sk);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
@@ -1198,9 +1204,9 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 
 		} else if (input.equals("n")) {
-			out.println("print Canceled.");
+			SharedKeyCryptoComm.send("print Canceled.", os, c, sk);
 		} else if (input.equals("cancel")) {
-			out.println();
+			SharedKeyCryptoComm.send("", os, c, sk);
 		}
 	}
 
@@ -1234,7 +1240,7 @@ public class ServerInputProcessor extends InputProcessor {
 					command += "print " + friend + ";";
 				}
 			}
-			out.println(command);
+			SharedKeyCryptoComm.send(command, os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -1285,11 +1291,11 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print Type the name of the user you wish to change role for:;"
 						+ "askForInput";
-				out.println(command);
+				SharedKeyCryptoComm.send(command, os, c, sk);
 
-				toChange = in.readLine();
+				toChange = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (toChange.equals("cancel")) {
-					out.println();
+					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
 				}
 				for (String[] userInfo : changeableUsers) {
@@ -1304,7 +1310,7 @@ public class ServerInputProcessor extends InputProcessor {
 					}
 				}
 				if (!userChangeable) {
-					out.print("print Cannot change role for " + toChange + ";");
+					SharedKeyCryptoComm.send("print Cannot change role for " + toChange + ";", os, c, sk);
 				}
 			}
 
@@ -1337,9 +1343,9 @@ public class ServerInputProcessor extends InputProcessor {
 			} else {
 				from = "ADMIN";
 			}
-			out.println("print Role for " + toChange
+			SharedKeyCryptoComm.send("print Role for " + toChange
 					+ " has been changed from " + from + " to "
-					+ role.toUpperCase());
+					+ role.toUpperCase(), os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -1385,19 +1391,19 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print Type the name of the user you wish to transfer SA role to:;"
 						+ "askForInput";
-				out.println(command);
+				SharedKeyCryptoComm.send(command, os, c, sk);
 
-				toChange = in.readLine();
+				toChange = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (toChange.equals("cancel")) {
-					out.println();
+					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
 				}
 				if (groupAdmins.contains(toChange)) {
 					transferableUser = true;
 				}
 				if (!transferableUser) {
-					out.print("print Cannot transfer SA role to " + toChange
-							+ ";");
+					SharedKeyCryptoComm.send("print Cannot transfer SA role to " + toChange
+							+ ";", os, c, sk);
 				}
 			}
 
@@ -1429,7 +1435,7 @@ public class ServerInputProcessor extends InputProcessor {
 			conn.commit();
 
 			// Print confirmation to client
-			out.println("print SA role has been transferred to " + toChange);
+			SharedKeyCryptoComm.send("print SA role has been transferred to " + toChange, os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -1472,9 +1478,9 @@ public class ServerInputProcessor extends InputProcessor {
 			// editParticipants, addAdmin
 			command += "print ;print Other Commands: addParticipants, removeParticipants";
 			// TODO: add edit and addAdmin to this list of commands
-			out.println(command);
+			SharedKeyCryptoComm.send(command, os, c, sk);
 		} else {
-			out.println("print You do not have permission to view participants.");
+			SharedKeyCryptoComm.send("print You do not have permission to view participants.", os, c, sk);
 		}
 	}
 
@@ -1519,10 +1525,10 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print [To add user: (<user1>, <privilege>), "
 						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];askForInput";
-				out.println(command);
-				String input = in.readLine();
+				SharedKeyCryptoComm.send(command, os, c, sk);
+				String input = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (input.equals("cancel")) {
-					out.println();
+					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
 				}
 				addInfo = parseAddUserInfo(input);
@@ -1537,15 +1543,15 @@ public class ServerInputProcessor extends InputProcessor {
 				if (!userAddable) {
 					notOkUsers = notOkUsers.substring(0,
 							notOkUsers.length() - 2);
-					out.print("print Cannot add " + notOkUsers
-							+ " as participants of this region.;");
+					SharedKeyCryptoComm.send("print Cannot add " + notOkUsers
+							+ " as participants of this region.;", os, c, sk);
 				}
 			}
 
 			// toAdd is addable
 			addParticipant(addInfo);
 		} else {
-			out.println("print You do not have permission to add participants to this region.");
+			SharedKeyCryptoComm.send("print You do not have permission to add participants to this region.", os, c, sk);
 		}
 	}
 
@@ -1585,7 +1591,7 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		// print confirmation
-		out.println("print Participants added.");
+		SharedKeyCryptoComm.send("print Participants added.", os, c, sk);
 	}
 
 	private void processRemoveParticipants() throws IOException {
@@ -1622,10 +1628,10 @@ public class ServerInputProcessor extends InputProcessor {
 					command += "print " + user + ";";
 				}
 				command += "print ;print [To remove participants: <user1>, <user2>];askForInput";
-				out.println(command);
-				String input = in.readLine();
+				SharedKeyCryptoComm.send(command, os, c, sk);
+				String input = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (input.equals("cancel")) {
-					out.println();
+					SharedKeyCryptoComm.send("", os, c, sk);
 					return;
 				}
 				toRemove = input.trim().split(" *, *");
@@ -1641,15 +1647,15 @@ public class ServerInputProcessor extends InputProcessor {
 				if (!userRemovable) {
 					notOkUsers = notOkUsers.substring(0,
 							notOkUsers.length() - 2);
-					out.print("print Cannot remove " + notOkUsers
-							+ " from this region.;");
+					SharedKeyCryptoComm.send("print Cannot remove " + notOkUsers
+							+ " from this region.;", os, c, sk);
 				}
 			}
 
 			// toRemove is removable
 			removeParticipant(toRemove);
 		} else {
-			out.println("print You do not have permission to add participants to this region.");
+			SharedKeyCryptoComm.send("print You do not have permission to add participants to this region.", os, c, sk);
 		}
 	}
 
@@ -1680,7 +1686,7 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		// print confirmation
-		out.println("print Participants removed.");
+		SharedKeyCryptoComm.send("print Participants removed.", os, c, sk);
 	}
 
 	private void processEditParticipants() throws IOException {
@@ -1734,11 +1740,11 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			command += "print ;print [To toggle permission status: <user1>, <user2>];"
 					+ "askForInput";
-			out.println(command);
+			SharedKeyCryptoComm.send(command, os, c, sk);
 
-			input = in.readLine();
+			input = SharedKeyCryptoComm.receive(br, is, c, sk);
 			if (input.equals("cancel")) {
-				out.println();
+				SharedKeyCryptoComm.send("", os, c, sk);
 				return;
 			}
 			String toChange = "";
@@ -1760,8 +1766,8 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			if (!userChangeable) {
 				toChange = toChange.substring(0, toChange.length() - 2);
-				out.print("print Cannot change permission for " + toChange
-						+ ";");
+				SharedKeyCryptoComm.send("print Cannot change permission for " + toChange
+						+ ";", os, c, sk);
 			}
 		}
 
@@ -1799,7 +1805,7 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		// print confirmation
-		out.println("print Participants removed.");
+		SharedKeyCryptoComm.send("print Participants removed.", os, c, sk);
 	}
 
 	/**
@@ -1811,10 +1817,10 @@ public class ServerInputProcessor extends InputProcessor {
 		 * homepage)
 		 */
 		if (currentPath[0] != null) {
-			out.println("print Must be at Home to create a board");
+			SharedKeyCryptoComm.send("print Must be at Home to create a board", os, c, sk);
 		} else {
 			String boardname = input.substring(("createBoard ").length());
-			out.println(SocialNetworkBoards.createBoard(user, boardname));
+			SharedKeyCryptoComm.send(SocialNetworkBoards.createBoard(user, boardname), os, c, sk);
 		}
 	}
 
@@ -1826,40 +1832,40 @@ public class ServerInputProcessor extends InputProcessor {
 	private void processRefresh() {
 		String boardName = currentPath[0];
 		if (boardName == null) {
-			out.println(SocialNetworkNavigation.printPath(currentPath)
-					+ "print ;" + SocialNetworkBoards.viewBoards(user));
+			SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+					+ "print ;" + SocialNetworkBoards.viewBoards(user), os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			/* No regions */
 			String postNum = currentPath[1];
 			if (postNum == null) { // Merely in the board
-				out.println(SocialNetworkNavigation.printPath(currentPath)
+				SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts
-								.viewPostList(user, boardName, null));
+								.viewPostList(user, boardName, null), os, c, sk);
 			} else { // Inside the post
-				out.println(SocialNetworkNavigation.printPath(currentPath)
+				SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts.viewPost(user, boardName, null,
-								Integer.parseInt(postNum)));
+								Integer.parseInt(postNum)), os, c, sk);
 			}
 		} else { // a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) { // Merely in the board
-				out.println(SocialNetworkNavigation.printPath(currentPath)
+				SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
-						+ SocialNetworkRegions.viewRegions(user, boardName));
+						+ SocialNetworkRegions.viewRegions(user, boardName), os, c, sk);
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // Merely in the region
-					out.println(SocialNetworkNavigation.printPath(currentPath)
+					SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPostList(user, boardName,
-									regionName));
+									regionName), os, c, sk);
 				} else { // Inside the post
-					out.println(SocialNetworkNavigation.printPath(currentPath)
+					SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPost(user, boardName,
-									regionName, Integer.parseInt(postNum)));
+									regionName, Integer.parseInt(postNum)), os, c, sk);
 				}
 			}
 		}
@@ -1886,19 +1892,19 @@ public class ServerInputProcessor extends InputProcessor {
 		case 1: /* Go forward in the hierarchy to destination */
 			/* Have different cases depending on the current path */
 			if (currentPath[0] == null) {
-				out.println(SocialNetworkNavigation.goToBoard(user,
-						currentPath, destination));
+				SharedKeyCryptoComm.send(SocialNetworkNavigation.goToBoard(user,
+						currentPath, destination), os, c, sk);
 			} else if (currentPath[0].equals("freeforall")) {
 				Integer postNum = null;
 				try {
 					postNum = Integer.parseInt(destination);
 				} catch (NumberFormatException e) {
-					out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
-							+ "go backwards");
+					SharedKeyCryptoComm.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+							+ "go backwards", os, c, sk);
 				}
 				if (postNum != null) {
-					out.println(SocialNetworkNavigation.goToPost(user,
-							currentPath, postNum.intValue()));
+					SharedKeyCryptoComm.send(SocialNetworkNavigation.goToPost(user,
+							currentPath, postNum.intValue()), os, c, sk);
 				}
 			} else {
 				if (currentPath[1] != null) {
@@ -1906,23 +1912,23 @@ public class ServerInputProcessor extends InputProcessor {
 					try {
 						postNum = Integer.parseInt(destination);
 					} catch (NumberFormatException e) {
-						out.println("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
-								+ "go backwards");
+						SharedKeyCryptoComm.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+								+ "go backwards", os, c, sk);
 					}
 					if (postNum != null) {
-						out.println(SocialNetworkNavigation.goToPost(user,
-								currentPath, postNum));
+						SharedKeyCryptoComm.send(SocialNetworkNavigation.goToPost(user,
+								currentPath, postNum), os, c, sk);
 					}
 				} else {
-					out.println(SocialNetworkNavigation.goToRegion(user,
-							currentPath, destination));
+					SharedKeyCryptoComm.send(SocialNetworkNavigation.goToRegion(user,
+							currentPath, destination), os, c, sk);
 				}
 			}
 			break;
 		default:
-			out.println("print Invalid destination given your current path: "
+			SharedKeyCryptoComm.send("print Invalid destination given your current path: "
 					+ SocialNetworkNavigation.printPath(currentPath) + ".; "
-					+ "print You can go backwards by typing \"..\" ");
+					+ "print You can go backwards by typing \"..\" ", os, c, sk);
 
 		}
 	}
@@ -1935,15 +1941,15 @@ public class ServerInputProcessor extends InputProcessor {
 		String boardName = currentPath[0];
 		String regionName = inputLine.substring(("createRegion ").length());
 		if (boardName == null) {
-			out.println("print Must be in the desired board in order to create the region.");
+			SharedKeyCryptoComm.send("print Must be in the desired board in order to create the region.", os, c, sk);
 		} else if (boardName.equals("freeforall")) {
-			out.println("print Cannot create regions in the freeforall board.");
+			SharedKeyCryptoComm.send("print Cannot create regions in the freeforall board.", os, c, sk);
 		} else if (currentPath[1] != null) {
-			out.println("print Must be exactly in the desired board (i.e., not inside a region in the board) "
-					+ "in order to create the region");
+			SharedKeyCryptoComm.send("print Must be exactly in the desired board (i.e., not inside a region in the board) "
+					+ "in order to create the region", os, c, sk);
 		} else {
-			out.println(SocialNetworkRegions.createRegion(user, currentPath[0],
-					regionName));
+			SharedKeyCryptoComm.send(SocialNetworkRegions.createRegion(user, currentPath[0],
+					regionName), os, c, sk);
 		}
 	}
 
@@ -1952,40 +1958,40 @@ public class ServerInputProcessor extends InputProcessor {
 		String boardName = currentPath[0];
 		boolean canPost = false;
 		if (boardName == null) {
-			out.println("print Must be within a board's region or in the freeforall board to create a post");
+			SharedKeyCryptoComm.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			String postNum = currentPath[1];
 			if (postNum == null) {
 				canPost = true;
 			} else {
-				out.println("print Must go back to the board page to create a post (not inside a post)");
+				SharedKeyCryptoComm.send("print Must go back to the board page to create a post (not inside a post)", os, c, sk);
 			}
 		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				out.println("print Must be within a board's region or in the freeforall board to create a post");
+				SharedKeyCryptoComm.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // in a board, region, not in a post
 					canPost = true;
 				} else {
-					out.println("print Must go back to the region page to create a post (not inside a post)");
+					SharedKeyCryptoComm.send("print Must go back to the region page to create a post (not inside a post)", os, c, sk);
 				}
 			}
 		}
 		if (canPost) {
-			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
-					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
-			String content = in.readLine();
+			SharedKeyCryptoComm.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
+			String content = SharedKeyCryptoComm.receive(br, is, c, sk);
 			while (content.equals("")) {
-				out.println("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
-				content = in.readLine();
+				SharedKeyCryptoComm.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
+				content = SharedKeyCryptoComm.receive(br, is, c, sk);
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
-				out.println("print ;askForInput ");
-				additionalContent = in.readLine();
+				SharedKeyCryptoComm.send("print ;askForInput ", os, c, sk);
+				additionalContent = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -1995,10 +2001,10 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 			if (cancelled) {
-				out.println("print Post Creation cancelled");
+				SharedKeyCryptoComm.send("print Post Creation cancelled", os, c, sk);
 			} else {
-				out.println(SocialNetworkPosts.createPost(user, content,
-						currentPath[0], currentPath[1]));
+				SharedKeyCryptoComm.send(SocialNetworkPosts.createPost(user, content,
+						currentPath[0], currentPath[1]), os, c, sk);
 			}
 		}
 	}
@@ -2014,40 +2020,40 @@ public class ServerInputProcessor extends InputProcessor {
 		String postNum = "";
 		boolean canReply = false;
 		if (boardName == null) {
-			out.println("print Must be within a post to create a reply");
+			SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			postNum = currentPath[1];
 			if (postNum == null) {
-				out.println("print Must be within a post to create a reply");
+				SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
 			} else {
 				canReply = true;
 			}
 		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				out.println("print Must be within a post to create a reply");
+				SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
 			} else {
 				postNum = currentPath[2];
 				if (postNum == null) { // in a board, region, not in a post
-					out.println("print Must be within a post to create a reply");
+					SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
 				} else {
 					canReply = true;
 				}
 			}
 		}
 		if (canReply) {
-			out.println("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
-					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
-			String content = in.readLine();
+			SharedKeyCryptoComm.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
+			String content = SharedKeyCryptoComm.receive(br, is, c, sk);
 			while (content.equals("")) {
-				out.println("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
-				content = in.readLine();
+				SharedKeyCryptoComm.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
+				content = SharedKeyCryptoComm.receive(br, is, c, sk);
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
-				out.println("print ;askForInput ");
-				additionalContent = in.readLine();
+				SharedKeyCryptoComm.send("print ;askForInput ", os, c, sk);
+				additionalContent = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -2057,12 +2063,12 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 			if (cancelled) {
-				out.println("print Reply Creation cancelled");
+				SharedKeyCryptoComm.send("print Reply Creation cancelled", os, c, sk);
 
 			} else {
-				out.println(SocialNetworkPosts.createReply(user, content,
+				SharedKeyCryptoComm.send(SocialNetworkPosts.createReply(user, content,
 						currentPath[0], currentPath[1],
-						Integer.parseInt(postNum)));
+						Integer.parseInt(postNum)), os, c, sk);
 			}
 		}
 	}
