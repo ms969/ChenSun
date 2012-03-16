@@ -4,7 +4,9 @@ import java.net.*;
 import java.io.*;
 
 import java.security.*;
+import javax.crypto.*;
 import crypto.PublicKeyCryptoServer;
+import crypto.SharedKeyCryptoComm;
 
 public class SocialNetworkProtocol implements Runnable {
 	
@@ -20,15 +22,17 @@ public class SocialNetworkProtocol implements Runnable {
 	}
 
 	public void main() throws Exception {
-		PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
+		SecretKey sk = PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
+		Cipher c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
 		// Getting client socket's input and output streams
-		BufferedReader in = new BufferedReader(new InputStreamReader(
-				clientSocket.getInputStream()));
-		PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+		BufferedReader in = new BufferedReader(new InputStreamReader(new CipherInputStream(
+				clientSocket.getInputStream(), c)));
 		
-		iprocessor = new ServerInputProcessor(out, in);
+		iprocessor = new ServerInputProcessor(clientSocket.getOutputStream(), in, 
+				clientSocket.getInputStream(), c, sk);
 		
 		// request input
+		
 		
 		String inputLine;
 		while ((inputLine = in.readLine()) != null) {
