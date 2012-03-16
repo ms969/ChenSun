@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import crypto.CryptoUtil;
@@ -321,19 +322,21 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void processLogin(String inputLine) {
 		// get password
-		out.println("getPassword");
-		String pwdString = null;
+		out.println("print Input password:;getPassword");
+		char[] charBuff = new char[24];
+		char[] pwdChar = null;
 		try {
-			pwdString = in.readLine();
+			int i = in.read(charBuff);
+			pwdChar = Arrays.copyOfRange(charBuff, 0, i-2);
+			Arrays.fill(charBuff, ' ');
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
+			Arrays.fill(charBuff, ' ');
 			e1.printStackTrace();
 		}
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet userTuple = null;
 		String username = getValue(inputLine);
-		byte[] pwd = pwdString.getBytes();
 		
 		boolean userExist = false;
 		boolean pwMatch = false;
@@ -357,8 +360,8 @@ public class ServerInputProcessor extends InputProcessor {
 				aname = userTuple.getString("aname");
 			}
 			if (userExist) {
-				pwMatch = Hash.comparePwd(pwhash, pwd);
-				CryptoUtil.zeroArray(pwd);
+				pwMatch = Hash.comparePwd(pwhash, pwdChar);
+				Arrays.fill(pwdChar, ' ');
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -473,9 +476,42 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 			
+			// choose password
+			boolean pwdValid = false;
+			char[] pwdChar1 = null;
+			char[] pwdChar2 = null;
+			while (!pwdValid) {
+				out.println("print Create a password for your account:;getPassword");
+				char[] charBuff = new char[24];
+				try {
+					int i = in.read(charBuff);
+					pwdChar1 = Arrays.copyOfRange(charBuff, 0, i-2);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				out.println("print Confirm new password:;getPassword");
+				charBuff = new char[24];
+				try {
+					int i = in.read(charBuff);
+					pwdChar2 = Arrays.copyOfRange(charBuff, 0, i-2);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				pwdValid = pwdsMatch(pwdChar1, pwdChar2);
+				
+				if (!pwdValid) {
+					out.print("print Invalid passwords.;");
+				}
+			}
+			
+			// both checks out
+			String pwdStore = Hash.createPwdHashStore(pwdChar1);
+			
 			// group exists
-			query = "INSERT INTO main.registrationrequests (username, aid) " +
-					"VALUE ('" + newUser + "', " + aid + ")";
+			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) " +
+					"VALUE ('" + newUser + "', " + aid + ", '" + pwdStore + "')";
 			
 			stmt.executeUpdate(query);
 			out.println("print Registration request for " + newUser + " from " +
@@ -495,6 +531,18 @@ public class ServerInputProcessor extends InputProcessor {
 		}	
 
 	}
+
+	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
+		if (pwdChar1.length != pwdChar2.length) {
+			return false;
+		}
+		for (int i=0; i<pwdChar1.length; i++) {
+			if (pwdChar1[i] != pwdChar2[i]) 
+				return false;
+		}
+		return true;
+	}
+
 
 	private void processRegRequests() throws IOException {
 		// TODO: Check if user is an admin
@@ -624,13 +672,13 @@ public class ServerInputProcessor extends InputProcessor {
 			
 			ArrayList<String[]> pendingUserInfo = new ArrayList<String[]>();
 			while (selectResult.next()) {
-				String[] userInfo = {selectResult.getString("username"), selectResult.getString("aid")};
+				String[] userInfo = {selectResult.getString("username"), selectResult.getString("aid"), selectResult.getString("pwhash")};
 				pendingUserInfo.add(userInfo);
 			}
 			for (String[] userInfo: pendingUserInfo) {
-				String insertQuery = "INSERT INTO main.users (username, aid, role) " +
+				String insertQuery = "INSERT INTO main.users (username, aid, pwhash, role) " +
 						"VALUE " + "('" + userInfo[0] + "'," + 
-						userInfo[1] + ",'member')";
+						userInfo[1] + ", '" + userInfo[2] + "','member')";
 				String addFriendQuery = addFriendsFromGroupQuery(userInfo[0], Integer.parseInt(userInfo[1]));
 				
 				if (SocialNetworkServer.DEBUG) {

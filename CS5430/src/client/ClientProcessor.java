@@ -1,35 +1,34 @@
 package client;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Reader;
-import java.util.Scanner;
+import java.util.Arrays;
 
 import shared.InputProcessor;
 
 public class ClientProcessor extends InputProcessor {
 	private boolean loggedIn = false;
 	private boolean exit = false;
-	//private String user = null;
-	
+	// private String user = null;
+
 	private BufferedReader keyboard;
 	private PrintWriter serverOut;
 	private BufferedReader serverIn;
-	
-	public ClientProcessor(PrintWriter serverOut, BufferedReader serverIn, BufferedReader keyboard) {
+
+	public ClientProcessor(PrintWriter serverOut, BufferedReader serverIn,
+			BufferedReader keyboard) {
 		this.serverOut = serverOut;
 		this.serverIn = serverIn;
 		this.keyboard = keyboard;
 	}
-	
+
 	private void processCommands(String response) {
 		String delims = ";";
 		String[] commands = response.split(delims);
-		for (int i=0; i < commands.length; i++) {
+		for (int i = 0; i < commands.length; i++) {
 			if (commands[i].matches("^print.+")) {
 				String value = getValue(commands[i]);
 				System.out.println(value);
@@ -43,9 +42,10 @@ public class ClientProcessor extends InputProcessor {
 			if (commands[i].equals("isExit")) {
 				serverOut.println(isExit());
 			}
-			/*if (commands[i].equals("getUser")) {
-				serverOut.println(getUser());
-			}*/
+			/*
+			 * if (commands[i].equals("getUser")) {
+			 * serverOut.println(getUser()); }
+			 */
 			if (commands[i].matches("^setLoggedIn.+")) {
 				String value = getValue(commands[i]);
 				setLoggedIn(Boolean.parseBoolean(value));
@@ -60,19 +60,34 @@ public class ClientProcessor extends InputProcessor {
 			if (commands[i].equals("getPassword")) {
 				getPassword();
 			}
-			
-			/*if (commands[i].matches("^setUser.+")) {
-				String value = getValue(commands[i]);
-				setUser(value);
-			}*/
+
+			/*
+			 * if (commands[i].matches("^setUser.+")) { String value =
+			 * getValue(commands[i]); setUser(value); }
+			 */
 			// *** Add commands here ***
 		}
 	}
-	
+
 	public void getPassword() {
-		System.out.println("Type in your password:");
+		// XXX working here
+		char[] charBuff = new char[24];
+		System.out.print(">>");
+		try {
+			int i = keyboard.read(charBuff);
+			//keyboard.readLine();
+			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
+			serverOut.println(pwd);
+			Arrays.fill(charBuff, ' ');
+			Arrays.fill(pwd, ' ');
+			processCommands(serverIn.readLine());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
-	
+
 	public void askForInput() {
 		System.out.print(">> ");
 		try {
@@ -90,7 +105,7 @@ public class ClientProcessor extends InputProcessor {
 		System.out.println("To register, type 'register'");
 		askForInput();
 	}
-	
+
 	public void processHelp() {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader("HELP.txt"));
@@ -102,10 +117,11 @@ public class ClientProcessor extends InputProcessor {
 			// TODO: do this?
 			System.out.println("Help file not found. Contact system admin.");
 		} catch (IOException e) {
-			System.out.println("Help file may be corrupted. Contact system admin.");
+			System.out
+					.println("Help file may be corrupted. Contact system admin.");
 		}
 	}
-	
+
 	public boolean isLoggedIn() {
 		return loggedIn;
 	}
@@ -113,10 +129,10 @@ public class ClientProcessor extends InputProcessor {
 	public boolean isExit() {
 		return exit;
 	}
-	
-//	public String getUser() {
-//		return user;
-//	}
+
+	// public String getUser() {
+	// return user;
+	// }
 
 	public void setLoggedIn(boolean loggedIn) {
 		this.loggedIn = loggedIn;
@@ -125,8 +141,8 @@ public class ClientProcessor extends InputProcessor {
 	public void setExit(boolean exit) {
 		this.exit = exit;
 	}
-	
-//	public void setUser(String user) {
-//		this.user = user;
-//	}
+
+	// public void setUser(String user) {
+	// this.user = user;
+	// }
 }
