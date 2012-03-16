@@ -46,7 +46,8 @@ VALUES ("everyonebutcolinvp", "Connie", 'viewpost', "MJ"),
 ("everyonebutcolinvp", "Robert", 'viewpost', "April"),
 ("adminsandconnieview", "Connie", 'view', "April");
 INSERT INTO fantasiaboard.posts
-VALUES ("everyonebutcolinvp", null, "Connie", NOW(), "I hate Colin!", NOW()),
-("adminsandconnieview", null, "MJ", NOW(), "Haha there's not a star next to this region for you Connie!", NOW());
+VALUES ("everyonebutcolinvp", null, "Connie", NOW(), "gXYhiFZ/xQ8=mUDfM0+oIWBwLya0jQC9rQ==", NOW()),
+("adminsandconnieview", null, "MJ", NOW(), "+/qaeXS5z3U=tAvE9h+T2L2qjdiIxMOzp9l05Yk9m1YnK5A2oOp+xNR0Xa0ZMJ8pI0tmSPCxCen5TJIhxfjAjWYp
+tKMxpUVHJg==", NOW());
 INSERT INTO fantasiaboard.replies
-VALUES ("everyonebutcolinvp", 1, null, "Jocelyn", NOW(), "Me Too!");
+VALUES ("everyonebutcolinvp", 1, null, "Jocelyn", NOW(), "RuK3LVd6bQA=bDFM2Quk4LU=");

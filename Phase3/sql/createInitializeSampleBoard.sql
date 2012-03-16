@@ -44,14 +44,14 @@ VALUES ("withmjsfriendconnie"), ("postswithreplies");
 INSERT INTO helloworldboard.regionprivileges
 VALUES ("withmjsfriendconnie", "Connie", 'viewpost', "MJ");
 INSERT INTO helloworldboard.posts
-VALUES ("withmjsfriendconnie", null, "Connie", NOW(), "Hello World!", NOW());
+VALUES ("withmjsfriendconnie", null, "Connie", NOW(), "Q/7u5WaohZY=iVeb2TI3XU8pqH29FZ9rWA==", NOW());
 INSERT INTO helloworldboard.replies
-VALUES ("withmjsfriendconnie", 1, null, "MJ", NOW(), "The World says Hi Back!"),
-("withmjsfriendconnie", 1, null, "Kevin", NOW(), "The World says Goodbye.");
+VALUES ("withmjsfriendconnie", 1, null, "MJ", NOW(), "DaZwcPImF/k=YWVEaffaP+qHQaKrQzWd4dZ/9mBCRxk2"),
+("withmjsfriendconnie", 1, null, "Kevin", NOW(), "mhoPvsXTBKU=Lt9w+u58q/gHfXLh8YxFstz086vyib7G");
 INSERT INTO helloworldboard.posts
-VALUES ("postswithreplies", null, "Kevin", NOW(), "Bologna", NOW()),
+VALUES ("postswithreplies", null, "Kevin", NOW(), "XybtTMu+sC8=KStQPekGLEA=", NOW()),
 ("postswithreplies", null, "Kevin", NOW(), "Ham", NOW());
 INSERT INTO helloworldboard.replies
-VALUES ("postswithreplies", 2, null, "MJ", NOW(), "Roast Beef");
+VALUES ("postswithreplies", 2, null, "MJ", NOW(), "79zfBNMaHuM=/KJWGEHlpfdIvQ5H5MHraw==");
 INSERT INTO helloworldboard.posts
-VALUES ("postswithreplies", null, "Kevin", NOW(), "Salami", NOW())
+VALUES ("postswithreplies", null, "Kevin", NOW(), "66SOxcRFM3Q=Wh7Dvh+TdF4=", NOW())
