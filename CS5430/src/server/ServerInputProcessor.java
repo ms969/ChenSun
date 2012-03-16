@@ -328,12 +328,12 @@ public class ServerInputProcessor extends InputProcessor {
 				role = userTuple.getString("role");
 				aname = userTuple.getString("aname");
 			}
-			
+			String command = "";
 			if (userExist) {
-				SharedKeyCryptoComm.send("setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH), os, c, sk);
+				command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
 			}
-			
-			SharedKeyCryptoComm.send("print Input password:;getPassword", os, c, sk);
+			command += "print Input password:;getPassword";
+			SharedKeyCryptoComm.send(command, os, c, sk);
 			String enteredPwdHash = SharedKeyCryptoComm.receive(br, is, c, sk);
 			
 			if (userExist) {
@@ -350,25 +350,24 @@ public class ServerInputProcessor extends InputProcessor {
 		// Output for Client
 		if (userExist && pwMatch) {
 			user = username;
-			SharedKeyCryptoComm.send("setLoggedIn true;" + "print Logged in as: " + username
+			String command = "setLoggedIn true;" + "print Logged in as: " + username
 					+ ";" + "print Role: " + role.toUpperCase() + ";"
-					+ "print A Cappella Group: " + aname + ";print ;", os, c, sk);
+					+ "print A Cappella Group: " + aname + ";print ;";
 
 			// Get friend requests
-			String friendReqCommand = getFriendReq(username);
-			SharedKeyCryptoComm.send(friendReqCommand, os, c, sk);
+			command += getFriendReq(username);
 
 			// if admin or SA, get pending registration requests
 			if (role.equals("admin") || role.equals("sa")) {
 				String regReqCommand = getRegReq(username);
-				SharedKeyCryptoComm.send(regReqCommand + ";", os, c, sk);
+				command += regReqCommand;
 			}
 
 			String hr = getHR(80);
-			SharedKeyCryptoComm.send(hr + "print ;", os, c, sk);
+			command += hr + "print ;";
 
 			// printing out boards
-			SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+			SharedKeyCryptoComm.send(command + SocialNetworkNavigation.printPath(currentPath)
 					+ SocialNetworkBoards.viewBoards(user), os, c, sk);
 		} else {
 			SharedKeyCryptoComm.send("print username does not exist or invalid password.", os, c, sk);
@@ -430,10 +429,11 @@ public class ServerInputProcessor extends InputProcessor {
 				command = command + ";print " + groups.getString("aname");
 			}
 
+			String command = "";
 			String group = "";
 			int aid = 0;
 			while (!groupExist) {
-				SharedKeyCryptoComm.send("print Choose a cappella group for " + newUser
+				SharedKeyCryptoComm.send(command + "print Choose a cappella group for " + newUser
 						+ ":" + command + ";askForInput", os, c, sk);
 				group = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (group.equals("cancel")) {
@@ -463,10 +463,10 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "')";
 
 			stmt.executeUpdate(query);
-			SharedKeyCryptoComm.send("print Registration request for " + newUser + " from "
+			command = "print Registration request for " + newUser + " from "
 					+ group
 					+ " has been sent.;print Once an admin from your group "
-					+ "approves, you will be added to the system.;print ;", os, c, sk);
+					+ "approves, you will be added to the system.;print ;";
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
 				SharedKeyCryptoComm.send("print User is already in the system. Choose a different username.;print ;", os, c, sk);

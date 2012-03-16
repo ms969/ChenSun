@@ -2,6 +2,14 @@ Kevin Chen - kfc35
 MJ Sun - ms969
 
 Goal of Protocol:
+	Authentication of server and client:
+		At the end of the protocol, the client knows that the server 
+		it is communicating to has the private key that corresponds 
+		to the public key that the client is holding. Server also
+		gets a weak authentication of the client because the 
+		client knows how to answer the challenge sent to him.
+		There is no guarantee that the client is a genuine client.
+		
 
 Authentication Protocol:
 	1) Ensure that the ClientGUI is talking to the 
