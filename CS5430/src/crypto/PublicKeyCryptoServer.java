@@ -176,8 +176,8 @@ public class PublicKeyCryptoServer {
 			}
 		}
 		/*Zero out arrays that contained the key in RAW*/
-		CryptoUtil.zeroArray(recvkey);
-		CryptoUtil.zeroArray(firstmsg);
+		Arrays.fill(recvkey, (byte) 0x00);
+		Arrays.fill(firstmsg, (byte) 0x00);;
 		
 		//create a second nonce to authenticate the client
 		SecureRandom sr = null; 

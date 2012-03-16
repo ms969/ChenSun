@@ -1,0 +1,28 @@
+Kevin Chen - kfc35
+MJ Sun - ms969
+
+Authentication Protocol:
+	1) Ensure that the ClientGUI is talking to the 
+	genuine server.
+	2) Ensure that the server is talking to a genuine
+	ClientGUI.
+	3) Ensure that ClientGUI and server communications
+	are confidential.
+	4) Ensure that the user operating the ClientGUI is
+	a genuine user of the system.
+	5) Ensure that the server's long term storage data
+	is confidential.
+	
+Set-Up Assumptions
+	1) The server has a public key known to all ClientGUI's
+	and a private key that only its operator knows.
+	2) The operator has a shared key only the operator knows,
+	which is used to encrypt/decrypt the database
+	(Enrollment Protocol)
+	3) Presidents/The-Most-High of ACapella groups have contacted
+	the server operator to set up their own accounts as well
+	as their own ACapella groups.
+	
+Authenticating the Client-Server Connection
+
+	
