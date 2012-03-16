@@ -118,7 +118,7 @@ public class ClientProcessor extends InputProcessor {
 		char[] pwdChar2 = null;
 		while (!pwdValid) {
 			System.out.println("Create a password for your account:");
-			System.out.print(">>");
+			System.out.print(">> ");
 			char[] charBuff = new char[24];
 			try {
 				int i = keyboard.read(charBuff);
@@ -129,7 +129,7 @@ public class ClientProcessor extends InputProcessor {
 			}
 
 			System.out.println("Confirm new password:");
-			System.out.print(">>");
+			System.out.print(">> ");
 			charBuff = new char[24];
 			try {
 				int i = keyboard.read(charBuff);
@@ -163,6 +163,7 @@ public class ClientProcessor extends InputProcessor {
 		try {
 			String input = keyboard.readLine();
 			SharedKeyCryptoComm.send(input, serverOut, c, sk);
+			System.out.println("Done sending input");
 			processCommands(SharedKeyCryptoComm.receive(br, serverIn, c, sk));
 
 		} catch (IOException e) {

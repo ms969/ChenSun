@@ -54,6 +54,7 @@ public class ServerInputProcessor extends InputProcessor {
 
 	public void processCommand(String inputLine) throws IOException {
 		if (inputLine.matches(COMMANDS[0])) {
+			System.out.println("I'm at processCommand login!");
 			if (user == null) {
 				processLogin(inputLine);
 			} else {
@@ -418,6 +419,7 @@ public class ServerInputProcessor extends InputProcessor {
 		// username isn't already in the DB
 		boolean groupExist = false;
 		String command = "";
+		String list = "";
 		HashMap<String, Integer> groupList = new HashMap<String, Integer>();
 		ResultSet groups = null;
 		String query = "SELECT aid, aname FROM main.acappella";
@@ -426,14 +428,15 @@ public class ServerInputProcessor extends InputProcessor {
 			groups = stmt.executeQuery(query);
 			while (groups.next()) {
 				groupList.put(groups.getString("aname"), groups.getInt("aid"));
-				command = command + ";print " + groups.getString("aname");
+				list = list + ";print " + groups.getString("aname");
 			}
 
 			String group = "";
 			int aid = 0;
 			while (!groupExist) {
-				SharedKeyCryptoComm.send("print Choose a cappella group for " + newUser
-						+ ":" + command + ";askForInput", os, c, sk);
+				command += "print Choose a cappella group for " + newUser
+						+ ":" + list + ";askForInput";
+				SharedKeyCryptoComm.send(command, os, c, sk);
 				group = SharedKeyCryptoComm.receive(br, is, c, sk);
 				if (group.equals("cancel")) {
 					SharedKeyCryptoComm.send("", os, c, sk);
@@ -441,7 +444,7 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 
 				if (!groupList.containsKey(group)) {
-					SharedKeyCryptoComm.send("print Please choose a group from the list.;", os, c, sk);
+					command = "print Please choose a group from the list.;";
 				} else {
 					groupExist = true;
 					aid = groupList.get(group);
