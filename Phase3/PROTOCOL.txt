@@ -9,6 +9,11 @@ Goal of Protocol:
 		gets a weak authentication of the client because the 
 		client knows how to answer the challenge sent to him.
 		There is no guarantee that the client is a genuine client.
+	Authentication of user to server:
+		At the end of the protocol, the server is certain that 
+		the user using the client is a valid user of the 
+		system. A valid user is a person that knows a pair of
+		valid <username, password>.
 		
 
 Authentication Protocol:
@@ -46,7 +51,17 @@ The server responds back with the original challenge + 1, and sends
 a challenge back to ensure that the client is following protocol
 The client returns back the new challenge * 2.
 
-
+Authenticating users to server
+Client -> user: "Input username"
+user -> Client: username
+Client -> Server: username
+Server -> Client: user.salt
+Client -> user: "Input password"
+user -> Client: password
+Client -> Server: Hash(user.salt+password)
+Server: if: (Hash(user.salt+password) = database.user.password)
+		Server -> Client: valid user
+	else: Server -> Client: invalid user
 
 Nonce Sizes: 64 bits. Not many people will be using the system at a time.
 Our estimated population 20 * 10 = 200 people. If everyone logs in everyday,
@@ -59,6 +74,9 @@ NonClosingCipherOutputStream
 	Sometimes, closing a CipherOutputStream is desired, but 
 the underlying socket stream should not be closed. This FilterOutputStream
 is an intermediate to restrict the lower output streams from being closed.
+
+NonClosingCipherInputStream
+	Similar to OutputStream, except for input!
 
 PublicKeyCryptoClient
 	Implements the Client side of the authentication protocol involving
@@ -93,4 +111,6 @@ generated using a secure random number generator.
 SharedKeyCrypto
 	Implements DES secret key encrypting. This class is used for 
 encrypting and decrypting sensitive data stored in the database.
+
+
 	
