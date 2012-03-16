@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import crypto.SharedKeyCrypto;
+
 public class SocialNetworkDatabasePosts {
 	private static String specialStrPostable = "*";
 	private static String specialStrCreatedPost = "**";
@@ -194,8 +196,9 @@ public class SocialNetworkDatabasePosts {
 	 * 
 	 * TODO (author) For regular boards and regions, ensure the user can post under it
 	 */
-	public static String createPost(Connection conn, String username, String content, 
+	public static String createPost(Connection conn, String username, String contentRaw, 
 			String boardName, String regionName) {
+		String content = SharedKeyCrypto.encrypt(contentRaw);
 		PreparedStatement createPstmt = null;
 		String createPost = "";
 		
@@ -319,8 +322,9 @@ public class SocialNetworkDatabasePosts {
 	 * Updates the originating post's dateLastUpdated
 	 * Assumes the board, the region, and the post are valid.
 	 */
-	public static String createReply(Connection conn, String username, String content, 
+	public static String createReply(Connection conn, String username, String contentRaw, 
 			String boardName, String regionName, int postNum) {
+		String content = SharedKeyCrypto.encrypt(contentRaw);
 		PreparedStatement createPstmt = null;
 		String createReply = "";
 		
@@ -478,13 +482,13 @@ public class SocialNetworkDatabasePosts {
 				postAndReplies += 
 					"print ----- Post# " + postNum + "[" + postResult.getString("postedBy") + "]----- " +
 					postResult.getTimestamp("datePosted").toString() + ";print \t" +
-					postResult.getString("content") + ";";
+					SharedKeyCrypto.decrypt(postResult.getString("content")) + ";";
 				
 				repliesResult = replies.executeQuery();
 				while (repliesResult.next()) { //Print out all replies
 					postAndReplies += "print ----- Reply[" + repliesResult.getString("repliedBy") + "] ----- " +
 					repliesResult.getTimestamp("dateReplied").toString() + ";print \t" +
-					repliesResult.getString("content") + ";";
+					SharedKeyCrypto.decrypt(repliesResult.getString("content")) + ";";
 				}
 			}
 			// if there's no postResult, the post DNE.
