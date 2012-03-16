@@ -26,20 +26,36 @@ public class SharedKeyCrypto {
 	
 	private static final int IV_STRING_LENGTH = 12;
 	
-	private static final String KEY_STRING = "92LlYoVU1hU="; // TODO: need to take this out
-	private Key key;
+	private static Key key = null;
 	
-	public SharedKeyCrypto(String key_string) {
+	public static boolean initSharedKeyCrypto(String key_string) {
 		try {
-			this.key = unwrapKey(key_string);
+			key = unwrapKey(key_string);
 		} catch (InvalidKeyException e) {
 			if (DEBUG) e.printStackTrace();
+			return false;
 		} catch (InvalidKeySpecException e) {
 			if (DEBUG) e.printStackTrace();
+			return false;
 		}
+		String testString = "Hello World!";
+		String result = "";
+		Cipher c;
+		try {
+			c = Cipher.getInstance("DES");
+			c.init(Cipher.ENCRYPT_MODE, key);
+			byte[] ciphertext = c.doFinal(testString.getBytes());
+			c.init(Cipher.DECRYPT_MODE, key);
+			result = new String(c.doFinal(ciphertext), "UTF8");
+		}
+		catch (Exception e) {
+			if (DEBUG) e.printStackTrace();
+			return false;
+		}
+		return testString.equals(result);
 	}
 	
-	public String generateKey() throws InvalidKeySpecException {
+	public static String generateKey() throws InvalidKeySpecException {
 		try {
 			KeyGenerator generator = KeyGenerator.getInstance("DES");
 			generator.init(new SecureRandom());
@@ -56,7 +72,7 @@ public class SharedKeyCrypto {
 		return null;
 	}
 	
-	public SecretKey unwrapKey(String wrappedKey) throws InvalidKeyException, InvalidKeySpecException {
+	public static SecretKey unwrapKey(String wrappedKey) throws InvalidKeyException, InvalidKeySpecException {
 		try {
 			DESKeySpec keySpec = new DESKeySpec(decode(wrappedKey));
 			SecretKeyFactory factory = SecretKeyFactory.getInstance("DES");
@@ -68,7 +84,7 @@ public class SharedKeyCrypto {
 		return null;
 	}
 	
-	public String encrypt(String txt) throws InvalidKeyException, IllegalBlockSizeException {
+	public static String encrypt(String txt) throws InvalidKeyException, IllegalBlockSizeException {
 		Cipher cipher = null;
 		try {
 			cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
@@ -88,7 +104,7 @@ public class SharedKeyCrypto {
 		return null;
 	}
 	
-	public String decrypt(String secret) throws InvalidKeyException, IllegalBlockSizeException {
+	public static String decrypt(String secret) throws InvalidKeyException, IllegalBlockSizeException {
 		Cipher cipher;
 		try {
 			byte[] iv = decode(secret.substring(0, IV_STRING_LENGTH));
@@ -113,11 +129,11 @@ public class SharedKeyCrypto {
 		return null;
 	}
 	
-	private String encode(byte[] bytes) {
+	private static String encode(byte[] bytes) {
 		return CryptoUtil.encode(bytes);
 	}
 	
-	private byte[] decode(String str) {
+	private static byte[] decode(String str) {
 		return CryptoUtil.decode(str);
 	}
 }
