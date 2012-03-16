@@ -12,9 +12,6 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
-
 public class PublicKeyCrypto {
 	/* In the server and client code, the server's Public Key
 	 * is on full display. */
@@ -30,19 +27,11 @@ public class PublicKeyCrypto {
 	private static BigInteger serverPKExpRSA = new BigInteger("65537");
 	/* TODO must remove this.*/
 	private static BigInteger serverPrivKPrivExpRSA = new BigInteger(
-			"35945105707" +
-			"0514364632653049857385519916138917131755251" +
-			"5556420534534072481682843926657413922909946" +
-			"7890185487695930264175135148693093153197798" +
-			"9188836393913191079379415982728565479044105" +
-			"5281056962297542468442548591992047168685821" +
-			"8767521363784780358713936281232600468990679" +
-			"159303006096606946533721779530214714753");
+			"35945105707051436463265304985738551991613891713175525155564205345340724816828439266574139229099467890185487695930264175135148693093153197798918883639391319107937941598272856547904410552810569622975424684425485919920471686858218767521363784780358713936281232600468990679159303006096606946533721779530214714753");
 	/*Nonce length is in bytes*/
 	private final static int NONCE_LENGTH = (64/8);
-	/*DES Key length is in bytes*/
-	private final static int DES_KEY_LENGTH = 56;
-	private final static int DES_KEY_LENGTH_BYTES = (64/8);
+	private final static int BLOWFISH_KEY_LENGTH = 128;
+	private final static int BLOWFISH_KEY_LENGTH_BYTES = (128/8);
 	private final static int RSA_KEY_LENGTH = 1024;
 	private final static int RSA_BLOCK_LENGTH = (((RSA_KEY_LENGTH)/8));
 	
@@ -142,9 +131,9 @@ public class PublicKeyCrypto {
 		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		
 		//extract the shared key
-		byte[] recvkey = new byte[DES_KEY_LENGTH_BYTES];
-		System.arraycopy(firstmsg, NONCE_LENGTH, recvkey, 0, DES_KEY_LENGTH_BYTES);
-		SecretKey key = (SecretKey) new SecretKeySpec(recvkey, 0, DES_KEY_LENGTH_BYTES, "DES");
+		byte[] recvkey = new byte[BLOWFISH_KEY_LENGTH_BYTES];
+		System.arraycopy(firstmsg, NONCE_LENGTH, recvkey, 0, BLOWFISH_KEY_LENGTH_BYTES);
+		SecretKey key = (SecretKey) new SecretKeySpec(recvkey, 0, BLOWFISH_KEY_LENGTH_BYTES, "Blowfish");
 		System.out.println("Key received: " + new String(key.getEncoded(), "UTF8"));
 		
 		//create a second nonce to authenticate the client
@@ -161,7 +150,7 @@ public class PublicKeyCrypto {
 		/*Construct the second message*/
 		//prepend the iv for the decrypter to know.
 		os.write(iv);
-		c = Cipher.getInstance("DES/CFB8/PKCS5Padding");
+		c = Cipher.getInstance("Blowfish/CFB8/PKCS5Padding");
 		c.init(Cipher.ENCRYPT_MODE, key, ivp);
 		byte[] secondmsg = new byte[NONCE_LENGTH + NONCE_LENGTH];
 		System.arraycopy(firstNonceNumPlusOneCorrectLen, 0, secondmsg, 0, NONCE_LENGTH);
@@ -219,9 +208,9 @@ public class PublicKeyCrypto {
 		PublicKey serverPubK = serverPublicKeyRSA();
 		
 		/*Generate a symmetric session key. 
-		 * For DES, the default is 56 bit length*/
-		KeyGenerator kg = KeyGenerator.getInstance("DES"); //algorithm is valid
-		kg.init(DES_KEY_LENGTH);
+		 * For Blowfish, the default is 128 bit length*/
+		KeyGenerator kg = KeyGenerator.getInstance("Blowfish"); //algorithm is valid
+		kg.init(BLOWFISH_KEY_LENGTH);
 		SecretKey key = kg.generateKey();
 		byte[] sendkey = key.getEncoded();
 		System.out.println("Encoded Key: " + new String(sendkey, "UTF8"));
@@ -233,7 +222,7 @@ public class PublicKeyCrypto {
 		c.init(Cipher.ENCRYPT_MODE, serverPubK);
 		
 		/*Initialize a nonce.
-		 *The sec random num gen. will also be used for DES */
+		 *The sec random num gen. will also be used for ivp*/
 		SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
 		byte[] nonce = new byte[NONCE_LENGTH];
 		sr.nextBytes(nonce);
@@ -242,9 +231,9 @@ public class PublicKeyCrypto {
 		}
 		
 		/*Construct the first message*/
-		byte[] firstmsg = new byte[NONCE_LENGTH + DES_KEY_LENGTH_BYTES];
+		byte[] firstmsg = new byte[NONCE_LENGTH + BLOWFISH_KEY_LENGTH_BYTES];
 		System.arraycopy(nonce, 0, firstmsg, 0, NONCE_LENGTH);
-		System.arraycopy(sendkey, 0, firstmsg, NONCE_LENGTH, DES_KEY_LENGTH_BYTES);
+		System.arraycopy(sendkey, 0, firstmsg, NONCE_LENGTH, BLOWFISH_KEY_LENGTH_BYTES);
 
 		/*Encrypt */
 		byte[] encfirstmsg = c.doFinal(firstmsg);
@@ -257,7 +246,7 @@ public class PublicKeyCrypto {
 		
 		/*Receive the second message*/
 		
-		c = Cipher.getInstance("DES/CFB8/PKCS5Padding");
+		c = Cipher.getInstance("Blowfish/CFB8/PKCS5Padding");
 		
 		//get ivp from prepend of second msg.
 		byte[] iv = new byte[8];
