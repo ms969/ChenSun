@@ -3,12 +3,16 @@ package server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import crypto.CryptoUtil;
+import crypto.Hash;
 
 import shared.InputProcessor;
 
@@ -316,11 +320,20 @@ public class ServerInputProcessor extends InputProcessor {
 	}
 
 	private void processLogin(String inputLine) {
+		// get password
+		out.println("getPassword");
+		String pwdString = null;
+		try {
+			pwdString = in.readLine();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet userTuple = null;
 		String username = getValue(inputLine);
-		byte[] pwd = "something".getBytes();
+		byte[] pwd = pwdString.getBytes();
 		
 		boolean userExist = false;
 		boolean pwMatch = false;
@@ -344,7 +357,8 @@ public class ServerInputProcessor extends InputProcessor {
 				aname = userTuple.getString("aname");
 			}
 			if (userExist) {
-				
+				pwMatch = Hash.comparePwd(pwhash, pwd);
+				CryptoUtil.zeroArray(pwd);
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

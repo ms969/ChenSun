@@ -57,6 +57,9 @@ public class ClientProcessor extends InputProcessor {
 			if (commands[i].equals("help")) {
 				processHelp();
 			}
+			if (commands[i].equals("getPassword")) {
+				getPassword();
+			}
 			
 			/*if (commands[i].matches("^setUser.+")) {
 				String value = getValue(commands[i]);
@@ -64,6 +67,10 @@ public class ClientProcessor extends InputProcessor {
 			}*/
 			// *** Add commands here ***
 		}
+	}
+	
+	public void getPassword() {
+		System.out.println("Type in your password:");
 	}
 	
 	public void askForInput() {
