@@ -3,17 +3,24 @@ package server;
 import java.net.*;
 import java.io.*;
 
+import java.security.*;
+import crypto.PublicKeyCryptoServer;
+
 public class SocialNetworkProtocol implements Runnable {
 	
 	private ServerInputProcessor iprocessor;
 	
 	private Socket clientSocket;
+	
+	private PrivateKey pk;
 
-	public SocialNetworkProtocol(Socket clientSocket) {
+	public SocialNetworkProtocol(Socket clientSocket, PrivateKey pk) {
 		this.clientSocket = clientSocket;
+		this.pk = pk;
 	}
 
-	public void main() throws IOException {
+	public void main() throws Exception {
+		PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
 		// Getting client socket's input and output streams
 		BufferedReader in = new BufferedReader(new InputStreamReader(
 				clientSocket.getInputStream()));
@@ -33,10 +40,10 @@ public class SocialNetworkProtocol implements Runnable {
 		clientSocket.close();
 	}
 
-	public void run() {
+	public void run(){
 		try {
 			main();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
