@@ -65,6 +65,7 @@ public class SharedKeyCryptoComm {
 	}
 	
 	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
+		System.out.println(msg);
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
@@ -92,7 +93,7 @@ public class SharedKeyCryptoComm {
 		return true;
 	}
 	
-	public static String receive(BufferedReader br, InputStream is, Cipher c, SecretKey sk) {
+	public static String receive(InputStream is, Cipher c, SecretKey sk) {
 		int blockSize = c.getBlockSize();
 		byte[] iv = new byte[blockSize];
 		
@@ -102,14 +103,21 @@ public class SharedKeyCryptoComm {
 				System.out.println("Error/Timeout receiving the message.");
 				return null;
 			}
+			
 			IvParameterSpec ivp = new IvParameterSpec(iv);
 			try {
 				c.init(Cipher.DECRYPT_MODE, sk, ivp);
 			}
 			catch (Exception e) {/*cannot happen*/}
+			
 
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					new CipherInputStream(new NonClosingCipherInputStream(is),c)));
+			
 			//get msg
-			return br.readLine();
+			String msg = br.readLine();
+			br.close();
+			return msg;
 		}
 		catch (IOException ioe) {
 			System.out.println("Error/Timeout receiving the message.");
