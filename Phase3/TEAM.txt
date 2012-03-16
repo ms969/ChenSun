@@ -1,0 +1,16 @@
+Kevin Chen - kfc35
+	Kevin did research on how to implement shared key and public key 
+encryption. He brainstormed the key exchange protocol for server and
+client authentication. He implemented the authentication protocol 
+for server to authenticate to the client using RSA. He also 
+implemented shared session keys for communicating between clients and 
+server. 
+	Hours: 26 hours (total).
+
+MJ Sun - ms969
+	MJ did research on implementation of shared key encryption. She 
+implemented the password hashing protocol and server-database 
+encryption using shared key. She updated tutorial setup files with 
+encrypted data. MJ also helped to formulate and complete the 
+protocol for server and client authentication.
+	Hours: 24 hours (total).
