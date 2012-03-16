@@ -429,7 +429,6 @@ public class ServerInputProcessor extends InputProcessor {
 				command = command + ";print " + groups.getString("aname");
 			}
 
-			String command = "";
 			String group = "";
 			int aid = 0;
 			while (!groupExist) {
@@ -467,6 +466,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ group
 					+ " has been sent.;print Once an admin from your group "
 					+ "approves, you will be added to the system.;print ;";
+			SharedKeyCryptoComm.send(command, os, c, sk);
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
 				SharedKeyCryptoComm.send("print User is already in the system. Choose a different username.;print ;", os, c, sk);
