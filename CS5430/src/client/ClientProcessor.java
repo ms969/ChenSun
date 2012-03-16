@@ -1,10 +1,11 @@
 package client;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import javax.crypto.*;
+
+import crypto.SharedKeyCryptoComm;
+
+import java.security.*;
 import java.util.Arrays;
 
 import shared.InputProcessor;
@@ -16,14 +17,22 @@ public class ClientProcessor extends InputProcessor {
 	// private String user = null;
 
 	private BufferedReader keyboard;
-	private PrintWriter serverOut;
-	private BufferedReader serverIn;
-
-	public ClientProcessor(PrintWriter serverOut, BufferedReader serverIn,
-			BufferedReader keyboard) {
+	private OutputStream serverOut;
+	private InputStream serverIn;
+	private BufferedReader br;
+	private Cipher c;
+	private SecretKey sk;
+	
+	
+	public ClientProcessor(OutputStream serverOut, InputStream serverIn, 
+			BufferedReader keyboard, Cipher c, SecretKey sk) {
+		this.keyboard = keyboard;
 		this.serverOut = serverOut;
 		this.serverIn = serverIn;
-		this.keyboard = keyboard;
+		br = new BufferedReader(new InputStreamReader(new CipherInputStream(
+				serverIn, c)));
+		this.c = c;
+		this.sk = sk;
 	}
 
 	private void processCommands(String response) {
@@ -38,10 +47,10 @@ public class ClientProcessor extends InputProcessor {
 				askForInput();
 			}
 			if (commands[i].equals("isLoggedIn")) {
-				serverOut.println(isLoggedIn());
+				SharedKeyCryptoComm.send("" + isLoggedIn(), serverOut, c, sk);
 			}
 			if (commands[i].equals("isExit")) {
-				serverOut.println(isExit());
+				SharedKeyCryptoComm.send("" + isExit(), serverOut, c, sk);
 			}
 			/*
 			 * if (commands[i].equals("getUser")) {
@@ -82,10 +91,11 @@ public class ClientProcessor extends InputProcessor {
 			int i = keyboard.read(charBuff);
 			//keyboard.readLine();
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
+			//TODO
 			serverOut.println(pwd);
 			Arrays.fill(charBuff, ' ');
 			Arrays.fill(pwd, ' ');
-			processCommands(serverIn.readLine());
+			processCommands(SharedKeyCryptoComm.receive(br, serverIn, c, sk));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -97,8 +107,8 @@ public class ClientProcessor extends InputProcessor {
 		System.out.print(">> ");
 		try {
 			String input = keyboard.readLine();
-			serverOut.println(input);
-			processCommands(serverIn.readLine());
+			SharedKeyCryptoComm.send(input, serverOut, c, sk);
+			processCommands(SharedKeyCryptoComm.receive(br, serverIn, c, sk));
 
 		} catch (IOException e) {
 			e.printStackTrace();
