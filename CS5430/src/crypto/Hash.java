@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 import server.SocialNetworkServer;
 
@@ -41,25 +42,33 @@ public class Hash {
 	}
 
 	public static boolean comparePwd(String storedPwd, char[] enteredPwd) {
-
+		String pwdAndSaltStr = hashExistingPwd(storedPwd.substring(0, SALT_STRING_LENGTH), enteredPwd);
+		boolean ret = storedPwd.substring(SALT_STRING_LENGTH).equals(
+				pwdAndSaltStr);
+		Arrays.fill(enteredPwd, ' ');
+		return ret;
+	}
+	
+	public static boolean comparePwd(String storedPwd, String enteredPwd) {
+		return storedPwd.substring(SALT_STRING_LENGTH).equals(enteredPwd);
+	}
+	
+	public static String hashExistingPwd(String salt, char[] enteredPwd) {
 		// convert char[] to byte[]
 		byte[] enteredPwdByte = new byte[enteredPwd.length*2];
 		ByteBuffer.wrap(enteredPwdByte).asCharBuffer().put(enteredPwd);
 		// getting the salt in byte[]
-		byte[] saltBytes = decode(storedPwd
-				.substring(0, SALT_STRING_LENGTH));
+		byte[] saltBytes = decode(salt);
 		// concatenating into one
 		byte[] pwdAndSalt = new byte[saltBytes.length + enteredPwdByte.length];
 		System.arraycopy(saltBytes, 0, pwdAndSalt, 0, saltBytes.length);
 		System.arraycopy(enteredPwdByte, 0, pwdAndSalt, saltBytes.length,
 				enteredPwdByte.length);
 		// hashing it
-		String pwdAndSaltStr = generateHash(pwdAndSalt);
-		boolean ret = storedPwd.substring(SALT_STRING_LENGTH).equals(
-				pwdAndSaltStr);
-		CryptoUtil.zeroArray(pwdAndSalt);
-		return ret;
-	
+		String hash = generateHash(pwdAndSalt);
+		Arrays.fill(enteredPwdByte, (byte)0x00);
+		Arrays.fill(pwdAndSalt, (byte)0x00);
+		return hash;
 	}
 
 	private static String encode(byte[] bytes) {

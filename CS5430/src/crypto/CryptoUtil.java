@@ -22,17 +22,13 @@ public class CryptoUtil {
 		}
 	}
 	
-	private static byte[] generateZeroArray(int length) {
-		byte[] array = new byte[length];
-		byte[] zero = {(byte)0x00};
-		for (int i=0; i<length; i++) {
-			System.arraycopy(zero, 0, array, i, 1);
-		}
-		return array;
-	}
+//	private static byte[] generateZeroArray(int length) {
+//		byte[] array = new byte[length];
+//		byte[] zero = {(byte)0x00};
+//		for (int i=0; i<length; i++) {
+//			System.arraycopy(zero, 0, array, i, 1);
+//		}
+//		return array;
+//	}
 	
-	public static void zeroArray(byte[] array) {
-		byte[] zeros = generateZeroArray(array.length);
-		System.arraycopy(zeros, 0, array, 0, array.length);
-	}
 }

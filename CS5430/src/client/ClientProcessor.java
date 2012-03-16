@@ -3,6 +3,7 @@ package client;
 import java.io.*;
 import javax.crypto.*;
 
+import crypto.Hash;
 import crypto.SharedKeyCryptoComm;
 
 import java.security.*;
@@ -88,11 +89,15 @@ public class ClientProcessor extends InputProcessor {
 		char[] charBuff = new char[24];
 		System.out.print(">>");
 		try {
+			String hashedPwd = "";
 			int i = keyboard.read(charBuff);
 			//keyboard.readLine();
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
-			//TODO
-			serverOut.println(pwd);
+			if (salt != null) {
+				hashedPwd = Hash.hashExistingPwd(salt, pwd);
+			}
+			
+			SharedKeyCryptoComm.send(hashedPwd, serverOut, c, sk);
 			Arrays.fill(charBuff, ' ');
 			Arrays.fill(pwd, ' ');
 			processCommands(SharedKeyCryptoComm.receive(br, serverIn, c, sk));

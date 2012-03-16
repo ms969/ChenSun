@@ -292,17 +292,7 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void processLogin(String inputLine) {
 		// get password
-		out.println("print Input password:;getPassword");
-		char[] charBuff = new char[24];
-		char[] pwdChar = null;
-		try {
-			int i = in.read(charBuff);
-			pwdChar = Arrays.copyOfRange(charBuff, 0, i - 2);
-			Arrays.fill(charBuff, ' ');
-		} catch (IOException e1) {
-			Arrays.fill(charBuff, ' ');
-			e1.printStackTrace();
-		}
+		
 		Connection conn = DBManager.getConnection();
 		Statement stmt = null;
 		ResultSet userTuple = null;
@@ -329,11 +319,21 @@ public class ServerInputProcessor extends InputProcessor {
 				role = userTuple.getString("role");
 				aname = userTuple.getString("aname");
 			}
+			
 			if (userExist) {
-				pwMatch = Hash.comparePwd(pwhash, pwdChar);
-				Arrays.fill(pwdChar, ' ');
+				out.print("setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH));
+			}
+			
+			out.println("print Input password:;getPassword");
+			String enteredPwdHash = in.readLine();
+			
+			if (userExist) {
+				pwMatch = Hash.comparePwd(pwhash, enteredPwdHash);
 			}
 		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
 			DBManager.closeStatement(stmt);
