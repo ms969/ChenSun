@@ -97,6 +97,7 @@ public class ClientProcessor extends InputProcessor {
 			int i = keyboard.read(charBuff);
 			//keyboard.readLine();
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
+			System.out.println("salt: " + salt);
 			if (salt != null) {
 				hashedPwd = Hash.hashExistingPwd(salt, pwd);
 			}
