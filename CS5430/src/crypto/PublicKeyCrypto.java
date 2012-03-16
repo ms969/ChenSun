@@ -12,6 +12,9 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
+
 public class PublicKeyCrypto {
 	/* In the server and client code, the server's Public Key
 	 * is on full display. */
@@ -40,9 +43,9 @@ public class PublicKeyCrypto {
 	/*DES Key length is in bytes*/
 	private final static int DES_KEY_LENGTH = 56;
 	private final static int DES_KEY_LENGTH_BYTES = (64/8);
+	private final static int RSA_KEY_LENGTH = 1024;
+	private final static int RSA_BLOCK_LENGTH = (((RSA_KEY_LENGTH)/8));
 	
-	
-
 	public static boolean debug = true;
 	
 	private static PublicKey serverPublicKeyRSA() throws NoSuchAlgorithmException, InvalidKeySpecException {
@@ -103,6 +106,7 @@ public class PublicKeyCrypto {
 			//TODO for now. The server initializes this on startup
 			PrivateKey serverPrivK = serverPrivateKeyRSA(serverPrivKPrivExpRSA);
 			c.init(Cipher.DECRYPT_MODE, serverPrivK);
+
 		//}
 		/*
 		catch (Exception e) {
@@ -111,18 +115,18 @@ public class PublicKeyCrypto {
 			System.exit( 1 );
 		}*/
 		
-		CipherInputStream cis = new CipherInputStream(is, c);
-		//BufferedReader br = new BufferedReader(new InputStreamReader(is));
-		byte[] firstmsg = new byte[NONCE_LENGTH + DES_KEY_LENGTH_BYTES];
-		System.out.println("About to read the first msg");
-
-		int bytesRead = cis.read(firstmsg);
-		while (bytesRead != NONCE_LENGTH + DES_KEY_LENGTH_BYTES) {
-			bytesRead += cis.read(firstmsg, bytesRead, NONCE_LENGTH + DES_KEY_LENGTH_BYTES - bytesRead);
+		/*Receive the first message*/
+		/*Because RSA is DUMB WITH CIPHER STREAMS, doing it old school*/
+		BufferedInputStream bis = new BufferedInputStream(is);
+		byte[] encfirstmsg = new byte[RSA_BLOCK_LENGTH];
+		if (debug) {
+			System.out.println("About to read the first msg");
 		}
-		//String msg = br.readLine();
-		//System.out.println(msg);
-		
+		int bytesRead = bis.read(encfirstmsg);
+		while (bytesRead != RSA_BLOCK_LENGTH) {
+			bytesRead += bis.read(encfirstmsg, bytesRead, RSA_BLOCK_LENGTH - bytesRead);
+		}
+		byte[] firstmsg = c.doFinal(encfirstmsg);
 		System.out.println("Server received first message: " + 
 				new String(firstmsg, "UTF8"));
 		
@@ -137,6 +141,7 @@ public class PublicKeyCrypto {
 		byte[] firstNonceNumPlusOneCorrectLen = new byte[8];
 		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		
+		//extract the shared key
 		byte[] recvkey = new byte[DES_KEY_LENGTH_BYTES];
 		System.arraycopy(firstmsg, NONCE_LENGTH, recvkey, 0, DES_KEY_LENGTH_BYTES);
 		SecretKey key = (SecretKey) new SecretKeySpec(recvkey, 0, DES_KEY_LENGTH_BYTES, "DES");
@@ -148,11 +153,14 @@ public class PublicKeyCrypto {
 		sr.nextBytes(sendNonce);
 		System.out.println("Second nonce created: " + new BigInteger(sendNonce));
 		
+		//create an ivp
 		byte[] iv = new byte[8];
 		sr.nextBytes(iv);
 		IvParameterSpec ivp = new IvParameterSpec(iv);
 		
 		/*Construct the second message*/
+		//prepend the iv for the decrypter to know.
+		os.write(iv);
 		c = Cipher.getInstance("DES/CFB8/PKCS5Padding");
 		c.init(Cipher.ENCRYPT_MODE, key, ivp);
 		byte[] secondmsg = new byte[NONCE_LENGTH + NONCE_LENGTH];
@@ -165,12 +173,17 @@ public class PublicKeyCrypto {
 		cos.close();
 		System.out.println("Server sent the second message: " + new String(secondmsg, "UTF8"));
 		
+		//get the new ivp for the third message
 		iv = new byte[8];
-		sr.nextBytes(iv);
+		bytesRead = is.read(iv);
+		while (bytesRead != 8) {
+			bytesRead += is.read(iv, bytesRead, 8 - bytesRead);
+		}
 		ivp = new IvParameterSpec(iv);
 		
 		/*Receive the third message, check that nonce = nonce*2*/
 		c.init(Cipher.DECRYPT_MODE, key, ivp);
+		CipherInputStream cis = new CipherInputStream(is, c);
 		byte[] thirdmsg = new byte[NONCE_LENGTH];
 		bytesRead = cis.read(thirdmsg);
 		while (bytesRead != NONCE_LENGTH) {
@@ -232,32 +245,35 @@ public class PublicKeyCrypto {
 		byte[] firstmsg = new byte[NONCE_LENGTH + DES_KEY_LENGTH_BYTES];
 		System.arraycopy(nonce, 0, firstmsg, 0, NONCE_LENGTH);
 		System.arraycopy(sendkey, 0, firstmsg, NONCE_LENGTH, DES_KEY_LENGTH_BYTES);
-		
+
 		/*Encrypt */
+		byte[] encfirstmsg = c.doFinal(firstmsg);
+		BufferedOutputStream bos = new BufferedOutputStream(os);
+		bos.write(encfirstmsg);
+		bos.flush();
 		CipherOutputStream cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
 		
-		//PrintWriter ps = new PrintWriter(cos, true);
-		//ps.println(new String(firstmsg, "UTF8"));
-		cos.write(firstmsg);
-		cos.flush();
-		cos.close();
-		//ps.flush();
-		
-		System.out.println("Sent first message from client: " + new String(firstmsg, "UTF8"));
+		System.out.println("First Message: " + new String(encfirstmsg, "UTF8"));//firstmsgbase64);
 		
 		/*Receive the second message*/
 		
 		c = Cipher.getInstance("DES/CFB8/PKCS5Padding");
 		
+		//get ivp from prepend of second msg.
 		byte[] iv = new byte[8];
-		sr.nextBytes(iv);
+		int bytesRead = is.read(iv);
+		while (bytesRead != 8) {
+			bytesRead += is.read(iv, bytesRead, 8 - bytesRead);
+		}
 		IvParameterSpec ivp = new IvParameterSpec(iv);
 		
+		//fetch the actual second message
 		c.init(Cipher.DECRYPT_MODE, key, ivp);
 		CipherInputStream cis = new CipherInputStream(is, c);
 		byte[] secondmsg = new byte[NONCE_LENGTH + NONCE_LENGTH];
-		int bytesRead = cis.read(secondmsg);
+		bytesRead = cis.read(secondmsg);
 		while (bytesRead != NONCE_LENGTH + NONCE_LENGTH) {
+			System.out.println(bytesRead);
 			bytesRead += cis.read(secondmsg, bytesRead, NONCE_LENGTH + NONCE_LENGTH - bytesRead);
 		}
 		System.out.println("Second msg received: " + new String(secondmsg, "UTF8"));
@@ -277,7 +293,6 @@ public class PublicKeyCrypto {
 		}
 		else {
 			/*Calculate second nonce * 2*/
-		
 			byte[] secondNonce = new byte[NONCE_LENGTH];
 			System.arraycopy(secondmsg, NONCE_LENGTH, secondNonce, 0, NONCE_LENGTH);
 			BigInteger secondNonceNum = new BigInteger(secondNonce);
@@ -290,7 +305,14 @@ public class PublicKeyCrypto {
 			byte[] thirdmsg = new byte[NONCE_LENGTH];
 			System.arraycopy(secondNonceTimesTwoCorrectLen, 0, thirdmsg, 0, NONCE_LENGTH);
 			
-			c.init(Cipher.ENCRYPT_MODE, key);
+			//Create a new ivp for this new msg
+			iv = new byte[8];
+			sr.nextBytes(iv);
+			ivp = new IvParameterSpec(iv);
+			
+			//prepend iv to the msg
+			os.write(iv);
+			c.init(Cipher.ENCRYPT_MODE, key, ivp);
 			cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
 			cos.write(thirdmsg);
 			cos.flush();

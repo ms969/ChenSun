@@ -12,10 +12,9 @@ public class NonClosingCipherOutputStream extends FilterOutputStream {
 
 	public void close() throws IOException{
 		try {
-			flush();
+			super.flush();
 		}
 		catch (IOException e) {
-			
 		}
 	}
 }
