@@ -6,7 +6,11 @@ import server.SocialNetworkServer;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
+import shared.ProjectConfig;
+
 public class CryptoUtil {
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
+	
 	public static String encode(byte[] bytes) {
 		BASE64Encoder encoder = new BASE64Encoder();
 		return encoder.encode(bytes);
@@ -17,7 +21,7 @@ public class CryptoUtil {
 		try {
 			return decoder.decodeBuffer(str);
 		} catch (IOException e) {
-			if (SocialNetworkServer.DEBUG) e.printStackTrace();
+			if (DEBUG) e.printStackTrace();
 			return null;
 		}
 	}

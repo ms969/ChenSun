@@ -4,6 +4,8 @@ import java.io.*;
 
 import javax.crypto.*;
 
+import comm.CommManager;
+
 import crypto.Hash;
 import crypto.SharedKeyCryptoComm;
 
@@ -16,7 +18,6 @@ public class ClientProcessor extends InputProcessor {
 	private boolean loggedIn = false;
 	private boolean exit = false;
 	private String salt;
-	// private String user = null;
 
 	private BufferedReader keyboard;
 	private OutputStream serverOut;
@@ -46,15 +47,11 @@ public class ClientProcessor extends InputProcessor {
 				askForInput();
 			}
 			if (commands[i].equals("isLoggedIn")) {
-				SharedKeyCryptoComm.send("" + isLoggedIn(), serverOut, c, sk);
+				CommManager.send("" + isLoggedIn(), serverOut, c, sk);
 			}
 			if (commands[i].equals("isExit")) {
-				SharedKeyCryptoComm.send("" + isExit(), serverOut, c, sk);
+				CommManager.send("" + isExit(), serverOut, c, sk);
 			}
-			/*
-			 * if (commands[i].equals("getUser")) {
-			 * serverOut.println(getUser()); }
-			 */
 			if (commands[i].matches("^setLoggedIn.+")) {
 				String value = getValue(commands[i]);
 				setLoggedIn(Boolean.parseBoolean(value));
@@ -76,41 +73,45 @@ public class ClientProcessor extends InputProcessor {
 			if (commands[i].equals("createPassword")) {
 				createPassword();
 			}
-
-			/*
-			 * if (commands[i].matches("^setUser.+")) { String value =
-			 * getValue(commands[i]); setUser(value); }
-			 */
 			// *** Add commands here ***
 		}
 	}
 
-	public void getPassword() {
-		// XXX working here
+	public void askForInput() {
+		System.out.print(">> ");
+		try {
+			String input = keyboard.readLine();
+			CommManager.send(input, serverOut, c, sk);
+			processCommands(CommManager.receive(serverIn, c, sk));
+	
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void getPassword() {
 		char[] charBuff = new char[24];
 		System.out.print(">> ");
 		try {
 			String hashedPwd = "";
 			int i = keyboard.read(charBuff);
-			//keyboard.readLine();
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
-			System.out.println("salt: " + salt);
 			if (salt != null) {
 				hashedPwd = Hash.hashExistingPwd(salt, pwd);
+				salt = null;
 			}
 			
-			SharedKeyCryptoComm.send(hashedPwd, serverOut, c, sk);
+			CommManager.send(hashedPwd, serverOut, c, sk);
 			Arrays.fill(charBuff, ' ');
 			Arrays.fill(pwd, ' ');
-			processCommands(SharedKeyCryptoComm.receive(serverIn, c, sk));
+			processCommands(CommManager.receive(serverIn, c, sk));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 	}
 	
-	public void createPassword() {
+	private void createPassword() {
 		boolean pwdValid = false;
 		char[] pwdChar1 = null;
 		char[] pwdChar2 = null;
@@ -122,7 +123,6 @@ public class ClientProcessor extends InputProcessor {
 				int i = keyboard.read(charBuff);
 				pwdChar1 = Arrays.copyOfRange(charBuff, 0, i - 2);
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 
@@ -142,41 +142,17 @@ public class ClientProcessor extends InputProcessor {
 		}
 		
 		String pwdHash = Hash.createPwdHashStore(pwdChar1);
-		SharedKeyCryptoComm.send(pwdHash, serverOut, c, sk);
-		processCommands(SharedKeyCryptoComm.receive(serverIn, c, sk));
+		CommManager.send(pwdHash, serverOut, c, sk);
+		processCommands(CommManager.receive(serverIn, c, sk));
 	}
 		
-	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
-		if (pwdChar1.length != pwdChar2.length) {
-			return false;
-		}
-		for (int i = 0; i < pwdChar1.length; i++) {
-			if (pwdChar1[i] != pwdChar2[i])
-				return false;
-		}
-		return true;
-	}
-
-	public void askForInput() {
-		System.out.print(">> ");
-		try {
-			String input = keyboard.readLine();
-			SharedKeyCryptoComm.send(input, serverOut, c, sk);
-			System.out.println("Done sending input");
-			processCommands(SharedKeyCryptoComm.receive(serverIn, c, sk));
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	public void processLogin() {
 		System.out.println("To log in, type 'login <username>'");
 		System.out.println("To register, type 'register'");
 		askForInput();
 	}
 
-	public void processHelp() {
+	private void processHelp() {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader("HELP.txt"));
 			String line;
@@ -204,19 +180,23 @@ public class ClientProcessor extends InputProcessor {
 		return exit;
 	}
 
-	// public String getUser() {
-	// return user;
-	// }
-
-	public void setLoggedIn(boolean loggedIn) {
+	private void setLoggedIn(boolean loggedIn) {
 		this.loggedIn = loggedIn;
 	}
 
-	public void setExit(boolean exit) {
+	private void setExit(boolean exit) {
 		this.exit = exit;
 	}
 
-	// public void setUser(String user) {
-	// this.user = user;
-	// }
+	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
+		if (pwdChar1.length != pwdChar2.length) {
+			return false;
+		}
+		for (int i = 0; i < pwdChar1.length; i++) {
+			if (pwdChar1[i] != pwdChar2[i])
+				return false;
+		}
+		return true;
+	}
+
 }

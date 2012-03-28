@@ -64,23 +64,9 @@ public class ClientGUI {
 			}
 	
 			/* TODO Get Information from Server if successfully logged in */
-	
-//			boolean inSession = true;
-//			String input;
-//			String socketMsg;
-//	
-//			while (inSession) {
-//				System.out.print(">> ");
-//				input = keyboard.readLine();
-//				serverOut.println(input);
-//				socketMsg = serverIn.readLine();
-//				System.out.println(socketMsg);
-//			}
+
 		}
 
-//		serverOut.close();
-//		serverIn.close();
-//		kkSocket.close();
 	}
 
 }

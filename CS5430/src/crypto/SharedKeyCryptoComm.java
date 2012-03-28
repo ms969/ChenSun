@@ -37,7 +37,7 @@ public class SharedKeyCryptoComm {
 	}
 	
 	/** Reads an IV with the given size
-	 *  Returns null when there is an IOException
+	 *  Returns false when there is an IOException
 	 * **/
 	private static boolean readIV(InputStream is, byte[] iv) {
 		try {

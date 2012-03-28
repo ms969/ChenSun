@@ -7,9 +7,10 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 
 import server.SocialNetworkServer;
+import shared.ProjectConfig;
 
 public class Hash {
-	private static final boolean DEBUG = SocialNetworkServer.DEBUG;
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	public static final int SALT_STRING_LENGTH = 24;
 	public static final int SALT_BYTE_LENGTH = 16;
 

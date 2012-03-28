@@ -5,6 +5,9 @@ import java.io.*;
 
 import java.security.*;
 import javax.crypto.*;
+
+import comm.CommManager;
+
 import crypto.PublicKeyCryptoServer;
 import crypto.SharedKeyCryptoComm;
 
@@ -33,7 +36,7 @@ public class SocialNetworkProtocol implements Runnable {
 		
 		
 		String inputLine;
-		while ((inputLine = SharedKeyCryptoComm.receive(clientSocket.getInputStream(), c, sk)) != null) {
+		while ((inputLine = CommManager.receive(clientSocket.getInputStream(), c, sk)) != null) {
 			System.out.println(inputLine);
 			iprocessor.processCommand(inputLine);
 		}

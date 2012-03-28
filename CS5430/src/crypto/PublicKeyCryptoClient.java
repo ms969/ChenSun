@@ -11,6 +11,8 @@ import java.util.Arrays;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 
+import shared.ProjectConfig;
+
 public class PublicKeyCryptoClient {
 	/* In the server and client code, the server's Public Key
 	 * is on full display. */
@@ -25,7 +27,7 @@ public class PublicKeyCryptoClient {
 			"483255857586126066156178747843234758357");
 	private static BigInteger serverPKExpRSA = new BigInteger("65537");
 	
-	private static boolean debug = false;
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	private final static int NONCE_LENGTH = (64/8);
 	private final static int BLOWFISH_KEY_LENGTH = 128;
 	private final static int BLOWFISH_KEY_LENGTH_BYTES = (BLOWFISH_KEY_LENGTH/8);
@@ -66,7 +68,7 @@ public class PublicKeyCryptoClient {
 		kg.init(BLOWFISH_KEY_LENGTH);
 		SecretKey key = kg.generateKey();
 		byte[] sendkey = key.getEncoded();
-		if (debug) {
+		if (DEBUG) {
 			try {
 				System.out.println("Encoded Key: " + new String(sendkey, "UTF8"));
 			}
@@ -97,7 +99,7 @@ public class PublicKeyCryptoClient {
 		catch (Exception e) {/*Valid algorithm*/}
 		byte[] nonce = new byte[NONCE_LENGTH];
 		sr.nextBytes(nonce);
-		if (debug) {
+		if (DEBUG) {
 			System.out.println("First Nonce created on client side: " + new BigInteger(nonce));
 		}
 		
@@ -118,7 +120,7 @@ public class PublicKeyCryptoClient {
 			System.out.println("Error sending the first message");
 			return null;
 		}
-		if (debug) {
+		if (DEBUG) {
 			try {
 				System.out.println("First Message: " + new String(encfirstmsg, "UTF8"));//firstmsgbase64);
 			}
@@ -164,7 +166,7 @@ public class PublicKeyCryptoClient {
 			System.out.println("Error/Timeout while receiving the second message.");
 			return null;
 		}
-		if (debug) {
+		if (DEBUG) {
 			try {
 				System.out.println("Second msg received: " + new String(secondmsg, "UTF8"));
 			}
@@ -180,7 +182,7 @@ public class PublicKeyCryptoClient {
 		byte[] firstNonceNumPlusOneCorrectLen = new byte[NONCE_LENGTH];
 		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		if (!Arrays.equals(recvnonce, firstNonceNumPlusOneCorrectLen)) {
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Failure");
 			}
 			return null;
@@ -190,11 +192,11 @@ public class PublicKeyCryptoClient {
 			byte[] secondNonce = new byte[NONCE_LENGTH];
 			System.arraycopy(secondmsg, NONCE_LENGTH, secondNonce, 0, NONCE_LENGTH);
 			BigInteger secondNonceNum = new BigInteger(secondNonce);
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Second nonce received: " + secondNonceNum);
 			}
 			secondNonceNum = secondNonceNum.shiftLeft(1);
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Second nonce * 2: " + secondNonceNum);
 			}
 			byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
@@ -221,7 +223,7 @@ public class PublicKeyCryptoClient {
 				System.out.println("Error/Timeout while sending the third message");
 				return null;
 			}
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Success");
 			}
 			return key;

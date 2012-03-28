@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 public class SocialNetworkDatabaseBoards {
 	
@@ -338,5 +339,29 @@ public class SocialNetworkDatabaseBoards {
 		else {
 			return boardlist;
 		}
+	}
+	
+	public static ArrayList<String> getBoardAdmins(Connection conn, String board) {
+		if (board.equals("freeforall")) {
+			// TODO: what to return if board is freeforall?
+			return null;
+		}
+		ArrayList<String> admins = new ArrayList<String>();
+		String query = "SELECT * FROM " + board + ".admins";
+		Statement stmt = null;
+		ResultSet adminResults = null;
+		try {
+			stmt = conn.createStatement();
+			adminResults = stmt.executeQuery(query);
+			while (adminResults.next()) {
+				admins.add(adminResults.getString("username"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			DBManager.closeStatement(stmt);
+			DBManager.closeResultSet(adminResults);
+		}
+		return admins;
 	}
 }

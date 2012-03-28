@@ -12,6 +12,8 @@ import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import shared.ProjectConfig;
+
 public class PublicKeyCryptoServer {
 	/* In the server and client code, the server's Public Key
 	 * is on full display. */
@@ -32,7 +34,7 @@ public class PublicKeyCryptoServer {
 	private final static int RSA_KEY_LENGTH = 1024;
 	private final static int RSA_BLOCK_LENGTH = (((RSA_KEY_LENGTH)/8));
 	
-	public static boolean debug = false;
+	public static final boolean DEBUG = ProjectConfig.DEBUG;
 	
 	/** Returns the server's public key
 	 * from static info.
@@ -85,13 +87,13 @@ public class PublicKeyCryptoServer {
 			//encrypt
 			rsac.init(Cipher.ENCRYPT_MODE, pub);
 			byte[] ciphertxt = rsac.doFinal(testingString.getBytes("UTF8"));
-			if (debug) {
+			if (DEBUG) {
 				System.out.println(new String(ciphertxt, "UTF8"));
 			}
 			//decrypt
 			rsac.init(Cipher.DECRYPT_MODE,priv);
 			txt = new String(rsac.doFinal(ciphertxt), "UTF8");
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("\n" + txt);
 			}
 		}
@@ -129,7 +131,7 @@ public class PublicKeyCryptoServer {
 		BufferedInputStream bis = new BufferedInputStream(is);
 		byte[] encfirstmsg = new byte[RSA_BLOCK_LENGTH];
 		byte[] firstmsg = null;
-		if (debug) {
+		if (DEBUG) {
 			System.out.println("About to read the first msg");
 		}
 		try {
@@ -138,7 +140,7 @@ public class PublicKeyCryptoServer {
 				bytesRead += bis.read(encfirstmsg, bytesRead, RSA_BLOCK_LENGTH - bytesRead);
 			}
 			firstmsg = c.doFinal(encfirstmsg);
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Server received first message: " + 
 						new String(firstmsg, "UTF8"));
 			}
@@ -152,11 +154,11 @@ public class PublicKeyCryptoServer {
 		byte[] recvNonce = new byte[NONCE_LENGTH];
 		System.arraycopy(firstmsg, 0, recvNonce, 0, NONCE_LENGTH);
 		BigInteger firstNonceNum = new BigInteger(recvNonce);
-		if (debug) {
+		if (DEBUG) {
 			System.out.println("First nonce recv: " + firstNonceNum);
 		}
 		firstNonceNum = firstNonceNum.add(BigInteger.ONE);
-		if (debug) {
+		if (DEBUG) {
 			System.out.println("First nonce recv + 1: " + firstNonceNum);
 		}
 		byte[] firstNonceNumPlusOne = firstNonceNum.toByteArray();
@@ -167,7 +169,7 @@ public class PublicKeyCryptoServer {
 		byte[] recvkey = new byte[BLOWFISH_KEY_LENGTH_BYTES];
 		System.arraycopy(firstmsg, NONCE_LENGTH, recvkey, 0, BLOWFISH_KEY_LENGTH_BYTES);
 		SecretKey key = (SecretKey) new SecretKeySpec(recvkey, 0, BLOWFISH_KEY_LENGTH_BYTES, "Blowfish");
-		if (debug) {
+		if (DEBUG) {
 			try {
 				System.out.println("Key received: " + new String(key.getEncoded(), "UTF8"));
 			}
@@ -189,7 +191,7 @@ public class PublicKeyCryptoServer {
 		}
 		byte[] sendNonce = new byte[NONCE_LENGTH];
 		sr.nextBytes(sendNonce);
-		if (debug) {
+		if (DEBUG) {
 			System.out.println("Second nonce created: " + new BigInteger(sendNonce));
 		}
 		//create an ivp
@@ -216,7 +218,7 @@ public class PublicKeyCryptoServer {
 			System.out.println("Error sending the second message");
 			return null;
 		}
-		if (debug) {
+		if (DEBUG) {
 			try {
 				System.out.println("Server sent the second message: " + new String(secondmsg, "UTF8"));
 			}
@@ -259,13 +261,13 @@ public class PublicKeyCryptoServer {
 		byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
 		System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
 		if (Arrays.equals(thirdmsg, secondNonceTimesTwoCorrectLen)) {
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Success");
 			}
 			return key;
 		}
 		else {
-			if (debug) {
+			if (DEBUG) {
 				System.out.println("Failure");
 			}
 			return null;

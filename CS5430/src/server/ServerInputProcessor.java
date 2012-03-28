@@ -1,173 +1,179 @@
 package server;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
 
 import shared.InputProcessor;
-import crypto.Hash;
-import crypto.SharedKeyCrypto;
-import crypto.SharedKeyCryptoComm;
-import database.DBManager;
+import shared.ProjectConfig;
 
-import java.security.*;
-import javax.crypto.*;
+import comm.CommManager;
+
+import crypto.Hash;
+import database.DBManager;
+import database.DatabaseAdmin;
+import database.SocialNetworkDatabaseBoards;
 
 public class ServerInputProcessor extends InputProcessor {
 	private OutputStream os;
 	private InputStream is;
 	private Cipher c;
 	private SecretKey sk;
-	private SharedKeyCrypto skc;
+	
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 
 	private String user = null;
 	private String[] currentPath;
 
-	public static final String[] COMMANDS = { "^login .+", // 0
-			"^register$", // 1
-			"^regRequests$", // 2
-			"^addFriend.*", // 3
-			"^createBoard .+", // 4
-			"^refresh$", // 5
-			"^goto .+", // 6
-			"^createRegion .+", // 7
-			"^post$", // 8
-			"^reply$", // 9
-			"^friendRequests$", // 10
-			"^deleteUser$", // 11
-			"^showFriends$", // 12
-			"^changeUserRole$", // 13
-			"^transferSA$", // 14
-			// "^participants$", // 15
-			// "^addParticipants$", // 16
-			// "^removeParticipants$", // 17
-			// "^editParticipants$", // 18
-			"^logout$", // 15
-			"^help$", // 16
-	};
-
 	public void processCommand(String inputLine) throws IOException {
-		if (inputLine.matches(COMMANDS[0])) {
+		if (inputLine.matches("^login .+")) {
 			System.out.println("I'm at processCommand login!");
 			if (user == null) {
 				processLogin(inputLine);
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[1])) {
+		if (inputLine.matches("^register$")) {
 			if (user == null) {
 				processRegistration();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[2])) {
+		if (inputLine.matches("^regRequests$")) {
 			if (user != null) {
 				processRegRequests();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[3])) {
+		if (inputLine.matches("^addFriend.*")) {
 			if (user != null) {
 				processAddFriend(inputLine);
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[4])) {
+		if (inputLine.matches("^createBoard .+")) {
 			if (user != null) {
 				processCreateBoard(inputLine);
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[5])) {
+		if (inputLine.matches("^refresh$")) {
 			if (user != null) {
 				processRefresh();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[6])) {
+		if (inputLine.matches("^goto .+")) {
 			if (user != null) {
 				processGoto(inputLine);
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[7])) {
+		if (inputLine.matches("^createRegion .+")) {
 			if (user != null) {
 				processCreateRegion(inputLine);
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[8])) {
+		if (inputLine.matches("^post$")) {
 			if (user != null) {
 				processPost();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[9])) {
+		if (inputLine.matches("^reply$")) {
 			if (user != null) {
 				processReply();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[10])) {
+		if (inputLine.matches("^friendRequests$")) {
 			if (user != null) {
 				processFriendRequests();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[11])) {
+		if (inputLine.matches("^deleteUser$")) {
 			if (user != null) {
 				processDeleteUser();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[12])) {
+		if (inputLine.matches("^showFriends$")) {
 			if (user != null) {
 				processShowFriends();
+			} else {
+				CommManager.send("", os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[13])) {
+		if (inputLine.matches("^changeUserRole$")) {
 			if (user != null) {
 				processChangeUserRole();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
 			}
 			return;
 		}
-		if (inputLine.matches(COMMANDS[14])) {
+		if (inputLine.matches("^transferSA$")) {
 			if (user != null) {
 				processTransferSA();
 			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
+				CommManager.send("" , os, c, sk);
+			}
+			return;
+		}
+		if (inputLine.matches("^logout$")) {
+			if (user != null) {
+				processLogout();
+			} else {
+				CommManager.send("" , os, c, sk);
+			}
+			return;
+		}
+		if (inputLine.matches("^help$")) {
+			if (user != null) {
+				CommManager.send("help", os, c, sk);
+			} else {
+				CommManager.send("", os, c, sk);
 			}
 			return;
 		}
@@ -181,31 +187,7 @@ public class ServerInputProcessor extends InputProcessor {
 		 * (inputLine.matches(COMMANDS[18])) { if (user != null) {
 		 * processEditParticipants(); } else { out.println(); } return; }
 		 */
-		if (inputLine.matches(COMMANDS[15])) {
-			if (user != null) {
-				processLogout();
-			} else {
-				SharedKeyCryptoComm.send("" , os, c, sk);
-			}
-			return;
-		}
-		if (inputLine.matches(COMMANDS[16])) {
-			if (user != null) {
-				SharedKeyCryptoComm.send("help", os, c, sk);
-			} else {
-				SharedKeyCryptoComm.send("", os, c, sk);
-			}
-			return;
-		}
-		SharedKeyCryptoComm.send("", os, c, sk);
-	}
-
-	private void processLogout() {
-		user = null;
-		for (int i = 0; i < currentPath.length; i++) {
-			currentPath[i] = null;
-		}
-		SharedKeyCryptoComm.send("print Logged out.;setLoggedIn false", os, c, sk);
+		CommManager.send("", os, c, sk);
 	}
 
 	public ServerInputProcessor(OutputStream os, InputStream is, 
@@ -220,145 +202,50 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 	}
 
-	/**
-	 * return an array with the logged in user's info user[0] = username user[1]
-	 * = a cappella name user[2] = role
-	 */
-	private String[] getCurrentUserInfo() {
-		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet result = null;
-		String[] user = new String[3];
-		try {
-			stmt = conn.createStatement();
-			String query = "SELECT username, aname, role FROM main.users NATURAL JOIN "
-					+ "main.acappella WHERE username = '" + user + "'";
-			result = stmt.executeQuery(query);
-			while (result.next()) {
-				user[0] = result.getString("username");
-				user[1] = result.getString("aname");
-				user[2] = result.getString("role");
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			DBManager.closeStatement(stmt);
-			DBManager.closeResultSet(result);
-			DBManager.closeConnection(conn);
-		}
-		return user;
-	}
-
-	private ArrayList<String> getCurrentUsersFriends() {
-		ArrayList<String> friends = new ArrayList<String>();
-		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet results = null;
-		try {
-			stmt = conn.createStatement();
-			String query = "SELECT * FROM main.friends WHERE username1 = '"
-					+ user + "' OR username2 = '" + user + "'";
-			results = stmt.executeQuery(query);
-			while (results.next()) {
-				if (results.getString("username1").equals(user)) {
-					friends.add(results.getString("username2"));
-				} else {
-					friends.add(results.getString("username1"));
-				}
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			DBManager.closeStatement(stmt);
-			DBManager.closeResultSet(results);
-			DBManager.closeConnection(conn);
-		}
-		return friends;
-	}
-
-	private ArrayList<String> getBoardAdmins() {
-		if (currentPath[0].equals("freeforall")) {
-			// TODO: what to return if board is freeforall?
-			return null;
-		}
-		String board = currentPath[0];
-		ArrayList<String> admins = new ArrayList<String>();
-
-		Connection conn = DBManager.getConnection();
-		try {
-			Statement stmt = conn.createStatement();
-			String query = "SELECT * FROM " + board + ".admins";
-			ResultSet adminResults = stmt.executeQuery(query);
-			while (adminResults.next()) {
-				admins.add(adminResults.getString("username"));
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return admins;
-	}
-
 	private void processLogin(String inputLine) {
-		// get password
-		
 		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet userTuple = null;
 		String username = getValue(inputLine);
 
 		boolean userExist = false;
 		boolean pwMatch = false;
-		String pwhash = "";
-		String role = "";
-		String aname = "";
-
-		// Querying database
-		try {
-			conn = DBManager.getConnection();
-			stmt = null;
-			String query = "SELECT username, pwhash, aname, role "
-					+ "FROM main.users NATURAL JOIN main.acappella "
-					+ "WHERE username = '" + username + "'";
-			stmt = conn.createStatement();
-			userTuple = stmt.executeQuery(query);
-			if (userTuple.next()) {
-				userExist = true;
-				pwhash = userTuple.getString("pwhash");
-				role = userTuple.getString("role");
-				aname = userTuple.getString("aname");
-			}
-			String command = "";
-			if (userExist) {
-				command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
-			}
-			command += "print Input password:;getPassword";
-			SharedKeyCryptoComm.send(command, os, c, sk);
-			String enteredPwdHash = SharedKeyCryptoComm.receive(is, c, sk);
-			
-			if (userExist) {
-				pwMatch = Hash.comparePwd(pwhash, enteredPwdHash);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			DBManager.closeStatement(stmt);
-			DBManager.closeResultSet(userTuple);
-			DBManager.closeConnection(conn);
+		
+		String pwhash = "", aname = "", role = "";
+		String command = "";
+		
+		// check username existence
+		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
+		if (userInfo != null) {
+			userExist = true;
+			pwhash = userInfo[1];
+			aname = userInfo[2];
+			role = userInfo[3];
+		}
+		if (userExist) {
+			command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
+		}
+		// ask for password
+		command += "print Input password:;getPassword";
+		CommManager.send(command, os, c, sk);
+		String enteredPwdHash = CommManager.receive(is, c, sk);
+		
+		// check password
+		if (userExist) {
+			pwMatch = Hash.comparePwd(pwhash, enteredPwdHash);
 		}
 
 		// Output for Client
 		if (userExist && pwMatch) {
 			user = username;
-			String command = "setLoggedIn true;" + "print Logged in as: " + username
+			command = "setLoggedIn true;" + "print Logged in as: " + username
 					+ ";" + "print Role: " + role.toUpperCase() + ";"
 					+ "print A Cappella Group: " + aname + ";print ;";
 
 			// Get friend requests
-			command += getFriendReq(username);
+			command += SocialNetworkAdmin.friendReqNotification(conn, username);
 
 			// if admin or SA, get pending registration requests
 			if (role.equals("admin") || role.equals("sa")) {
-				String regReqCommand = getRegReq(username);
+				String regReqCommand = SocialNetworkAdmin.regReqNotification(conn, username);
 				command += regReqCommand + ";";
 			}
 
@@ -366,727 +253,218 @@ public class ServerInputProcessor extends InputProcessor {
 			command += hr + "print ;";
 
 			// printing out boards
-			SharedKeyCryptoComm.send(command + SocialNetworkNavigation.printPath(currentPath)
+			CommManager.send(command + SocialNetworkNavigation.printPath(currentPath)
 					+ SocialNetworkBoards.viewBoards(user), os, c, sk);
 		} else {
-			SharedKeyCryptoComm.send("print username does not exist or invalid password.", os, c, sk);
+			CommManager.send("print username does not exist or invalid password.", os, c, sk);
 		}
-
+		DBManager.closeConnection(conn);
 	}
 
-	private void processRegistration() throws IOException {
+	private void processRegistration(){
 		String newUser = "";
-		SharedKeyCryptoComm.send("print Choose a username:;askForInput", os, c, sk);
+		CommManager.send("print Choose a username:;askForInput;", os, c, sk);
 
 		boolean userExist = true;
 		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet existingUser = null;
 
+		// check if username already exist
 		while (userExist) {
-			newUser = SharedKeyCryptoComm.receive(is, c, sk);
+			newUser = CommManager.receive(is, c, sk);
 			if (newUser.equals("cancel")) {
-				SharedKeyCryptoComm.send("", os, c, sk);
+				CommManager.send("", os, c, sk);
 				return;
 			}
-
-			String query = "SELECT username FROM main.users WHERE username = '"
-					+ newUser + "'";
-			try {
-				stmt = conn.createStatement();
-				existingUser = stmt.executeQuery(query);
-				if (!existingUser.next()) {
-					userExist = false;
-				}
-			} catch (SQLException e) {
+			String[] userInfo = DatabaseAdmin.getUserInfo(conn, newUser);
+			if (userInfo == null)
 				userExist = false;
-				e.printStackTrace();
-			} finally {
-				DBManager.closeStatement(stmt);
-				DBManager.closeResultSet(existingUser);
-			}
 
 			// TODO: check that username is legal and isn't keywords like cancel
 
 			if (userExist) {
-				SharedKeyCryptoComm.send("print Username already exist. Choose a different one.;"
-						+ "askForInput", os, c, sk);
+				CommManager.send("print Username already exist. Choose a different one.;"
+						+ "askForInput;", os, c, sk);
 			}
 		}
 
 		// username isn't already in the DB
 		boolean groupExist = false;
 		String command = "";
-		String list = "";
-		HashMap<String, Integer> groupList = new HashMap<String, Integer>();
-		ResultSet groups = null;
-		String query = "SELECT aid, aname FROM main.acappella";
-		try {
-			stmt = conn.createStatement();
-			groups = stmt.executeQuery(query);
-			while (groups.next()) {
-				groupList.put(groups.getString("aname"), groups.getInt("aid"));
-				list = list + ";print " + groups.getString("aname");
+		Map<Integer, String> groupList = DatabaseAdmin.getGroupList(conn);
+		
+		String groupNum = "";
+		int aid = 0;
+		
+		// check if chosen group exist
+		while (!groupExist) {
+			command += SocialNetworkAdmin.displayGroupList(conn, groupList, newUser);
+			CommManager.send(command, os, c, sk);
+			
+			groupNum = CommManager.receive(is, c, sk);
+			if (groupNum.equals("cancel")) {
+				CommManager.send("", os, c, sk);
+				return;
 			}
-
-			String group = "";
-			int aid = 0;
-			while (!groupExist) {
-				command += "print Choose a cappella group for " + newUser
-						+ ":" + list + ";askForInput";
-				SharedKeyCryptoComm.send(command, os, c, sk);
-				group = SharedKeyCryptoComm.receive(is, c, sk);
-				if (group.equals("cancel")) {
-					SharedKeyCryptoComm.send("", os, c, sk);
-					return;
-				}
-
-				if (!groupList.containsKey(group)) {
-					command = "print Please choose a group from the list.;";
-				} else {
-					groupExist = true;
-					aid = groupList.get(group);
-				}
-			}
-
-			SharedKeyCryptoComm.send("createPassword", os, c, sk);
-			// choose password
-			String pwdStore = SharedKeyCryptoComm.receive(is, c, sk);
-			System.out.println("pwdStore: "+pwdStore);
-			// group exists
-			query = "INSERT INTO main.registrationrequests (username, aid, pwhash) "
-					+ "VALUE ('"
-					+ newUser
-					+ "', "
-					+ aid
-					+ ", '"
-					+ pwdStore
-					+ "')";
-
-			stmt.executeUpdate(query);
-			command = "print Registration request for " + newUser + " from "
-					+ group
-					+ " has been sent.;print Once an admin from your group "
-					+ "approves, you will be added to the system.;print ;";
-			SharedKeyCryptoComm.send(command, os, c, sk);
-		} catch (SQLException e) {
-			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
-				SharedKeyCryptoComm.send("print User is already in the system. Choose a different username.;print ;", os, c, sk);
+			
+			aid = Integer.parseInt(groupNum);
+			if (!groupList.containsKey(aid)) {
+				command = "print Please choose a group from the list.;";
 			} else {
-				e.printStackTrace();
+				groupExist = true;
 			}
-		} finally {
-			DBManager.closeResultSet(groups);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
 		}
-
+		
+		// create password
+		CommManager.send("createPassword", os, c, sk);
+		String pwdStore = CommManager.receive(is, c, sk);
+		
+		CommManager.send(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore), os, c, sk);
+		DBManager.closeConnection(conn);
 	}
-
-//	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
-//		if (pwdChar1.length != pwdChar2.length) {
-//			return false;
-//		}
-//		for (int i = 0; i < pwdChar1.length; i++) {
-//			if (pwdChar1[i] != pwdChar2[i])
-//				return false;
-//		}
-//		return true;
-//	}
 
 	private void processRegRequests() throws IOException {
-		// TODO: Check if user is an admin
-		ArrayList<String> pendingUsers = new ArrayList<String>();
-		int count = 0;
 		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet requests = null;
-		try {
-			stmt = conn.createStatement();
-			String query = "SELECT username "
-					+ "FROM main.registrationrequests "
-					+ "WHERE aid = (SELECT aid FROM main.users WHERE username = '"
-					+ user + "')";
-			requests = stmt.executeQuery(query);
-			while (requests.next()) {
-				pendingUsers.add(requests.getString("username"));
-				count++;
+		String[] currentUser = DatabaseAdmin.getUserInfo(conn, user);
+		if (currentUser[3].equals("admin") || currentUser[3].equals("sa")) {
+			String command = SocialNetworkAdmin.regRequests(conn, user);
+			CommManager.send(command, os, c, sk);
+			if (command.endsWith("askForInput;")) {
+				regApproval(conn, CommManager.receive(is, c, sk));
 			}
-		} catch (SQLException e) {
-			count = 0;
-			e.printStackTrace();
-		} finally {
-			DBManager.closeResultSet(requests);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
-		}
-
-		if (count > 0) {
-			String command = "print Pending User Registration Requests ("
-					+ count + "):";
-			for (int i = 0; i < pendingUsers.size(); i++) {
-				command = command + ";print " + pendingUsers.get(i);
-			}
-			command = command + ";print ;print [To approve: approve "
-					+ "<username1>, <username2>];print [To remove: "
-					+ "remove <username1>, <username2>];askForInput";
-			SharedKeyCryptoComm.send(command, os, c, sk);
-			regApproval(SharedKeyCryptoComm.receive(is, c, sk));
 		} else {
-			SharedKeyCryptoComm.send("print No pending registration requests at the moment.", os, c, sk);
+			CommManager.send("", os, c, sk);
 		}
-
+		DBManager.closeConnection(conn);
 	}
 
-	private void regApproval(String input) {
+	private void regApproval(Connection conn, String input) {
 		if (input.equals("cancel")) {
-			SharedKeyCryptoComm.send("", os, c, sk);
+			CommManager.send("", os, c, sk);
 			return;
 		}
-		if (input.matches("^approve.+")) {
-			String value = getValue(input);
-			String delim = ",";
-			String[] approvedUsers = value.split(delim);
-			regApprove(approvedUsers);
-			return;
-		}
-		if (input.matches("^remove.+")) {
-			String value = getValue(input);
-			String delim = ",";
-			String[] usersToDelete = value.split(delim);
-
-			// Building queries
-			String deleteQuery = "DELETE FROM main.registrationrequests WHERE ";
-			for (int i = 0; i < usersToDelete.length; i++) {
-				usersToDelete[i] = usersToDelete[i].trim();
-
-				deleteQuery += "username = " + quote(usersToDelete[i]);
-				if (i != usersToDelete.length - 1) {
-					deleteQuery += " OR ";
+		String[] currentUser = DatabaseAdmin.getUserInfo(conn, user);
+		if (currentUser[3].equals("admin") || currentUser[3].equals("sa")) {
+			String command = "";
+			if (input.matches("^approve.+")) {
+				String value = getValue(input);
+				String delim = " *, *";
+				String[] approvedUsers = value.split(delim);
+				for (String u: approvedUsers) {
+					command += SocialNetworkAdmin.regApprove(conn, u);
 				}
+				CommManager.send(command, os, c, sk);
+				return;
 			}
-
-			Connection conn = DBManager.getConnection();
-			Statement stmt = null;
-			try {
-				stmt = conn.createStatement();
-				stmt.executeUpdate(deleteQuery);
-				// confirmation to client
-				String command = "print ";
-				for (String user : usersToDelete) {
-					command += user + ", ";
+			if (input.matches("^remove.+")) {
+				String value = getValue(input);
+				String delim = " *, *";
+				String[] deletingUsers = value.split(delim);
+				for (String u: deletingUsers) {
+					command += SocialNetworkAdmin.regRemove(conn, u);
 				}
-				// substring to take off the last comma
-				command = command.substring(0, command.length() - 2)
-						+ " has been deleted from the system.";
-				SharedKeyCryptoComm.send(command, os, c, sk);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			} finally {
-				DBManager.closeStatement(stmt);
-				DBManager.closeConnection(conn);
-			}
-
-			return;
-		}
-	}
-
-	private void regApprove(String[] approvedUsers) {
-		// Building queries: select info from regrequests and delete from
-		// regreqests
-
-		String selectQuery = "SELECT * FROM main.registrationrequests WHERE ";
-		String deleteQuery = "DELETE FROM main.registrationrequests WHERE ";
-
-		for (int i = 0; i < approvedUsers.length; i++) {
-			approvedUsers[i] = approvedUsers[i].trim();
-
-			selectQuery += "username = " + quote(approvedUsers[i]);
-			deleteQuery += "username = " + quote(approvedUsers[i]);
-			if (i != approvedUsers.length - 1) {
-				selectQuery += " OR ";
-				deleteQuery += " OR ";
+				CommManager.send(command, os, c, sk);
+				return;
 			}
 		}
-		Connection conn = null;
-		Statement stmt = null;
-		ResultSet selectResult = null;
-		try {
-			// building the insert into users table query
-			conn = DBManager.getConnection();
-			conn.setAutoCommit(false);
-			stmt = conn.createStatement();
-
-			selectResult = stmt.executeQuery(selectQuery);
-
-			ArrayList<String[]> pendingUserInfo = new ArrayList<String[]>();
-			while (selectResult.next()) {
-				String[] userInfo = { selectResult.getString("username"),
-						selectResult.getString("aid"),
-						selectResult.getString("pwhash") };
-				pendingUserInfo.add(userInfo);
-			}
-			for (String[] userInfo : pendingUserInfo) {
-				String insertQuery = "INSERT INTO main.users (username, aid, pwhash, role) "
-					+ "VALUE " + "('" + userInfo[0] + "'," + userInfo[1] + ", '" 
-					+ userInfo[2] + "','member')";
-				String addFriendQuery = addFriendsFromGroupQuery(userInfo[0],
-						Integer.parseInt(userInfo[1]));
-
-				if (SocialNetworkServer.DEBUG) {
-
-				}
-
-				stmt.executeUpdate(insertQuery);
-				stmt.executeUpdate(addFriendQuery);
-				conn.commit();
-			}
-			stmt.executeUpdate(deleteQuery);
-			conn.commit();
-
-			if (SocialNetworkServer.DEBUG) {
-				System.out.println(selectQuery);
-				System.out.println(deleteQuery);
-			}
-
-			// confirmation to client
-			String command = "print ";
-			for (String user : approvedUsers) {
-				command += user + ", ";
-			}
-			// substring to take off the last comma
-			command = command.substring(0, command.length() - 2)
-					+ " has been added to the system.";
-			SharedKeyCryptoComm.send(command, os, c, sk);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			DBManager.rollback(conn);
-		} finally {
-			DBManager.trueAutoCommit(conn);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
-		}
-
-	}
-
-	private String addFriendsFromGroupQuery(String username, int aid) {
-		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet acappellaResult = null;
-		String acappellaUsers = "SELECT username FROM main.users WHERE aid = "
-				+ aid;
-		try {
-			stmt = conn.createStatement();
-			acappellaResult = stmt.executeQuery(acappellaUsers);
-			String addQuery = "INSERT INTO main.friends (username1, username2) VALUES ";
-			String user1, user2;
-			while (acappellaResult.next()) {
-				if (username.compareTo(acappellaResult.getString("username")) < 0) {
-					user1 = username;
-					user2 = acappellaResult.getString("username");
-					addQuery += "('" + user1 + "','" + user2 + "'), ";
-				} else if (username.compareTo(acappellaResult
-						.getString("username")) > 0) {
-					user1 = acappellaResult.getString("username");
-					user2 = username;
-					addQuery += "('" + user1 + "','" + user2 + "'), ";
-				}
-			}
-			// taking off the last comma, SQL doesn't like it
-			return addQuery.substring(0, addQuery.length() - 2);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return null;
-		} finally {
-			DBManager.closeResultSet(acappellaResult);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
-		}
-	}
-
-	private String getRegReq(String username) {
-		String command = "";
-		int requestCount = 0;
-		Connection conn = null;
-		Statement stmt = null;
-		ResultSet requests = null;
-		try {
-			conn = DBManager.getConnection();
-			stmt = conn.createStatement();
-			String query = "SELECT COUNT(username) as count "
-					+ "FROM main.registrationrequests "
-					+ "WHERE aid = (SELECT aid FROM main.users WHERE username = '"
-					+ username + "')";
-			requests = stmt.executeQuery(query);
-			while (requests.next()) {
-				requestCount = requests.getInt("count");
-			}
-		} catch (SQLException e) {
-			requestCount = 0;
-			e.printStackTrace();
-		} finally {
-			DBManager.closeResultSet(requests);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
-		}
-		if (requestCount != 0) {
-			command = ";print Pending User Registration Requests ("
-					+ requestCount + ") [To view: regRequests]";
-		}
-		return command;
 	}
 
 	private void processAddFriend(String input) throws IOException {
 		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		ResultSet usersResult = null;
-		try {
-			stmt = conn.createStatement();
-			// Stores a list of users that is not the current user, who is not a
-			// friend of the
-			// current user, and has not requested current user as friend
-			// Users[0]: username. Users[1]: group name
-			ArrayList<String[]> friendableUsers = new ArrayList<String[]>();
+		// Stores a list of users that is not the current user, who is not a
+		// friend of the
+		// current user, and has not requested current user as friend
+		// Users[0]: username. Users[1]: group name
+		List<String[]> friendableUsers = DatabaseAdmin.getFriendableUsers(conn, user);
 
-			// existing friends of user
-			ArrayList<String> existingFriends = new ArrayList<String>();
-			String query = "SELECT * FROM main.friends WHERE username1 = '"
-					+ user + "' OR " + "username2 = '" + user + "'";
-			ResultSet friendsResult = stmt.executeQuery(query);
-			while (friendsResult.next()) {
-				if (friendsResult.getString("username1").equals(user)) {
-					existingFriends.add(friendsResult.getString("username2"));
-				} else {
-					existingFriends.add(friendsResult.getString("username1"));
+		// input of format "addFriend" or "addFriend b"
+		boolean userExist = false;
+		String toFriend = "";
+		String command = "";
+		while (!userExist) {
+			String prefix = "";
+			if (!input.equals("addFriend")) {
+				prefix = getValue(input);
+			}
+			command += SocialNetworkAdmin.displayFriendableUsers(conn, user, prefix, friendableUsers);
+			CommManager.send(command, os, c, sk);
+
+			toFriend = CommManager.receive(is, c, sk);
+			if (toFriend.equals("cancel")) {
+				CommManager.send("", os, c, sk);
+				return;
+			}
+			for (String[] userInfo : friendableUsers) {
+				if (userInfo[0].equals(toFriend)) {
+					userExist = true;
+					break;
 				}
 			}
-
-			// list of users that is not the current user and who have not
-			// requested
-			// current user as friend
-			query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella "
-					+ "WHERE username != '"
-					+ user
-					+ "' AND username NOT IN "
-					+ "(SELECT requester FROM main.friendrequests "
-					+ "WHERE requestee = '" + user + "')";
-			usersResult = stmt.executeQuery(query);
-			while (usersResult.next()) {
-				if (!existingFriends
-						.contains(usersResult.getString("username"))) {
-					String[] userInfo = { usersResult.getString("username"),
-							usersResult.getString("aname") };
-					friendableUsers.add(userInfo);
-				}
+			if (!userExist) {
+				command = "print Cannot friend " + toFriend + ";";
 			}
-
-			// input of format "addFriend" or "addFriend b"
-			if (input.equals("addFriend")) {
-				// list everybody
-				boolean userExist = false;
-				String toFriend = "";
-
-				while (!userExist) {
-					String command = "print Users in the system:;";
-					for (String[] userInfo : friendableUsers) {
-						command += "print " + userInfo[0] + " (" + userInfo[1]
-								+ ");";
-					}
-					command += "print ;print Type the name of the user you wish to friend:;"
-							+ "askForInput";
-					SharedKeyCryptoComm.send(command, os, c, sk);
-
-					toFriend = SharedKeyCryptoComm.receive(is, c, sk);
-					if (toFriend.equals("cancel")) {
-						SharedKeyCryptoComm.send("", os, c, sk);
-						return;
-					}
-					for (String[] userInfo : friendableUsers) {
-						if (userInfo[0].equals(toFriend)) {
-							userExist = true;
-							break;
-						}
-					}
-					if (!userExist) {
-						SharedKeyCryptoComm.send("print Cannot friend " + toFriend + ";", os, c, sk);
-					}
-				}
-
-				// Gets back name of person to add as friend
-				addFriend(toFriend);
-			} else {
-				// selective list
-				String value = getValue(input);
-				boolean userExist = false;
-				String toFriend = "";
-
-				while (!userExist) {
-					String command = "print Usernames starting with '" + value
-							+ "';";
-					for (String[] userInfo : friendableUsers) {
-						value = value.toLowerCase();
-						if (userInfo[0].toLowerCase().startsWith(value)) {
-							command += "print " + userInfo[0] + " ("
-									+ userInfo[1] + ");";
-						}
-					}
-					command += "print ;print Type the name of the user you wish to friend:;"
-							+ "askForInput";
-					SharedKeyCryptoComm.send(command, os, c, sk);
-
-					toFriend = SharedKeyCryptoComm.receive(is, c, sk);
-					if (toFriend.equals("cancel")) {
-						SharedKeyCryptoComm.send("", os, c, sk);
-						return;
-					}
-					for (String[] userInfo : friendableUsers) {
-						if (userInfo[0].equals(toFriend)) {
-							userExist = true;
-							break;
-						}
-					}
-					if (!userExist) {
-						SharedKeyCryptoComm.send("print Cannot friend " + toFriend + ";", os, c, sk);
-					}
-				}
-
-				// Gets back name of person to add as friend
-				addFriend(toFriend);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			DBManager.closeResultSet(usersResult);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
 		}
+
+		// Gets back name of person to add as friend
+		addFriend(conn, toFriend);
+		DBManager.closeConnection(conn);
 	}
 
-	private void addFriend(String username) throws IOException {
+	private void addFriend(Connection conn, String username) throws IOException {
 		// username exists in the system.
-		SharedKeyCryptoComm.send("print Are you sure you want to add " + username
+		CommManager.send("print Are you sure you want to add " + username
 				+ " as a friend? (y/n);askForInput", os, c, sk);
-		String input = SharedKeyCryptoComm.receive(is, c, sk);
-		Connection conn = null;
-		Statement stmt = null;
+		String input = CommManager.receive(is, c, sk);
+		String command = "";
 		if (input.equals("y")) {
-			try {
-				conn = DBManager.getConnection();
-				stmt = null;
-				String query = "INSERT INTO main.friendrequests (requestee, requester) "
-						+ "VALUE ('" + username + "','" + user + "')";
-				stmt = conn.createStatement();
-				stmt.executeUpdate(query);
-
-				// print out confirmation
-				SharedKeyCryptoComm.send("print Friend request sent to " + username, os, c, sk);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			} finally {
-				DBManager.closeStatement(stmt);
-				DBManager.closeConnection(conn);
-			}
-
+			command = SocialNetworkAdmin.insertFriendRequest(conn, username, user);
 		} else if (input.equals("n")) {
-			SharedKeyCryptoComm.send("print Canceled.", os, c, sk);
+			command = "print Canceled.;";
 		} else if (input.equals("cancel")) {
-			SharedKeyCryptoComm.send("", os, c, sk);
+			command = "";
 		}
+		CommManager.send(command, os, c, sk);
 	}
 
-	private void processFriendRequests() throws IOException {
-		ArrayList<String> pendingFriends = new ArrayList<String>();
-		int count = 0;
-		Connection conn = null;
-		Statement stmt = null;
-		ResultSet requests = null;
-		try {
-			conn = DBManager.getConnection();
-			stmt = conn.createStatement();
-			String query = "SELECT requester " + "FROM main.friendrequests "
-					+ "WHERE requestee = '" + user + "'";
-			requests = stmt.executeQuery(query);
-			while (requests.next()) {
-				pendingFriends.add(requests.getString("requester"));
-				count++;
+		private void processFriendRequests() throws IOException {
+			Connection conn = DBManager.getConnection();
+			String command = SocialNetworkAdmin.friendRequests(conn, user);
+			CommManager.send(command, os, c, sk);
+			if (command.endsWith("askForInput;")) {
+				friendApproval(conn, CommManager.receive(is, c, sk));
 			}
-			stmt.close();
-		} catch (SQLException e) {
-			count = 0;
-			e.printStackTrace();
-		} finally {
-			DBManager.closeResultSet(requests);
-			DBManager.closeStatement(stmt);
 			DBManager.closeConnection(conn);
 		}
 
-		if (count > 0) {
-			String command = "print Pending Friend Requests (" + count + "):";
-			for (int i = 0; i < pendingFriends.size(); i++) {
-				command = command + ";print " + pendingFriends.get(i);
-			}
-			command = command + ";print ;print [To approve: approve "
-					+ "<username1>, <username2>];print [To remove: "
-					+ "remove <username1>, <username2>];askForInput";
-			SharedKeyCryptoComm.send(command, os, c, sk);
-			friendApproval(SharedKeyCryptoComm.receive(is, c, sk));
-		} else {
-			SharedKeyCryptoComm.send("print No pending friend requests at the moment.", os, c, sk);
-		}
-	}
-
-	private void friendApproval(String input) {
+	private void friendApproval(Connection conn, String input) {
 		if (input.equals("cancel")) {
-			SharedKeyCryptoComm.send("", os, c, sk);
+			CommManager.send("", os, c, sk);
 			return;
 		}
+		String command = "";
 		if (input.matches("^approve.+")) {
 			String value = getValue(input);
-			String delim = ",";
+			String delim = " *, *";
 			String[] approvedFriends = value.split(delim);
-			friendApprove(approvedFriends);
+			for (String u: approvedFriends) {
+				command += SocialNetworkAdmin.friendApprove(conn, u, user);
+			}
+			CommManager.send(command, os, c, sk);
 			return;
 		}
 		if (input.matches("^remove.+")) {
 			String value = getValue(input);
-			String delim = ",";
+			String delim = " *, *";
 			String[] usersToDelete = value.split(delim);
-
-			// Building queries
-			String deleteQuery = "DELETE FROM main.friendrequests WHERE ";
-			for (int i = 0; i < usersToDelete.length; i++) {
-				usersToDelete[i] = usersToDelete[i].trim();
-
-				deleteQuery += "(requester = " + quote(usersToDelete[i])
-						+ " AND requestee = " + quote(user) + ")";
-				if (i != usersToDelete.length - 1) {
-					deleteQuery += " OR ";
-				}
+			for (String u: usersToDelete) {
+				command += SocialNetworkAdmin.friendReqRemove(conn, u, user);
 			}
-
-			if (SocialNetworkServer.DEBUG) {
-				System.out.println(deleteQuery);
-			}
-			Connection conn = null;
-			Statement stmt = null;
-			try {
-				conn = DBManager.getConnection();
-				stmt = conn.createStatement();
-				stmt.executeUpdate(deleteQuery);
-
-				// confirmation to client
-				String command = "print Friend requests from ";
-				for (String user : usersToDelete) {
-					command += user + ", ";
-				}
-				// substring to take off the last comma
-				command = command.substring(0, command.length() - 2)
-						+ " have been deleted.";
-				SharedKeyCryptoComm.send(command, os, c, sk);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			} finally {
-				DBManager.closeStatement(stmt);
-				DBManager.closeConnection(conn);
-			}
-
+			CommManager.send(command, os, c, sk);
 			return;
 		}
 	}
 
-	private void friendApprove(String[] approvedUsers) {
-		// Building queries
-		String deleteQuery = "DELETE FROM main.friendrequests WHERE ";
-		String insertQuery = "INSERT INTO main.friends (username1, username2) VALUES ";
-
-		for (int i = 0; i < approvedUsers.length; i++) {
-			approvedUsers[i] = approvedUsers[i].trim();
-
-			deleteQuery += "(requester = " + quote(approvedUsers[i])
-					+ " AND requestee = " + quote(user) + ")";
-			String user1, user2;
-			if (user.compareTo(approvedUsers[i]) < 0) {
-				user1 = quote(user);
-				user2 = quote(approvedUsers[i]);
-			} else {
-				user1 = quote(approvedUsers[i]);
-				user2 = quote(user);
-			}
-			insertQuery += "(" + user1 + "," + user2 + "), ";
-			if (i != approvedUsers.length - 1) {
-				deleteQuery += " OR ";
-			}
-		}
-		// taking off the last comma, SQL doesn't like it
-		insertQuery = insertQuery.substring(0, insertQuery.length() - 2);
-		Connection conn = null;
-		Statement stmt = null;
-		try {
-			// building the insert into users table query
-			conn = DBManager.getConnection();
-			conn.setAutoCommit(false);
-			stmt = conn.createStatement();
-
-			if (SocialNetworkServer.DEBUG) {
-				System.out.println(insertQuery);
-				System.out.println(deleteQuery);
-			}
-
-			// execute insertion and deletion queries
-			stmt.executeUpdate(insertQuery);
-			stmt.executeUpdate(deleteQuery);
-			conn.commit();
-
-			// confirmation to client
-			String command = "print ";
-			for (String user : approvedUsers) {
-				command += user + ", ";
-			}
-			// substring to take off the last comma
-			command = command.substring(0, command.length() - 2)
-					+ " have been added as your friends.";
-			SharedKeyCryptoComm.send(command, os, c, sk);
-		} catch (SQLException e) {
-			e.printStackTrace();
-			DBManager.rollback(conn);
-		} finally {
-			DBManager.trueAutoCommit(conn);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
-		}
-	}
-
-	private String getFriendReq(String username) {
-		String command = "";
-		int requestCount = 0;
-		Connection conn = null;
-		Statement stmt = null;
-		ResultSet requests = null;
-		try {
-			conn = DBManager.getConnection();
-			stmt = conn.createStatement();
-			String query = "SELECT COUNT(requestee) as count "
-					+ "FROM main.friendrequests " + "WHERE requestee = '"
-					+ username + "'";
-			requests = stmt.executeQuery(query);
-			while (requests.next()) {
-				requestCount = requests.getInt("count");
-			}
-		} catch (SQLException e) {
-			requestCount = 0;
-			e.printStackTrace();
-		} finally {
-			DBManager.closeResultSet(requests);
-			DBManager.closeStatement(stmt);
-			DBManager.closeConnection(conn);
-		}
-		if (requestCount != 0) {
-			command = ";print Pending Friend Requests (" + requestCount
-					+ ") [To view: friendRequests]";
-		}
-		return command;
-	}
-
+	//----------------------cleaning----------------------------------------
+	// XXX working here KILL ME!
 	private void processDeleteUser() throws IOException {
 		// TODO: check to see if user is actually a SA
 		Connection conn = DBManager.getConnection();
@@ -1103,7 +481,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "(SELECT aid FROM main.users WHERE username = '" + user
 					+ "')";
 
-			if (SocialNetworkServer.DEBUG) {
+			if (DEBUG) {
 				System.out
 						.println("Delete User deletable user query: " + query);
 			}
@@ -1123,18 +501,18 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print Type the name of the user you wish to delete:;"
 						+ "askForInput";
-				SharedKeyCryptoComm.send(command, os, c, sk);
+				CommManager.send(command, os, c, sk);
 
-				toDelete = SharedKeyCryptoComm.receive(is, c, sk);
+				toDelete = CommManager.receive(is, c, sk);
 				if (toDelete.equals("cancel")) {
-					SharedKeyCryptoComm.send("", os, c, sk);
+					CommManager.send("", os, c, sk);
 					return;
 				}
 				if (deletableUsers.contains(toDelete)) {
 					userDeletable = true;
 				}
 				if (!userDeletable) {
-					SharedKeyCryptoComm.send("print Cannot delete " + toDelete + ";", os, c, sk);
+					CommManager.send("print Cannot delete " + toDelete + ";", os, c, sk);
 				}
 			}
 
@@ -1152,9 +530,9 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void deleteUser(String username) throws IOException {
 		// username is a deletable user
-		SharedKeyCryptoComm.send("print User deletions cannot be undone.;"
+		CommManager.send("print User deletions cannot be undone.;"
 				+ "print Are you sure you want to delete this user? (y/n);askForInput", os, c, sk);
-		String input = SharedKeyCryptoComm.receive(is, c, sk);
+		String input = CommManager.receive(is, c, sk);
 		Connection conn = null;
 		Statement stmt = null;
 		if (input.equals("y")) {
@@ -1166,7 +544,7 @@ public class ServerInputProcessor extends InputProcessor {
 				stmt.executeUpdate(query);
 
 				// print out confirmation
-				SharedKeyCryptoComm.send("print " + username
+				CommManager.send("print " + username
 						+ " has been deleted from the system.", os, c, sk);
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -1176,9 +554,9 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 
 		} else if (input.equals("n")) {
-			SharedKeyCryptoComm.send("print Canceled.", os, c, sk);
+			CommManager.send("print Canceled.", os, c, sk);
 		} else if (input.equals("cancel")) {
-			SharedKeyCryptoComm.send("", os, c, sk);
+			CommManager.send("", os, c, sk);
 		}
 	}
 
@@ -1212,7 +590,7 @@ public class ServerInputProcessor extends InputProcessor {
 					command += "print " + friend + ";";
 				}
 			}
-			SharedKeyCryptoComm.send(command, os, c, sk);
+			CommManager.send(command, os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
@@ -1240,7 +618,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "(SELECT aid FROM main.users WHERE username = '" + user
 					+ "')";
 
-			if (SocialNetworkServer.DEBUG) {
+			if (DEBUG) {
 				System.out.println("role: changeable role query: " + query);
 			}
 
@@ -1263,11 +641,11 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print Type the name of the user you wish to change role for:;"
 						+ "askForInput";
-				SharedKeyCryptoComm.send(command, os, c, sk);
+				CommManager.send(command, os, c, sk);
 
-				toChange = SharedKeyCryptoComm.receive(is, c, sk);
+				toChange = CommManager.receive(is, c, sk);
 				if (toChange.equals("cancel")) {
-					SharedKeyCryptoComm.send("", os, c, sk);
+					CommManager.send("", os, c, sk);
 					return;
 				}
 				for (String[] userInfo : changeableUsers) {
@@ -1282,7 +660,7 @@ public class ServerInputProcessor extends InputProcessor {
 					}
 				}
 				if (!userChangeable) {
-					SharedKeyCryptoComm.send("print Cannot change role for " + toChange + ";", os, c, sk);
+					CommManager.send("print Cannot change role for " + toChange + ";", os, c, sk);
 				}
 			}
 
@@ -1315,7 +693,7 @@ public class ServerInputProcessor extends InputProcessor {
 			} else {
 				from = "ADMIN";
 			}
-			SharedKeyCryptoComm.send("print Role for " + toChange
+			CommManager.send("print Role for " + toChange
 					+ " has been changed from " + from + " to "
 					+ role.toUpperCase(), os, c, sk);
 		} catch (SQLException e) {
@@ -1344,7 +722,7 @@ public class ServerInputProcessor extends InputProcessor {
 					+ "(SELECT aid FROM main.users WHERE username = '" + user
 					+ "') AND " + "role = 'admin'";
 
-			if (SocialNetworkServer.DEBUG) {
+			if (DEBUG) {
 				System.out.println("transfer: adminUser query: " + query);
 			}
 
@@ -1363,18 +741,18 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print Type the name of the user you wish to transfer SA role to:;"
 						+ "askForInput";
-				SharedKeyCryptoComm.send(command, os, c, sk);
+				CommManager.send(command, os, c, sk);
 
-				toChange = SharedKeyCryptoComm.receive(is, c, sk);
+				toChange = CommManager.receive(is, c, sk);
 				if (toChange.equals("cancel")) {
-					SharedKeyCryptoComm.send("", os, c, sk);
+					CommManager.send("", os, c, sk);
 					return;
 				}
 				if (groupAdmins.contains(toChange)) {
 					transferableUser = true;
 				}
 				if (!transferableUser) {
-					SharedKeyCryptoComm.send("print Cannot transfer SA role to " + toChange
+					CommManager.send("print Cannot transfer SA role to " + toChange
 							+ ";", os, c, sk);
 				}
 			}
@@ -1407,7 +785,7 @@ public class ServerInputProcessor extends InputProcessor {
 			conn.commit();
 
 			// Print confirmation to client
-			SharedKeyCryptoComm.send("print SA role has been transferred to " + toChange, os, c, sk);
+			CommManager.send("print SA role has been transferred to " + toChange, os, c, sk);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			DBManager.rollback(conn);
@@ -1418,16 +796,24 @@ public class ServerInputProcessor extends InputProcessor {
 
 	}
 
+	private void processLogout() {
+		user = null;
+		for (int i = 0; i < currentPath.length; i++) {
+			currentPath[i] = null;
+		}
+		CommManager.send("print Logged out.;setLoggedIn false", os, c, sk);
+	}
+
 	private void processParticipants() {
-		ArrayList<String> admins = getBoardAdmins();
+		Connection conn = DBManager.getConnection();
+		String board = currentPath[0];
+		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
 		if (admins.contains(user)) {
 			// print displaying participants
-			String board = currentPath[0];
 			String region = currentPath[1];
 			String command = "print Displaying participants:;";
 
 			// print a list of participants of the region
-			Connection conn = DBManager.getConnection();
 			Statement stmt = null;
 			try {
 				stmt = conn.createStatement();
@@ -1450,24 +836,24 @@ public class ServerInputProcessor extends InputProcessor {
 			// editParticipants, addAdmin
 			command += "print ;print Other Commands: addParticipants, removeParticipants";
 			// TODO: add edit and addAdmin to this list of commands
-			SharedKeyCryptoComm.send(command, os, c, sk);
+			CommManager.send(command, os, c, sk);
 		} else {
-			SharedKeyCryptoComm.send("print You do not have permission to view participants.", os, c, sk);
+			CommManager.send("print You do not have permission to view participants.", os, c, sk);
 		}
 	}
 
 	private void processAddParticipants() throws IOException {
 		// check if user is admin
-		ArrayList<String> admins = getBoardAdmins();
+		Connection conn = DBManager.getConnection();
+		String board = currentPath[0];
+		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
 		if (admins.contains(user)) {
 			// get a list of the user's friends
-			ArrayList<String> usersFriends = getCurrentUsersFriends();
+			List<String> usersFriends = DatabaseAdmin.getFriends(conn, user);
 
 			// get a list of participants
-			String board = currentPath[0];
 			String region = currentPath[1];
 			ArrayList<String> participants = new ArrayList<String>();
-			Connection conn = DBManager.getConnection();
 			Statement stmt = null;
 			String query = "SELECT username, privilege FROM " + board
 					+ ".regionprivileges WHERE rname = '" + region + "'";
@@ -1497,10 +883,10 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 				command += "print ;print [To add user: (<user1>, <privilege>), "
 						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];askForInput";
-				SharedKeyCryptoComm.send(command, os, c, sk);
-				String input = SharedKeyCryptoComm.receive(is, c, sk);
+				CommManager.send(command, os, c, sk);
+				String input = CommManager.receive(is, c, sk);
 				if (input.equals("cancel")) {
-					SharedKeyCryptoComm.send("", os, c, sk);
+					CommManager.send("", os, c, sk);
 					return;
 				}
 				addInfo = parseAddUserInfo(input);
@@ -1515,7 +901,7 @@ public class ServerInputProcessor extends InputProcessor {
 				if (!userAddable) {
 					notOkUsers = notOkUsers.substring(0,
 							notOkUsers.length() - 2);
-					SharedKeyCryptoComm.send("print Cannot add " + notOkUsers
+					CommManager.send("print Cannot add " + notOkUsers
 							+ " as participants of this region.;", os, c, sk);
 				}
 			}
@@ -1523,7 +909,7 @@ public class ServerInputProcessor extends InputProcessor {
 			// toAdd is addable
 			addParticipant(addInfo);
 		} else {
-			SharedKeyCryptoComm.send("print You do not have permission to add participants to this region.", os, c, sk);
+			CommManager.send("print You do not have permission to add participants to this region.", os, c, sk);
 		}
 	}
 
@@ -1551,7 +937,7 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		query = query.substring(0, query.length() - 2);
 
-		if (SocialNetworkServer.DEBUG) {
+		if (DEBUG) {
 			System.out.println("addParticipants query: " + query);
 		}
 
@@ -1563,20 +949,20 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		// print confirmation
-		SharedKeyCryptoComm.send("print Participants added.", os, c, sk);
+		CommManager.send("print Participants added.", os, c, sk);
 	}
 
 	private void processRemoveParticipants() throws IOException {
 		// TODO: What's the policy for deleting admins from a board?
 
 		// check if user is admin
-		ArrayList<String> admins = getBoardAdmins();
+		Connection conn = DBManager.getConnection();
+		String board = currentPath[0];
+		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
 		if (admins.contains(user)) {
 			// get a list of participants
-			String board = currentPath[0];
 			String region = currentPath[1];
 			ArrayList<String> participants = new ArrayList<String>();
-			Connection conn = DBManager.getConnection();
 			Statement stmt = null;
 			String query = "SELECT username, privilege FROM " + board
 					+ ".regionprivileges WHERE rname = '" + region + "'";
@@ -1600,10 +986,10 @@ public class ServerInputProcessor extends InputProcessor {
 					command += "print " + user + ";";
 				}
 				command += "print ;print [To remove participants: <user1>, <user2>];askForInput";
-				SharedKeyCryptoComm.send(command, os, c, sk);
-				String input = SharedKeyCryptoComm.receive(is, c, sk);
+				CommManager.send(command, os, c, sk);
+				String input = CommManager.receive(is, c, sk);
 				if (input.equals("cancel")) {
-					SharedKeyCryptoComm.send("", os, c, sk);
+					CommManager.send("", os, c, sk);
 					return;
 				}
 				toRemove = input.trim().split(" *, *");
@@ -1619,7 +1005,7 @@ public class ServerInputProcessor extends InputProcessor {
 				if (!userRemovable) {
 					notOkUsers = notOkUsers.substring(0,
 							notOkUsers.length() - 2);
-					SharedKeyCryptoComm.send("print Cannot remove " + notOkUsers
+					CommManager.send("print Cannot remove " + notOkUsers
 							+ " from this region.;", os, c, sk);
 				}
 			}
@@ -1627,7 +1013,7 @@ public class ServerInputProcessor extends InputProcessor {
 			// toRemove is removable
 			removeParticipant(toRemove);
 		} else {
-			SharedKeyCryptoComm.send("print You do not have permission to add participants to this region.", os, c, sk);
+			CommManager.send("print You do not have permission to add participants to this region.", os, c, sk);
 		}
 	}
 
@@ -1646,7 +1032,7 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		query += ")";
 
-		if (SocialNetworkServer.DEBUG) {
+		if (DEBUG) {
 			System.out.println("remove participant query: " + query);
 		}
 
@@ -1658,7 +1044,7 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		// print confirmation
-		SharedKeyCryptoComm.send("print Participants removed.", os, c, sk);
+		CommManager.send("print Participants removed.", os, c, sk);
 	}
 
 	private void processEditParticipants() throws IOException {
@@ -1680,7 +1066,7 @@ public class ServerInputProcessor extends InputProcessor {
 			String query = "SELECT username, privilege FROM " + board
 					+ ".regionprivileges " + "WHERE rname = '" + region + "'";
 
-			if (SocialNetworkServer.DEBUG) {
+			if (DEBUG) {
 				System.out.println("Edit participant query: " + query);
 			}
 
@@ -1712,11 +1098,11 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			command += "print ;print [To toggle permission status: <user1>, <user2>];"
 					+ "askForInput";
-			SharedKeyCryptoComm.send(command, os, c, sk);
+			CommManager.send(command, os, c, sk);
 
-			input = SharedKeyCryptoComm.receive(is, c, sk);
+			input = CommManager.receive(is, c, sk);
 			if (input.equals("cancel")) {
-				SharedKeyCryptoComm.send("", os, c, sk);
+				CommManager.send("", os, c, sk);
 				return;
 			}
 			String toChange = "";
@@ -1738,7 +1124,7 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			if (!userChangeable) {
 				toChange = toChange.substring(0, toChange.length() - 2);
-				SharedKeyCryptoComm.send("print Cannot change permission for " + toChange
+				CommManager.send("print Cannot change permission for " + toChange
 						+ ";", os, c, sk);
 			}
 		}
@@ -1765,7 +1151,7 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		query += ")";
 
-		if (SocialNetworkServer.DEBUG) {
+		if (DEBUG) {
 			System.out.println("remove participant query: " + query);
 		}
 
@@ -1777,7 +1163,7 @@ public class ServerInputProcessor extends InputProcessor {
 			e.printStackTrace();
 		}
 		// print confirmation
-		SharedKeyCryptoComm.send("print Participants removed.", os, c, sk);
+		CommManager.send("print Participants removed.", os, c, sk);
 	}
 
 	/**
@@ -1789,10 +1175,10 @@ public class ServerInputProcessor extends InputProcessor {
 		 * homepage)
 		 */
 		if (currentPath[0] != null) {
-			SharedKeyCryptoComm.send("print Must be at Home to create a board", os, c, sk);
+			CommManager.send("print Must be at Home to create a board", os, c, sk);
 		} else {
 			String boardname = input.substring(("createBoard ").length());
-			SharedKeyCryptoComm.send(SocialNetworkBoards.createBoard(user, boardname), os, c, sk);
+			CommManager.send(SocialNetworkBoards.createBoard(user, boardname), os, c, sk);
 		}
 	}
 
@@ -1804,18 +1190,18 @@ public class ServerInputProcessor extends InputProcessor {
 	private void processRefresh() {
 		String boardName = currentPath[0];
 		if (boardName == null) {
-			SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+			CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 					+ "print ;" + SocialNetworkBoards.viewBoards(user), os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			/* No regions */
 			String postNum = currentPath[1];
 			if (postNum == null) { // Merely in the board
-				SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts
 								.viewPostList(user, boardName, null), os, c, sk);
 			} else { // Inside the post
-				SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts.viewPost(user, boardName, null,
 								Integer.parseInt(postNum)), os, c, sk);
@@ -1823,18 +1209,18 @@ public class ServerInputProcessor extends InputProcessor {
 		} else { // a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) { // Merely in the board
-				SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkRegions.viewRegions(user, boardName), os, c, sk);
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // Merely in the region
-					SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPostList(user, boardName,
 									regionName), os, c, sk);
 				} else { // Inside the post
-					SharedKeyCryptoComm.send(SocialNetworkNavigation.printPath(currentPath)
+					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPost(user, boardName,
 									regionName, Integer.parseInt(postNum)), os, c, sk);
@@ -1864,18 +1250,18 @@ public class ServerInputProcessor extends InputProcessor {
 		case 1: /* Go forward in the hierarchy to destination */
 			/* Have different cases depending on the current path */
 			if (currentPath[0] == null) {
-				SharedKeyCryptoComm.send(SocialNetworkNavigation.goToBoard(user,
+				CommManager.send(SocialNetworkNavigation.goToBoard(user,
 						currentPath, destination), os, c, sk);
 			} else if (currentPath[0].equals("freeforall")) {
 				Integer postNum = null;
 				try {
 					postNum = Integer.parseInt(destination);
 				} catch (NumberFormatException e) {
-					SharedKeyCryptoComm.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+					CommManager.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
 							+ "go backwards", os, c, sk);
 				}
 				if (postNum != null) {
-					SharedKeyCryptoComm.send(SocialNetworkNavigation.goToPost(user,
+					CommManager.send(SocialNetworkNavigation.goToPost(user,
 							currentPath, postNum.intValue()), os, c, sk);
 				}
 			} else {
@@ -1884,21 +1270,21 @@ public class ServerInputProcessor extends InputProcessor {
 					try {
 						postNum = Integer.parseInt(destination);
 					} catch (NumberFormatException e) {
-						SharedKeyCryptoComm.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+						CommManager.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
 								+ "go backwards", os, c, sk);
 					}
 					if (postNum != null) {
-						SharedKeyCryptoComm.send(SocialNetworkNavigation.goToPost(user,
+						CommManager.send(SocialNetworkNavigation.goToPost(user,
 								currentPath, postNum), os, c, sk);
 					}
 				} else {
-					SharedKeyCryptoComm.send(SocialNetworkNavigation.goToRegion(user,
+					CommManager.send(SocialNetworkNavigation.goToRegion(user,
 							currentPath, destination), os, c, sk);
 				}
 			}
 			break;
 		default:
-			SharedKeyCryptoComm.send("print Invalid destination given your current path: "
+			CommManager.send("print Invalid destination given your current path: "
 					+ SocialNetworkNavigation.printPath(currentPath) + ".; "
 					+ "print You can go backwards by typing \"..\" ", os, c, sk);
 
@@ -1913,14 +1299,14 @@ public class ServerInputProcessor extends InputProcessor {
 		String boardName = currentPath[0];
 		String regionName = inputLine.substring(("createRegion ").length());
 		if (boardName == null) {
-			SharedKeyCryptoComm.send("print Must be in the desired board in order to create the region.", os, c, sk);
+			CommManager.send("print Must be in the desired board in order to create the region.", os, c, sk);
 		} else if (boardName.equals("freeforall")) {
-			SharedKeyCryptoComm.send("print Cannot create regions in the freeforall board.", os, c, sk);
+			CommManager.send("print Cannot create regions in the freeforall board.", os, c, sk);
 		} else if (currentPath[1] != null) {
-			SharedKeyCryptoComm.send("print Must be exactly in the desired board (i.e., not inside a region in the board) "
+			CommManager.send("print Must be exactly in the desired board (i.e., not inside a region in the board) "
 					+ "in order to create the region", os, c, sk);
 		} else {
-			SharedKeyCryptoComm.send(SocialNetworkRegions.createRegion(user, currentPath[0],
+			CommManager.send(SocialNetworkRegions.createRegion(user, currentPath[0],
 					regionName), os, c, sk);
 		}
 	}
@@ -1930,40 +1316,40 @@ public class ServerInputProcessor extends InputProcessor {
 		String boardName = currentPath[0];
 		boolean canPost = false;
 		if (boardName == null) {
-			SharedKeyCryptoComm.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
+			CommManager.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			String postNum = currentPath[1];
 			if (postNum == null) {
 				canPost = true;
 			} else {
-				SharedKeyCryptoComm.send("print Must go back to the board page to create a post (not inside a post)", os, c, sk);
+				CommManager.send("print Must go back to the board page to create a post (not inside a post)", os, c, sk);
 			}
 		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				SharedKeyCryptoComm.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
+				CommManager.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // in a board, region, not in a post
 					canPost = true;
 				} else {
-					SharedKeyCryptoComm.send("print Must go back to the region page to create a post (not inside a post)", os, c, sk);
+					CommManager.send("print Must go back to the region page to create a post (not inside a post)", os, c, sk);
 				}
 			}
 		}
 		if (canPost) {
-			SharedKeyCryptoComm.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
-			String content = SharedKeyCryptoComm.receive(is, c, sk);
+			String content = CommManager.receive(is, c, sk);
 			while (content.equals("")) {
-				SharedKeyCryptoComm.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
-				content = SharedKeyCryptoComm.receive(is, c, sk);
+				CommManager.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
+				content = CommManager.receive(is, c, sk);
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
-				SharedKeyCryptoComm.send("print ;askForInput ", os, c, sk);
-				additionalContent = SharedKeyCryptoComm.receive(is, c, sk);
+				CommManager.send("print ;askForInput ", os, c, sk);
+				additionalContent = CommManager.receive(is, c, sk);
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -1973,9 +1359,9 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 			if (cancelled) {
-				SharedKeyCryptoComm.send("print Post Creation cancelled", os, c, sk);
+				CommManager.send("print Post Creation cancelled", os, c, sk);
 			} else {
-				SharedKeyCryptoComm.send(SocialNetworkPosts.createPost(user, content,
+				CommManager.send(SocialNetworkPosts.createPost(user, content,
 						currentPath[0], currentPath[1]), os, c, sk);
 			}
 		}
@@ -1992,40 +1378,40 @@ public class ServerInputProcessor extends InputProcessor {
 		String postNum = "";
 		boolean canReply = false;
 		if (boardName == null) {
-			SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
+			CommManager.send("print Must be within a post to create a reply", os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			postNum = currentPath[1];
 			if (postNum == null) {
-				SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
+				CommManager.send("print Must be within a post to create a reply", os, c, sk);
 			} else {
 				canReply = true;
 			}
 		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
+				CommManager.send("print Must be within a post to create a reply", os, c, sk);
 			} else {
 				postNum = currentPath[2];
 				if (postNum == null) { // in a board, region, not in a post
-					SharedKeyCryptoComm.send("print Must be within a post to create a reply", os, c, sk);
+					CommManager.send("print Must be within a post to create a reply", os, c, sk);
 				} else {
 					canReply = true;
 				}
 			}
 		}
 		if (canReply) {
-			SharedKeyCryptoComm.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
-			String content = SharedKeyCryptoComm.receive(is, c, sk);
+			String content = CommManager.receive(is, c, sk);
 			while (content.equals("")) {
-				SharedKeyCryptoComm.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
-				content = SharedKeyCryptoComm.receive(is, c, sk);
+				CommManager.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
+				content = CommManager.receive(is, c, sk);
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
-				SharedKeyCryptoComm.send("print ;askForInput ", os, c, sk);
-				additionalContent = SharedKeyCryptoComm.receive(is, c, sk);
+				CommManager.send("print ;askForInput ", os, c, sk);
+				additionalContent = CommManager.receive(is, c, sk);
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -2035,10 +1421,10 @@ public class ServerInputProcessor extends InputProcessor {
 				}
 			}
 			if (cancelled) {
-				SharedKeyCryptoComm.send("print Reply Creation cancelled", os, c, sk);
+				CommManager.send("print Reply Creation cancelled", os, c, sk);
 
 			} else {
-				SharedKeyCryptoComm.send(SocialNetworkPosts.createReply(user, content,
+				CommManager.send(SocialNetworkPosts.createReply(user, content,
 						currentPath[0], currentPath[1],
 						Integer.parseInt(postNum)), os, c, sk);
 			}

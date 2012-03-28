@@ -18,11 +18,11 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 
-import server.SocialNetworkServer;
+import shared.ProjectConfig;
 
 public class SharedKeyCrypto {
 	
-	private static final boolean DEBUG = SocialNetworkServer.DEBUG;
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	
 	private static final int IV_STRING_LENGTH = 12;
 	

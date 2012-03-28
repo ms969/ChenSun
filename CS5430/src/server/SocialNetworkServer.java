@@ -3,9 +3,12 @@ package server;
 import java.math.BigInteger;
 import java.net.*;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.io.*;
 
 import javax.crypto.KeyGenerator;
+
+import shared.ProjectConfig;
 
 import crypto.PublicKeyCryptoServer;
 import crypto.SharedKeyCrypto;
@@ -20,7 +23,7 @@ public class SocialNetworkServer {
 	private static final int LISTEN_PORT_NUM = 5329;
 	private static PrivateKey privk = null;
 	private static PublicKey pubk = null;
-	public static final boolean DEBUG = true;
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 
 	public static void main(String[] args) throws IOException {
 
@@ -31,6 +34,28 @@ public class SocialNetworkServer {
 			System.exit( 1 );
 		}
 		
+		if (DEBUG && args.length == 2) {
+			try {
+				privk = PublicKeyCryptoServer.serverPrivateKeyRSA(new BigInteger(args[0]));
+			} catch (Exception e) { /* Can't happen */ }
+			SharedKeyCrypto.initSharedKeyCrypto(args[1]);
+		} else {
+			getSecrets();
+		}
+		
+		System.out.println("Server successfully started");
+		
+		ServerSocket serverSocket = initializeSocket();
+		
+		
+		while (true) {
+			acceptClient(serverSocket);
+		}
+		
+		
+	}
+
+	private static void getSecrets() throws IOException {
 		//Get the private key from the operator
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Input the first secret");
@@ -75,17 +100,6 @@ public class SocialNetworkServer {
 			System.out.println("Too many incorrect tries. Exiting.");
 			System.exit( 1 );
 		}
-		
-		System.out.println("Server successfully started");
-		
-		ServerSocket serverSocket = initializeSocket();
-		
-		
-		while (true) {
-			acceptClient(serverSocket);
-		}
-		
-		
 	}
 
 	private static ServerSocket initializeSocket() {
