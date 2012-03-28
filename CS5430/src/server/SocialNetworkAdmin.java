@@ -85,7 +85,7 @@ public class SocialNetworkAdmin {
 			}
 			command += ";print ;print [To approve: approve "
 					+ "<username1>, <username2>];print [To remove: "
-					+ "remove <username1>, <username2>];askForInput";
+					+ "remove <username1>, <username2>];askForInput;";
 		}
 		return command;
 	}
