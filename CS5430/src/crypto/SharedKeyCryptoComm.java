@@ -69,9 +69,6 @@ public class SharedKeyCryptoComm {
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
-		
-		CipherOutputStream cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
-		PrintWriter pw = new PrintWriter(cos);
 		try {
 			//iv and msg
 			byte[] iv = createIV(sr, blockSize);
@@ -81,10 +78,11 @@ public class SharedKeyCryptoComm {
 			}
 			catch (Exception e) {/*This cannot happen*/}
 			os.write(iv);
+			CipherOutputStream cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
+			PrintWriter pw = new PrintWriter(cos);
 			pw.println(msg);
 			pw.flush();
 			pw.close();
-			cos.close();
 		}
 		catch (IOException e) {
 			System.out.println("Error/Timeout sending the message: " + msg);
