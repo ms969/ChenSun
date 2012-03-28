@@ -82,7 +82,9 @@ public class SharedKeyCryptoComm {
 			PrintWriter pw = new PrintWriter(cos);
 			pw.println(msg);
 			pw.flush();
+			cos.flush();
 			pw.close();
+			cos.close();
 		}
 		catch (IOException e) {
 			System.out.println("Error/Timeout sending the message: " + msg);
