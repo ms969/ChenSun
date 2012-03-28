@@ -166,7 +166,7 @@ public class SocialNetworkAdmin {
 	}
 
 	public static String regRemove(Connection conn, String username) {
-		String success = "print "+username+" has been deleted from the system.";
+		String success = "print "+username+" has been deleted from the system.;";
 		String error = "print Database error occurred while removing registration for " + 
 				username + ". Please try again or contact the System Admin.;";
 		int status = DatabaseAdmin.deleteFromReg(conn, username);
@@ -178,7 +178,7 @@ public class SocialNetworkAdmin {
 	}
 	
 	public static String friendReqRemove(Connection conn, String requester, String requestee) {
-		String success = "print Friend request from " + requester + " has been deleted.";
+		String success = "print Friend request from " + requester + " has been deleted.;";
 		String error = "print Database error occurred while removing friend request from " + 
 				requester + ". Please try again or contact the System Admin.;";
 		int status = DatabaseAdmin.deleteFriendRequest(conn, requester, requestee);
