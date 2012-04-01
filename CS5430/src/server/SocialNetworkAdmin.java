@@ -353,6 +353,7 @@ public class SocialNetworkAdmin {
 	public static String printUserInfo(String username) {
 		Connection conn = DBManager.getConnection();
 		String command = printUserInfo(conn, username);
+		DBManager.closeConnection(conn);
 		return command;
 	}
 }
