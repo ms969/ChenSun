@@ -349,6 +349,12 @@ public class SocialNetworkAdmin {
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
 		return printUserInfo(userInfo[0], userInfo[3], userInfo[2]);
 	}
+	
+	public static String printUserInfo(String username) {
+		Connection conn = DBManager.getConnection();
+		String command = printUserInfo(conn, username);
+		return command;
+	}
 }
 
 
