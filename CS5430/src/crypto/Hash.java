@@ -60,6 +60,7 @@ public class Hash {
 		ByteBuffer.wrap(enteredPwdByte).asCharBuffer().put(enteredPwd);
 		// getting the salt in byte[]
 		byte[] saltBytes = decode(salt);
+		System.out.println(saltBytes);
 		// concatenating into one
 		byte[] pwdAndSalt = new byte[saltBytes.length + enteredPwdByte.length];
 		System.arraycopy(saltBytes, 0, pwdAndSalt, 0, saltBytes.length);

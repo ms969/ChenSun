@@ -147,6 +147,7 @@ public class ClientProcessor extends InputProcessor {
 	}
 		
 	public void processLogin() {
+		System.out.println();
 		System.out.println("To log in, type 'login <username>'");
 		System.out.println("To register, type 'register'");
 		askForInput();

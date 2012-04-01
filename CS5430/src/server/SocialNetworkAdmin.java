@@ -20,7 +20,7 @@ public class SocialNetworkAdmin {
 		int requestCount = DatabaseAdmin.getFriendReqCount(conn, username);
 		if (requestCount != 0) {
 			command = ";print Pending Friend Requests (" + requestCount
-				+ ") [To view: friendRequests]";
+				+ ") [To view: friendRequests];";
 		}
 		return command;
 	}
@@ -30,7 +30,7 @@ public class SocialNetworkAdmin {
 		int requestCount = DatabaseAdmin.getRegReqCount(conn, username);
 		if (requestCount != 0) {
 			command = ";print Pending User Registration Requests ("
-					+ requestCount + ") [To view: regRequests]";
+					+ requestCount + ") [To view: regRequests];";
 		}
 		return command;
 	}
@@ -108,7 +108,7 @@ public class SocialNetworkAdmin {
 			return error;
 		}
 		
-		int deleteStatus = DatabaseAdmin.deleteFromReg(conn, username);
+		int deleteStatus = DatabaseAdmin.deleteRegRequest(conn, username);
 		int addStatus = DatabaseAdmin.addUser(conn, username, pwhash, aid);
 		System.out.println("Going into addFriendsFromGroup");
 		int addFriendStatus = DatabaseAdmin.addFriendsFromGroup(conn, username, aid);
@@ -169,7 +169,7 @@ public class SocialNetworkAdmin {
 		String success = "print "+username+" has been deleted from the system.;";
 		String error = "print Database error occurred while removing registration for " + 
 				username + ". Please try again or contact the System Admin.;";
-		int status = DatabaseAdmin.deleteFromReg(conn, username);
+		int status = DatabaseAdmin.deleteRegRequest(conn, username);
 		if (status == 1) {
 			return success;
 		} else {
@@ -204,7 +204,7 @@ public class SocialNetworkAdmin {
 			}
 		}
 		command += "print ;print Type the name of the user you wish to friend:;"
-				+ "askForInput";
+				+ "askForInput;";
 		return command;
 	}
 	
@@ -228,6 +228,126 @@ public class SocialNetworkAdmin {
 			command = "print Database Error while sending friend request. Please try again or contact the System Admin.;";
 		}
 		return command;
+	}
+	
+	public static String displayDeletableUsers(Connection conn, List<String[]> users) {
+		String command = "print Users in your A Cappella group that you can delete:;";
+		for (String[] u: users) {
+			command += "print " + u[0] + ";";
+		}
+		command += "print ;print Type the name of the user you wish to delete:;askForInput;";
+		return command;
+	}
+	
+	public static String deleteUser(Connection conn, String username) {
+		String success = "print " + username + " has been deleted from the system.;";
+		String error = "print Database Error while deleting " + username + ". Please try again or contact the System Admin.;";
+		int status = DatabaseAdmin.deleteUser(conn, username);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
+	}
+	
+	public static String showFriends(Connection conn, String username) {
+		String command = "print Your Friends:;";
+		List<String> friends = DatabaseAdmin.getFriends(conn, username);
+		if (friends == null) {
+			command = "print Database Error while getting friend list. Please try again or contact the System Admin.;";
+		} else if (friends.size() == 0) {
+			command = "print You have no friends right now.;print To add a friend: type addFriend;";
+		} else {
+			for (String f: friends) {
+				String[] userInfo = DatabaseAdmin.getUserInfo(conn, f);
+				command += "print " + userInfo[0] + " (" + userInfo[2] + 
+						"-" + userInfo[3].toUpperCase() + ");";
+				// April (Fantasia-MEMBER)
+			}
+		}
+		return command;
+	}
+	
+	public static String displayRoleChange(Connection conn, List<String[]> users) {
+		String command = "print Users in your A Cappella group that you can change roles for:;";
+		for (String[] u: users) {
+			command += "print " + u[0] + " (" + u[1].toUpperCase() + ");";
+		}
+		command += "print ;print Type the name of the user you wish to change role for:;askForInput;";
+		return command;
+	}
+	
+	public static String changeRole(Connection conn, String username, String role) {
+		int status = DatabaseAdmin.changeRole(conn, username, role);
+		if (status == 1) {
+			String from;
+			if (role.equals("admin")) {
+				from = "MEMBER";
+			} else {
+				from = "ADMIN";
+			}
+			return "print Role for " + username + " has been changed from " + from + 
+					" to " + role.toUpperCase() + ";";
+		} else {
+			return "print Database Error while changing role for " + username + 
+					". Please try again or contact the System Admin.;";
+		}
+	}
+	
+	public static String displaySATransferableUsers(Connection conn, String username) {
+		String command = "print Users in your A Cappella group that you can transfer SA role to:;";
+		List<String> admins = DatabaseAdmin.getAdminsOfGroup(conn, username);
+		for (String a: admins) {
+			command += "print " + a + " (ADMIN);";
+		}
+		command += "print ;print Type the name of the user you wish to transfer SA role to:;"
+				+ "askForInput;";
+		return command;
+	}
+	
+	public static String transferSA(Connection conn, String from, String to) {
+		String success = "print SA role has been transferred to " + to + ";";
+		String error = "print Database error occurred while transferring SA role to " + 
+				to + ". Please try again or contact the System Admin.;";
+		try {
+			conn.setAutoCommit(false);
+		} catch (SQLException e) {
+			if (DEBUG) System.err.println("transferSA: turning off auto commit failed.");
+			return error;
+		}
+		
+		int demoteStatus = DatabaseAdmin.changeRole(conn, from, "admin");
+		int promoteStatus = DatabaseAdmin.changeRole(conn, to, "sa");
+		
+		if (demoteStatus != 1 || promoteStatus != 1) {
+			DBManager.rollback(conn);
+			DBManager.trueAutoCommit(conn);
+			if (DEBUG) System.err.printf("transferSA: DB operations failed. " +
+					"demoteStatus: %d, promoteStatus: %d\n", demoteStatus, promoteStatus);
+			return error;
+		} else {
+			try {
+				conn.commit();
+				DBManager.trueAutoCommit(conn);
+				return success;
+			} catch (SQLException e) {
+				DBManager.trueAutoCommit(conn);
+				if (DEBUG) e.printStackTrace();
+				return error;
+			}
+		}
+	}
+	
+	public static String printUserInfo(String username, String role, String aname) {
+		String command = "print Logged in as: " + username + ";";
+		command += "print Role: " + role.toUpperCase() + ";";
+		command += "print A Cappella Group: " + aname + ";print ;";
+		return command;
+	}
+	
+	public static String printUserInfo(Connection conn, String username) {
+		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
+		return printUserInfo(userInfo[0], userInfo[3], userInfo[2]);
 	}
 }
 

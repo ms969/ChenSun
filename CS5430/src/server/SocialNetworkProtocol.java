@@ -49,7 +49,7 @@ public class SocialNetworkProtocol implements Runnable {
 		try {
 			main();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			// TODO What to do with the exceptions?
 			e.printStackTrace();
 		}
 	}

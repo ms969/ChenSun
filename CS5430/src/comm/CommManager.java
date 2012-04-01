@@ -20,21 +20,18 @@ public class CommManager {
 	
 	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
 		if (ProjectConfig.DEBUG) {
-			System.out.println("Sent msg: " + msg);
+			//System.out.println("Sent msg: " + msg);
 		}
 		if (ProjectConfig.SENDING_METHOD == SendingType.SHARED_KEY) {
-			//System.out.println("Sending method = sharedkey");
 			return SharedKeyCryptoComm.send(msg, os, c, sk);
 		}
 		if (ProjectConfig.SENDING_METHOD == SendingType.NO_ENCRYPTION) {
-			//System.out.println("Sending method = no encryption");
 			PrintWriter pw = new PrintWriter(os);
 			pw.println(msg);
 			pw.flush();
 			//pw.close();
 			return true;
 		}
-		//System.out.println("Sending method other");
 		return false;
 	}
 	
@@ -51,7 +48,7 @@ public class CommManager {
 			try {
 				String msg = br.readLine();
 				if (ProjectConfig.DEBUG) {
-					System.out.println("Recv msg: " + msg);
+					//System.out.println("Recv msg: " + msg);
 				}
 				//br.close();
 				return msg;

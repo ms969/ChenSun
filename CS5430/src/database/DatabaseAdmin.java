@@ -16,6 +16,78 @@ public class DatabaseAdmin {
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
 
 	/**
+	 * Returns a Map of a cappella groups with aid as key and 
+	 * aname as value. If error, return null.
+	 * @param conn
+	 * @return HashMap of groups
+	 */
+	public static Map<Integer, String> getGroupList(Connection conn) {
+		Map<Integer, String> groupList = new HashMap<Integer, String>();
+		Statement stmt = null;
+		ResultSet groups = null;
+		String query = "SELECT aid, aname FROM main.acappella";
+		try {
+			stmt = conn.createStatement();
+			groups = stmt.executeQuery(query);
+			while (groups.next()) {
+				groupList.put(groups.getInt("aid"), groups.getString("aname"));
+			}
+		} catch (SQLException e) {
+			return null;
+		} finally {
+			DBManager.closeResultSet(groups);
+			DBManager.closeStatement(stmt);
+		}
+		return groupList;
+	}
+
+	/**
+	 * Adds a user to the user table with the given username, pwhash and aid. 
+	 * Its role is automatically set to member.
+	 * @param conn
+	 * @param username
+	 * @param pwhash
+	 * @param aid
+	 * @return 1 if successfully added.
+	 */
+	public static int addUser(Connection conn, String username, String pwhash, int aid) {
+		int status = 0;
+		String query = "INSERT INTO main.users (username, pwhash, aid, role) " +
+				"VALUE (?, ?, ?, 'member')";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			pstmt.setString(2, pwhash);
+			pstmt.setInt(3, aid);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+	
+	public static int deleteUser(Connection conn, String username) {
+		int status = 0;
+		String query = "DELETE FROM main.users WHERE username = ?";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+
+	/**
 	 * return an array with the user's info. 
 	 * userInfo[0] = username
 	 * userInfo[1] = pwhash
@@ -51,6 +123,95 @@ public class DatabaseAdmin {
 		return userInfo;
 	}
 	
+	/**
+	 * Retrieves a list of all users of a group given the group's aid. Returns null 
+	 * if error.
+	 * @param conn
+	 * @param aid
+	 * @return 
+	 */
+	public static List<String> getAllUsersOfGroup(Connection conn, int aid) {
+		List<String> users = new ArrayList<String>();
+		String query = "SELECT username FROM main.users WHERE aid = ?";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setInt(1, aid);
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				users.add(result.getString("username"));
+			}
+			if (users.size() == 0) {
+				users = null;
+			}
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			users = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return users;
+	}
+
+	/**
+	 * user[0] = username
+	 * user[1] = role
+	 * @param conn
+	 * @param username
+	 * @return
+	 */
+	public static List<String[]> getOtherUsersInGroup(Connection conn, String username) {
+		List<String[]> users = new ArrayList<String[]>();
+		String query = "SELECT username, role FROM main.users "
+				+ "WHERE username != ? AND aid = "
+				+ "(SELECT aid FROM main.users WHERE username = ?)";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			pstmt.setString(2, username);
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				String[] userInfo = {result.getString("username"), result.getString("role")};
+				users.add(userInfo);
+			}
+		} catch (SQLException e) {
+			users = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return users;
+	}
+	
+	public static List<String> getAdminsOfGroup(Connection conn, String username) {
+		List<String> admins = new ArrayList<String>();
+		String query = "SELECT username FROM main.users "
+				+ "WHERE username != ? AND aid = "
+				+ "(SELECT aid FROM main.users WHERE username = ?) AND role = 'admin'";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			pstmt.setString(2, username);
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				admins.add(result.getString("username"));
+			}
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			admins = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return admins;
+	}
+
 	/**
 	 * Returns a list of the user's friends. Returns null if error
 	 * @param conn
@@ -113,6 +274,145 @@ public class DatabaseAdmin {
 	}
 	
 	/**
+	 * For a new user, adds all the users from his group to his friend list
+	 * 
+	 * @param conn
+	 * @param username
+	 * @param aid
+	 * @return number of friend entries added. -1 if error
+	 */
+	public static int addFriendsFromGroup(Connection conn, String username, int aid) {
+		System.out.println("In addFriendsFromGroup");
+		int status = 0;
+		List<String> friends = getAllUsersOfGroup(conn, aid);
+		for (String f: friends) {
+			if (!f.equals(username)) {
+				int s = addFriend(conn, username, f);
+				if (s != -1) {
+					status+= s;
+				} else {
+					return -1;
+				}
+			}
+		}
+		return status;
+	}
+
+	public static List<String[]> getFriendableUsers(Connection conn, String username) {
+		List<String[]> friendableUsers = new ArrayList<String[]>();
+		// BLAH BLAH BLAH!!!!asdfjl;asj dofikm
+		List<String> existingFriends = getFriends(conn, username);
+		String query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella "
+				+ "WHERE username != ? AND username NOT IN "
+				+ "(SELECT requester FROM main.friendrequests "
+				+ "WHERE requestee = ?)";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			pstmt.setString(2, username);
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				if (!existingFriends.contains(result.getString("username"))) {
+					String[] userInfo = { result.getString("username"),
+							result.getString("aname") };
+					friendableUsers.add(userInfo);
+				}
+			}
+		} catch (SQLException e) {
+			friendableUsers = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return friendableUsers;
+	}
+
+	public static int insertFriendRequest(Connection conn, String requestee, String requester) {
+		int status = -1;
+		String query = "INSERT INTO main.friendrequests (requestee, requester) VALUE (?,?)";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, requestee);
+			pstmt.setString(2, requester);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = -1;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+
+	public static List<String> getFriendRequestList(Connection conn, String username) {
+		List<String> pendingFriends = new ArrayList<String>();
+		String query = "SELECT requester FROM main.friendrequests WHERE requestee = ?";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				pendingFriends.add(result.getString("requester"));
+			}
+		} catch (SQLException e) {
+			pendingFriends = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return pendingFriends;
+	}
+
+	public static int deleteFriendRequest(Connection conn, String requester, String requestee) {
+		int status = 0;
+		String query = "DELETE FROM main.friendrequests WHERE requester = ? AND requestee = ?";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, requester);
+			pstmt.setString(2, requestee);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+
+	public static int addFriend(Connection conn, String username1, String username2) {
+		int status = 0;
+		String query = "INSERT INTO main.friends (username1, username2) VALUES (?, ?)";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			String user1 = "", user2 = "";
+			if (username1.compareTo(username2) < 0) {
+				user1 = username1;
+				user2 = username2;
+			}
+			if (username1.compareTo(username2) > 0) {
+				user1 = username2;
+				user2 = username1;
+			}
+			pstmt.setString(1, user1);
+			pstmt.setString(2, user2);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+
+	/**
 	 * Returns the number of reg requests that the admin has. Return 0 on error
 	 * @param conn
 	 * @param username
@@ -139,32 +439,6 @@ public class DatabaseAdmin {
 			DBManager.closePreparedStatement(pstmt);
 		}
 		return requestCount;
-	}
-	
-	/**
-	 * Returns a Map of a cappella groups with aid as key and 
-	 * aname as value. If error, return null.
-	 * @param conn
-	 * @return HashMap of groups
-	 */
-	public static Map<Integer, String> getGroupList(Connection conn) {
-		Map<Integer, String> groupList = new HashMap<Integer, String>();
-		Statement stmt = null;
-		ResultSet groups = null;
-		String query = "SELECT aid, aname FROM main.acappella";
-		try {
-			stmt = conn.createStatement();
-			groups = stmt.executeQuery(query);
-			while (groups.next()) {
-				groupList.put(groups.getInt("aid"), groups.getString("aname"));
-			}
-		} catch (SQLException e) {
-			return null;
-		} finally {
-			DBManager.closeResultSet(groups);
-			DBManager.closeStatement(stmt);
-		}
-		return groupList;
 	}
 	
 	/**
@@ -274,7 +548,7 @@ public class DatabaseAdmin {
 	 * @param username
 	 * @return 1 if successfully deleted.
 	 */
-	public static int deleteFromReg(Connection conn, String username) {
+	public static int deleteRegRequest(Connection conn, String username) {
 		int status = 0;
 		String query = "DELETE FROM main.registrationrequests WHERE username = ?";
 		PreparedStatement pstmt = null;
@@ -291,169 +565,14 @@ public class DatabaseAdmin {
 		return status;
 	}
 	
-	/**
-	 * Adds a user to the user table with the given username, pwhash and aid. 
-	 * Its role is automatically set to member.
-	 * @param conn
-	 * @param username
-	 * @param pwhash
-	 * @param aid
-	 * @return 1 if successfully added.
-	 */
-	public static int addUser(Connection conn, String username, String pwhash, int aid) {
+	public static int changeRole(Connection conn, String username, String role) {
 		int status = 0;
-		String query = "INSERT INTO main.users (username, pwhash, aid, role) " +
-				"VALUE (?, ?, ?, 'member')";
+		String query = "UPDATE main.users SET role = ? WHERE username = ?";
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, username);
-			pstmt.setString(2, pwhash);
-			pstmt.setInt(3, aid);
-			status = pstmt.executeUpdate();
-		} catch (SQLException e) {
-			if (DEBUG) e.printStackTrace();
-			status = 0;
-		} finally {
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return status;
-	}
-	
-	/**
-	 * For a new user, adds all the users from his group to his friend list
-	 * 
-	 * @param conn
-	 * @param username
-	 * @param aid
-	 * @return number of friend entries added. -1 if error
-	 */
-	public static int addFriendsFromGroup(Connection conn, String username, int aid) {
-		System.out.println("In addFriendsFromGroup");
-		int status = 0;
-		List<String> friends = getAllUsersOfGroup(conn, aid);
-		for (String f: friends) {
-			if (!f.equals(username)) {
-				int s = addFriend(conn, username, f);
-				if (s != -1) {
-					status+= s;
-				} else {
-					return -1;
-				}
-			}
-		}
-		return status;
-	}
-	
-	/**
-	 * Retrieves a list of all users of a group given the group's aid. Returns null 
-	 * if error.
-	 * @param conn
-	 * @param aid
-	 * @return 
-	 */
-	public static List<String> getAllUsersOfGroup(Connection conn, int aid) {
-		List<String> users = new ArrayList<String>();
-		String query = "SELECT username FROM main.users WHERE aid = ?";
-		PreparedStatement pstmt = null;
-		ResultSet result = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setInt(1, aid);
-			result = pstmt.executeQuery();
-			while (result.next()) {
-				users.add(result.getString("username"));
-			}
-			if (users.size() == 0) {
-				users = null;
-			}
-		} catch (SQLException e) {
-			if (DEBUG) e.printStackTrace();
-			users = null;
-		} finally {
-			DBManager.closeResultSet(result);
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return users;
-	}
-	
-	public static List<String[]> getFriendableUsers(Connection conn, String username) {
-		List<String[]> friendableUsers = new ArrayList<String[]>();
-		// BLAH BLAH BLAH!!!!asdfjl;asj dofikm
-		List<String> existingFriends = getFriends(conn, username);
-		String query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella "
-				+ "WHERE username != ? AND username NOT IN "
-				+ "(SELECT requester FROM main.friendrequests "
-				+ "WHERE requestee = ?)";
-		PreparedStatement pstmt = null;
-		ResultSet result = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, username);
+			pstmt.setString(1, role);
 			pstmt.setString(2, username);
-			result = pstmt.executeQuery();
-			while (result.next()) {
-				if (!existingFriends.contains(result.getString("username"))) {
-					String[] userInfo = { result.getString("username"),
-							result.getString("aname") };
-					friendableUsers.add(userInfo);
-				}
-			}
-		} catch (SQLException e) {
-			friendableUsers = null;
-		} finally {
-			DBManager.closeResultSet(result);
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return friendableUsers;
-	}
-	
-	public static int insertFriendRequest(Connection conn, String requestee, String requester) {
-		int status = -1;
-		String query = "INSERT INTO main.friendrequests (requestee, requester) VALUE (?,?)";
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, requestee);
-			pstmt.setString(2, requester);
-			status = pstmt.executeUpdate();
-		} catch (SQLException e) {
-			status = -1;
-		} finally {
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return status;
-	}
-	
-	public static List<String> getFriendRequestList(Connection conn, String username) {
-		List<String> pendingFriends = new ArrayList<String>();
-		String query = "SELECT requester FROM main.friendrequests WHERE requestee = ?";
-		PreparedStatement pstmt = null;
-		ResultSet result = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, username);
-			result = pstmt.executeQuery();
-			while (result.next()) {
-				pendingFriends.add(result.getString("requester"));
-			}
-		} catch (SQLException e) {
-			pendingFriends = null;
-		} finally {
-			DBManager.closeResultSet(result);
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return pendingFriends;
-	}
-	
-	public static int deleteFriendRequest(Connection conn, String requester, String requestee) {
-		int status = 0;
-		String query = "DELETE FROM main.friendrequests WHERE requester = ? AND requestee = ?";
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, requester);
-			pstmt.setString(2, requestee);
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
@@ -464,32 +583,6 @@ public class DatabaseAdmin {
 		return status;
 	}
 	
-	public static int addFriend(Connection conn, String username1, String username2) {
-		int status = 0;
-		String query = "INSERT INTO main.friends (username1, username2) VALUES (?, ?)";
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			String user1 = "", user2 = "";
-			if (username1.compareTo(username2) < 0) {
-				user1 = username1;
-				user2 = username2;
-			}
-			if (username1.compareTo(username2) > 0) {
-				user1 = username2;
-				user2 = username1;
-			}
-			pstmt.setString(1, user1);
-			pstmt.setString(2, user2);
-			status = pstmt.executeUpdate();
-		} catch (SQLException e) {
-			if (DEBUG) e.printStackTrace();
-			status = 0;
-		} finally {
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return status;
-	}
 }
 
 
