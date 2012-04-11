@@ -22,7 +22,6 @@ public class SocialNetworkBoards {
 		return exists;
 	}
 	
-	//TODO assumptions: user is admin.
 	public static String createBoard(String username, String boardName) 
 	throws IOException {
 		if (boardName.trim().contains("..") || boardName.trim().equals("") 
