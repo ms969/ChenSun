@@ -100,7 +100,7 @@ public class SocialNetworkDatabaseRegions {
 		
 		boolean sqlex = false;
 		try {
-			String role = SocialNetworkDatabaseBoards.getUserRole(conn, username);
+			String role = DatabaseAdmin.getUserRole(conn, username);
 			if (role.equals("member")) {
 				regionPstmt = conn.prepareStatement(fetchRegionsMember);
 				regionPstmt.setString(1, username);

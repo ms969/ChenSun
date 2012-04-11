@@ -123,6 +123,33 @@ public class DatabaseAdmin {
 		return userInfo;
 	}
 	
+	/**
+	 * Utility function placed here for now...
+	 * Function to get the user's role.
+	 */
+	public static String getUserRole(Connection conn, String username) {
+		String userRole = "SELECT role FROM main.users WHERE username = ?";
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		String role = "";
+		try {
+			pstmt = conn.prepareStatement(userRole);
+			pstmt.setString(1, username);
+			rs = pstmt.executeQuery();
+			if (rs.next()) {
+				role = rs.getString("role");
+			}
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(rs);
+		}
+		return role;
+	}
+	
 	public static boolean isAdmin(Connection conn, String user) {
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
