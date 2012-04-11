@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -752,20 +753,22 @@ public class ServerInputProcessor extends InputProcessor {
 					conn, user, board, region);
 			boolean validParticip = false;
 			command = "";
+			List<String> addUsers = null;
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayAddableParticip(addables);
 				CommManager.send(command, os, c, sk);
 				String input = CommManager.receive(is, c, sk);
-				String[] addUsers = input.split(" *, *");
-				List<String> usersList = new ArrayList<String>();
-				Collections.addAll(usersList, addUsers);
-				validParticip = addables.containsAll(usersList);
+				addUsers = Arrays.asList(input.split(" *, *"));
+				validParticip = addables.containsAll(addUsers);
 				if (!validParticip) {
 					command = "print You do not have permission to add all the users " +
 							"you specified.;print ;";
 				}
 			}
-			
+			// Participants to add are valid
+			for (String user: addUsers) {
+				addParticipant(conn, user);
+			}
 		}
 		// only has permission to do this if owner of freeforall post or region
 		// "To add an admin, use the addAdmin command. Admins are added to the 
@@ -774,6 +777,10 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 	
+	private void addParticipant(Connection conn, String user2) {
+		
+	}
+
 	/**
 	 * Returns the error command if user not able to add participant to the current 
 	 * directory. Returns the empty string if user does have permission.
