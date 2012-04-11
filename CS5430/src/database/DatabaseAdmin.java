@@ -346,7 +346,6 @@ public class DatabaseAdmin {
 
 	public static List<String[]> getFriendableUsers(Connection conn, String username) {
 		List<String[]> friendableUsers = new ArrayList<String[]>();
-		// BLAH BLAH BLAH!!!!asdfjl;asj dofikm
 		List<String> existingFriends = getFriends(conn, username);
 		String query = "SELECT username, aname FROM main.users NATURAL JOIN main.acappella "
 				+ "WHERE username != ? AND username NOT IN "

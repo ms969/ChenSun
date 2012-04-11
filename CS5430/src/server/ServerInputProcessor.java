@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -337,7 +338,8 @@ public class ServerInputProcessor extends InputProcessor {
 		CommManager.send("createPassword", os, c, sk);
 		String pwdStore = CommManager.receive(is, c, sk);
 		
-		CommManager.send(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore), os, c, sk);
+		CommManager.send(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore), 
+				os, c, sk);
 		DBManager.closeConnection(conn);
 	}
 
@@ -408,7 +410,8 @@ public class ServerInputProcessor extends InputProcessor {
 			if (!input.equals("addFriend")) {
 				prefix = getValue(input);
 			}
-			command += SocialNetworkAdmin.displayFriendableUsers(conn, prefix, friendableUsers);
+			command += SocialNetworkAdmin.displayFriendableUsers(
+					conn, prefix, friendableUsers);
 			CommManager.send(command, os, c, sk);
 
 			toFriend = CommManager.receive(is, c, sk);
@@ -526,7 +529,8 @@ public class ServerInputProcessor extends InputProcessor {
 	private void deleteUser(Connection conn, String username) throws IOException {
 		// username is a deletable user
 		CommManager.send("print User deletions cannot be undone.;"
-				+ "print Are you sure you want to delete this user? (y/n);askForInput", os, c, sk);
+				+ "print Are you sure you want to delete this user? (y/n);askForInput", 
+				os, c, sk);
 		String input = CommManager.receive(is, c, sk);
 		String command;
 		if (input.equals("y")) {
@@ -643,7 +647,8 @@ public class ServerInputProcessor extends InputProcessor {
 		Connection conn = DBManager.getConnection();
 		String board = currentPath[0];
 		String command = "";
-		String wrongLocation = "print Goto a region or freeforall post to view participants in that region/post.;";
+		String wrongLocation = "print Goto a region or freeforall post to view participants " +
+				"in that region/post.;";
 
 		if (board == null) {
 			command = wrongLocation;
@@ -652,7 +657,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (region == null) {
 				command = wrongLocation;
 			} else {
-				command = SocialNetworkAdmin.displayParticipants(conn, board, region);
+				command = SocialNetworkAdmin.displayParticip(conn, board, region);
 			}
 		}
 		
@@ -702,7 +707,8 @@ public class ServerInputProcessor extends InputProcessor {
 					command += "print " + user + ";";
 				}
 				command += "print ;print [To add user: (<user1>, <privilege>), "
-						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];askForInput";
+						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];" +
+						"askForInput";
 				CommManager.send(command, os, c, sk);
 				String input = CommManager.receive(is, c, sk);
 				if (input.equals("cancel")) {
@@ -729,7 +735,8 @@ public class ServerInputProcessor extends InputProcessor {
 			// toAdd is addable
 			addParticipant(addInfo);
 		} else {
-			CommManager.send("print You do not have permission to add participants to this region.", os, c, sk);
+			CommManager.send("print You do not have permission to add participants to this " +
+					"region.", os, c, sk);
 		}
 	}
 	
@@ -741,8 +748,24 @@ public class ServerInputProcessor extends InputProcessor {
 		} else {
 			String board = currentPath[0];
 			String region = currentPath[1];
-			List<String> addables = SocialNetworkAdmin.getAddableParticipants(conn, user, board, region);
-			command = SocialNetworkAdmin.displayAddableParticipants(conn, addables);
+			List<String> addables = SocialNetworkAdmin.getAddableParticip(
+					conn, user, board, region);
+			boolean validParticip = false;
+			command = "";
+			while (!validParticip) {
+				command += SocialNetworkAdmin.displayAddableParticip(addables);
+				CommManager.send(command, os, c, sk);
+				String input = CommManager.receive(is, c, sk);
+				String[] addUsers = input.split(" *, *");
+				List<String> usersList = new ArrayList<String>();
+				Collections.addAll(usersList, addUsers);
+				validParticip = addables.containsAll(usersList);
+				if (!validParticip) {
+					command = "print You do not have permission to add all the users " +
+							"you specified.;print ;";
+				}
+			}
+			
 		}
 		// only has permission to do this if owner of freeforall post or region
 		// "To add an admin, use the addAdmin command. Admins are added to the 
@@ -752,14 +775,15 @@ public class ServerInputProcessor extends InputProcessor {
 	}
 	
 	/**
-	 * Returns the error command if user not able to add participant to the current directory
-	 * Returns the empty string if user does have permission.
+	 * Returns the error command if user not able to add participant to the current 
+	 * directory. Returns the empty string if user does have permission.
 	 * @param conn
 	 * @return
 	 */
 	private String addParticipantsError(Connection conn) {
 		String command = "";
-		String wrongLocation = "print Goto a region or freeforall post to view participants in that region/post.;";
+		String wrongLocation = "print Goto a region or freeforall post to view " +
+				"participants in that region/post.;";
 		String board = currentPath[0];
 		if (board == null) {
 			command = wrongLocation;
@@ -770,9 +794,11 @@ public class ServerInputProcessor extends InputProcessor {
 			} else {
 				boolean hasPerm;
 				if (board.equals("freeforall")) {
-					hasPerm = SocialNetworkDatabasePosts.isFFAPostCreator(conn, user, Integer.parseInt(region));
+					hasPerm = SocialNetworkDatabasePosts.isFFAPostCreator(
+							conn, user, Integer.parseInt(region));
 				} else {
-					hasPerm = SocialNetworkDatabaseRegions.isRegionManager(conn, user, board, region);
+					hasPerm = SocialNetworkDatabaseRegions.isRegionManager(
+							conn, user, board, region);
 				}
 				if (!hasPerm) {
 					command = INVALID;

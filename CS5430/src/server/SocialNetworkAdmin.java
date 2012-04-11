@@ -364,7 +364,7 @@ public class SocialNetworkAdmin {
 	 * @param region
 	 * @return
 	 */
-	public static String displayParticipants(Connection conn, String board, String region) {
+	public static String displayParticip(Connection conn, String board, String region) {
 		String command = "print Displaying participants in "+board+"/"+region+":;";
 		List<String> admins = DatabaseAdmin.getAdminsOfBoard(conn, board);
 		for (String a: admins) {
@@ -387,7 +387,7 @@ public class SocialNetworkAdmin {
 		return null;
 	}
 	
-	public static List<String> getAddableParticipants(Connection conn, String username, String board, String region) {
+	public static List<String> getAddableParticip(Connection conn, String username, String board, String region) {
 		List<String> addables = new ArrayList<String>();
 		// friends that are not already participants of the region and not admins
 		List<String> friends = DatabaseAdmin.getFriends(conn, username);
@@ -409,14 +409,15 @@ public class SocialNetworkAdmin {
 		return addables;
 	}
 	
-	public static String displayAddableParticipants(Connection conn, List<String> addables) {
-		String command = "print To add an admin, use the 'addAdmin' command. Admins are added to the " +
-				"entire board and has to be approved by all other admins of the board.;print ;" +
+	public static String displayAddableParticip(List<String> addables) {
+		String command = "print To add an admin, use the 'addAdmin' command. Admins " +
+				"are added to the entire board and has to be approved by all other " +
+				"admins of the board.;print ;" +
 				"print Friends you can add as a participant to this region/post.;";
-				;
 		for (String a: addables) {
 			command += "print " + a + ";";
 		}
+		command += "print To add participants, type '<user1>, <user2>';askForInput;";
 		return command;
 	}
 	
