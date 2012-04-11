@@ -93,6 +93,7 @@ public class SocialNetworkPosts {
 				"If the problem persists, contact an admin.";
 			}
 			else if (postExists.booleanValue()) {
+				//TODO check authorized to go to post HERE.
 				String msg = SocialNetworkDatabasePosts.getPostFreeForAll(dbconn, username, postNum);
 				DBManager.closeConnection(dbconn);
 				return msg;
@@ -121,6 +122,7 @@ public class SocialNetworkPosts {
 					"If the problem persists, contact an admin.";
 				}
 				else if (postExists.booleanValue()) {
+					//TODO check authorized to go to board HERE.
 					String msg = SocialNetworkDatabasePosts.getPost(dbconn, username,
 							bname, rname, postNum);
 					DBManager.closeConnection(dbconn);
@@ -206,6 +208,7 @@ public class SocialNetworkPosts {
 						"If the problem persists, contact an admin.";
 			}
 			else if (regionExists.booleanValue()) {
+				//TODO check authorized to go to board HERE.
 				String msg = SocialNetworkDatabasePosts.getPostList(dbconn, username,
 						bname, rname);
 				DBManager.closeConnection(dbconn);

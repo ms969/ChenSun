@@ -36,12 +36,20 @@ public class SocialNetworkDatabaseRegions {
 	}
 	
 	/**
-	 * 
 	 * Creates a region under the given board with the given region name.
 	 * ASSUMES that the boardName is valid.
 	 */
-	//TODO (author) ensure the user is an admin for the board.
 	public static String createRegion(Connection conn, String username, String boardName, String regionName) {
+		/** AUTHORIZATION CHECK **/
+		/** User must be an admin, and more specifically, a board admin **/
+		Boolean isAd = DatabaseAdmin.isAdmin(conn, username);
+		Boolean isBoardAd = SocialNetworkDatabaseBoards.isBoardAdmin(conn, username, boardName);
+		if (isAd == null || isBoardAd == null) {
+			return "print Error: Database error while creating the region (Verifying Authorizations). Contact the admin,";
+		}
+		if (!isAd || !isBoardAd) {
+			return "print Error: User is not authorized to create this region (Make this msg more ambig l8r!)";
+		}
 		PreparedStatement regionPstmt = null;
 		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (?)";
 		boolean success = false;
@@ -75,8 +83,8 @@ public class SocialNetworkDatabaseRegions {
 	 * Gets a list of regions that the user has access to.
 	 * If the user is an admin, the user can see all regions.
 	 * Also returns, with each region, the most recently posted posts.
-	 * Assumes boardName is not null and is a valid board.
-	 * TODO (author) double check that the user can call this method within this board
+	 * Assumes boardName is not null and is a valid board, and that the user
+	 * has already been authorized to access this board.
 	 * */
 	public static String getRegionListRecentPosts(Connection conn, String username, String boardName){
 		String regionsAndPosts = "print Regions:;";

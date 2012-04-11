@@ -73,6 +73,7 @@ public class SocialNetworkRegions {
 					"If the problem persists, contact an admin.";
 		}
 		if (boardExists.booleanValue()) {
+			//TODO check authorized to go to board HERE.
 			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, bname);
 			DBManager.closeConnection(dbconn);
 			return msg;

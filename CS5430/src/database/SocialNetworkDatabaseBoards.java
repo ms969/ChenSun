@@ -39,17 +39,17 @@ public class SocialNetworkDatabaseBoards {
 		return isAdmin;
 	}
 	
-	public static boolean isBoardManager(Connection conn, String username, String board) {
+	public static Boolean isBoardManager(Connection conn, String username, String board) {
 		String query = "SELECT managedby FROM main.boards WHERE bname = ?";
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
-		boolean isManager = false;
+		Boolean isManager = null;
 		try {
 			pstmt = conn.prepareStatement(query);
 			pstmt.setString(1, board);
 			result = pstmt.executeQuery();
 			if (result.next()) {
-				isManager = username.equals(result.getString("managedby"));
+				isManager = new Boolean(username.equals(result.getString("managedby")));
 			}
 		} catch (SQLException e) {
 			isManager = false;
@@ -167,7 +167,7 @@ public class SocialNetworkDatabaseBoards {
 	/**
 	 * Transactional method that creates a board.
 	 * Assumes that the user is an admin.
-	 * TODO LATER (author) 1) Checks that the user has permission to create a board
+	 * 1) Checks that the user has permission to create a board
 	 * 2) It creates a reference to the board in the "main" database, and adds this
 	 * 		user as an admin.
 	 * 3) It creates a database to store the board's regions, posts, etc.
@@ -175,7 +175,9 @@ public class SocialNetworkDatabaseBoards {
 	 */
 	public static String createBoard(Connection conn, String createdBy, String boardName) 
 	throws IOException {
-		
+
+		/**AUTHORIZATION CHECK **/
+		/**User must be an admin to create a board**/
 		if (!DatabaseAdmin.isAdmin(conn, createdBy)) {
 			return "print Error: Board could not be created (not authorized);";
 		}
@@ -261,10 +263,68 @@ public class SocialNetworkDatabaseBoards {
 		}
 	}
 	
+	/** Returns whether the user is authorized to go to this board.
+	 * Equivalent checking to GetBoardList:
+	 * For Admins: Must be within the "admin" list of the board
+	 * For Users: Must be within the "RegionPrivileges" list of the board for one region
+	 * Assumes the board already exists.
+	 */
+	public static Boolean authorizedGoToBoard(Connection conn, String username, String boardname) {
+		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet boards = null;
+		ResultSet privResult = null;
+		boolean sqlex = false;
+		Boolean authorized = null;
+		try {
+			String getRegionPrivs, getRegionAdmins;
+			String role = DatabaseAdmin.getUserRole(conn, username);
+			
+			if (!role.equals("")) { // an admin
+				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE bname = ? AND username = ?";
+				pstmt = conn.prepareStatement(getRegionAdmins);
+				pstmt.setString(1, username);
+				privResult = pstmt.executeQuery();
+				authorized = new Boolean(privResult.next());
+				privResult.close();
+				pstmt.close();
+				privResult = null;
+				pstmt = null;
+			}
+			else if (role.equals("member")) {
+				stmt = conn.createStatement();
+
+				getRegionPrivs = "SELECT privilege FROM " 
+					+ boardname + ".regionprivileges WHERE username = ?";
+				pstmt = conn.prepareStatement(getRegionPrivs);
+				pstmt.setString(1, username);
+				privResult = pstmt.executeQuery();
+				authorized = new Boolean(privResult.next());
+				privResult.close();
+				pstmt.close();
+				privResult = null;
+				pstmt = null;
+			}
+			else { //there was an sql exception when getting the role.
+				sqlex = true;
+			}
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+			sqlex = true;
+		}
+		finally {
+			DBManager.closeStatement(stmt);
+			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(boards);
+		}
+		return authorized;
+	}
+	
 	/**
 	 * Gets a list of boards that the user has permission to view.
 	 * For Admins: Must be within the "admin" list of the board
-	 * For Users: Must be within the "RegionPrivileges" list of the board
+	 * For Users: Must be within the "RegionPrivileges" list of the board for one region
 	 * A user has permission to view a board if it has at least one
 	 * region where it has view permissions within that board.
 	 * */
