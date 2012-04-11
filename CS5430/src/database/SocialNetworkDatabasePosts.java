@@ -48,6 +48,28 @@ public class SocialNetworkDatabasePosts {
 		return postExists;
 	}
 	
+	public static boolean isFFAPostCreator(Connection conn, String username, int post) {
+		boolean isCreator = false;
+		String query = "SELECT postedby FROM freeforall.posts " +
+				"WHERE pid = ?";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setInt(1, post);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				isCreator = username.equals(result.getString("postedby"));
+			}
+		} catch (SQLException e) {
+			isCreator = false;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return isCreator;
+	}
+	
 	/**
 	 * Returns the list of posts within the Free For All board that the
 	 * specified user can see.

@@ -66,6 +66,27 @@ public class SocialNetworkDatabaseBoards {
 		return isAdmin;
 	}
 	
+	public static boolean isBoardManager(Connection conn, String username, String board) {
+		String query = "SELECT managedby FROM main.boards WHERE bname = ?";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		boolean isManager = false;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, board);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				isManager = username.equals(result.getString("managedby"));
+			}
+		} catch (SQLException e) {
+			isManager = false;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return isManager;
+	}
+	
 	/**
 	 * Determine whether the board exists.
 	 * The return arg is null if there was an exc.

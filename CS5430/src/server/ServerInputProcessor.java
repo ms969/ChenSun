@@ -20,9 +20,7 @@ import shared.ProjectConfig;
 import comm.CommManager;
 
 import crypto.Hash;
-import database.DBManager;
-import database.DatabaseAdmin;
-import database.SocialNetworkDatabaseBoards;
+import database.*;
 
 public class ServerInputProcessor extends InputProcessor {
 	private OutputStream os;
@@ -36,7 +34,7 @@ public class ServerInputProcessor extends InputProcessor {
 	private static final String HELP = "print To see a list of commands type 'help'.;";
 
 	private String user = null;
-	private String[] currentPath;
+	private String[] currentPath; // 0 = board/"freeforall"; 1 = region/FFApost; 2 = post/null
 
 	public void processCommand(String inputLine) throws IOException {
 		if (inputLine.matches("^login .+")) {
@@ -175,16 +173,40 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
-		/*
-		 * if (inputLine.matches(COMMANDS[15])) { if (user != null) {
-		 * processParticipants(); } else { out.println(); } return; } if
-		 * (inputLine.matches(COMMANDS[16])) { if (user != null) {
-		 * processAddParticipants(); } else { out.println(); } return; } if
-		 * (inputLine.matches(COMMANDS[17])) { if (user != null) {
-		 * processRemoveParticipants(); } else { out.println(); } return; } if
-		 * (inputLine.matches(COMMANDS[18])) { if (user != null) {
-		 * processEditParticipants(); } else { out.println(); } return; }
-		 */
+		
+		if (inputLine.matches("^participants$")) {
+			if (user != null) {
+				processParticipants();
+			} else {
+				CommManager.send(INVALID, os, c, sk);
+			}
+			return;
+		}
+		if (inputLine.matches("^addParticipants$")) {
+			if (user != null) {
+				processAddParticipants();
+			} else {
+				CommManager.send(INVALID, os, c, sk);
+			}
+			return;
+		}
+		if (inputLine.matches("^removeParticipants$")) {
+			if (user != null) {
+				processRemoveParticipants();
+			} else {
+				CommManager.send(INVALID, os, c, sk);	
+			}
+			return;
+		}
+		if (inputLine.matches("^editParticipants$")) {
+			if (user != null) {
+				processEditParticipants();
+			} else {
+				CommManager.send(INVALID, os, c, sk);
+			}
+			return;
+		}
+		 
 		CommManager.send(INVALID+HELP, os, c, sk);
 	}
 
@@ -386,7 +408,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (!input.equals("addFriend")) {
 				prefix = getValue(input);
 			}
-			command += SocialNetworkAdmin.displayFriendableUsers(conn, user, prefix, friendableUsers);
+			command += SocialNetworkAdmin.displayFriendableUsers(conn, prefix, friendableUsers);
 			CommManager.send(command, os, c, sk);
 
 			toFriend = CommManager.receive(is, c, sk);
@@ -474,7 +496,7 @@ public class ServerInputProcessor extends InputProcessor {
 			String command = "";
 			
 			while (!userDeletable) {
-				command += SocialNetworkAdmin.displayDeletableUsers(conn, deletableUsers);
+				command += SocialNetworkAdmin.displayDeletableUsers(deletableUsers);
 				CommManager.send(command, os, c, sk);
 
 				toDelete = CommManager.receive(is, c, sk);
@@ -538,7 +560,7 @@ public class ServerInputProcessor extends InputProcessor {
 			String command = "";
 	
 			while (!userChangeable) {
-				command += SocialNetworkAdmin.displayRoleChange(conn, changeableUsers);
+				command += SocialNetworkAdmin.displayRoleChange(changeableUsers);
 				CommManager.send(command, os, c, sk);
 	
 				toChange = CommManager.receive(is, c, sk);
@@ -584,7 +606,7 @@ public class ServerInputProcessor extends InputProcessor {
 			String command = "";
 
 			while (!transferableUser) {
-				command += SocialNetworkAdmin.displaySATransferableUsers(conn, user);
+				command += SocialNetworkAdmin.displaySATransferableUsers(groupAdmins);
 				CommManager.send(command, os, c, sk);
 
 				toChange = CommManager.receive(is, c, sk);
@@ -616,48 +638,31 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		CommManager.send("print Logged out.;setLoggedIn false", os, c, sk);
 	}
-	
-	//----------------------cleaning----------------------------------------
-	// XXX working here
+
 	private void processParticipants() {
 		Connection conn = DBManager.getConnection();
 		String board = currentPath[0];
-		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
-		if (admins.contains(user)) {
-			// print displaying participants
-			String region = currentPath[1];
-			String command = "print Displaying participants:;";
+		String command = "";
+		String wrongLocation = "print Goto a region or freeforall post to view participants in that region/post.;";
 
-			// print a list of participants of the region
-			Statement stmt = null;
-			try {
-				stmt = conn.createStatement();
-				String query = "SELECT username, privilege FROM " + board
-						+ ".regionprivileges WHERE rname = '" + region + "'";
-				ResultSet partResult = stmt.executeQuery(query);
-				while (partResult.next()) {
-					command += "print " + partResult.getString("username");
-					if (partResult.getString("privilege").equals("view")) {
-						command += " (view only);";
-					} else {
-						command += ";";
-					}
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-
-			// print Commands: addParticipants, removeParticipants,
-			// editParticipants, addAdmin
-			command += "print ;print Other Commands: addParticipants, removeParticipants";
-			// TODO: add edit and addAdmin to this list of commands
-			CommManager.send(command, os, c, sk);
+		if (board == null) {
+			command = wrongLocation;
 		} else {
-			CommManager.send("print You do not have permission to view participants.", os, c, sk);
+			String region = currentPath[1];
+			if (region == null) {
+				command = wrongLocation;
+			} else {
+				command = SocialNetworkAdmin.displayParticipants(conn, board, region);
+			}
 		}
+		
+		CommManager.send(command, os, c, sk);
+		DBManager.closeConnection(conn);
 	}
-
-	private void processAddParticipants() throws IOException {
+	
+	//----------------------cleaning----------------------------------------
+	// XXX working here and the actual method below.
+	private void processAddParticipants2() throws IOException {
 		// check if user is admin
 		Connection conn = DBManager.getConnection();
 		String board = currentPath[0];
@@ -726,6 +731,55 @@ public class ServerInputProcessor extends InputProcessor {
 		} else {
 			CommManager.send("print You do not have permission to add participants to this region.", os, c, sk);
 		}
+	}
+	
+	private void processAddParticipants() throws IOException {
+		Connection conn = DBManager.getConnection();
+		String command = addParticipantsError(conn);
+		if (!command.equals("")) {
+			CommManager.send(command, os, c, sk);
+		} else {
+			String board = currentPath[0];
+			String region = currentPath[1];
+			List<String> addables = SocialNetworkAdmin.getAddableParticipants(conn, user, board, region);
+			command = SocialNetworkAdmin.displayAddableParticipants(conn, addables);
+		}
+		// only has permission to do this if owner of freeforall post or region
+		// "To add an admin, use the addAdmin command. Admins are added to the 
+		// entire board and has to be approved by all other admins of the board"
+		// display friends that are not already participants and not admins
+		DBManager.closeConnection(conn);
+	}
+	
+	/**
+	 * Returns the error command if user not able to add participant to the current directory
+	 * Returns the empty string if user does have permission.
+	 * @param conn
+	 * @return
+	 */
+	private String addParticipantsError(Connection conn) {
+		String command = "";
+		String wrongLocation = "print Goto a region or freeforall post to view participants in that region/post.;";
+		String board = currentPath[0];
+		if (board == null) {
+			command = wrongLocation;
+		} else {
+			String region = currentPath[1];
+			if (region == null) {
+				command = wrongLocation;
+			} else {
+				boolean hasPerm;
+				if (board.equals("freeforall")) {
+					hasPerm = SocialNetworkDatabasePosts.isFFAPostCreator(conn, user, Integer.parseInt(region));
+				} else {
+					hasPerm = SocialNetworkDatabaseRegions.isRegionManager(conn, user, board, region);
+				}
+				if (!hasPerm) {
+					command = INVALID;
+				}
+			}
+		}
+		return command;
 	}
 
 	private ArrayList<String[]> parseAddUserInfo(String input) {

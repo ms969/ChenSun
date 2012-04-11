@@ -123,6 +123,52 @@ public class DatabaseAdmin {
 		return userInfo;
 	}
 	
+	public static boolean isAdmin(Connection conn, String user) {
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		String query = "SELECT role FROM main.users WHERE username = ?";
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, user);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				String role = result.getString("role");
+				if (role.equals("admin") || role.equals("sa")) {
+					return true;
+				}
+			}
+		} catch (SQLException e) {
+			return false;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(result);
+		}
+		return false;
+	}
+	
+	public static boolean isSA(Connection conn, String user) {
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		String query = "SELECT role FROM main.users WHERE username = ?";
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, user);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				String role = result.getString("role");
+				if (role.equals("sa")) {
+					return true;
+				}
+			}
+		} catch (SQLException e) {
+			return false;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(result);
+		}
+		return false;
+	}
+	
 	/**
 	 * Retrieves a list of all users of a group given the group's aid. Returns null 
 	 * if error.
@@ -583,6 +629,79 @@ public class DatabaseAdmin {
 		return status;
 	}
 	
+	//--------------------Participant stuff------------------------------------//
+	
+	/**
+	 * Get participants to the given region in the given board.
+	 * Precond: if freeforall, region is pid, otherwise board and region 
+	 * are both valid
+	 * partInfo[0] = username
+	 * partInfo[1] = privilege ('view' or 'viewpost')
+	 * Returns null on error
+	 * @param conn
+	 * @param board
+	 * @param region
+	 * @return 
+	 */
+	public static List<String[]> getParticipants(Connection conn, String board, String region) {
+		List<String[]> part = new ArrayList<String[]>();
+		String query;
+		if (board.equals("freeforall")) {
+			query = "SELECT username, privilege " +
+					"FROM freeforall.postprivileges " +
+					"WHERE pid = ?";
+		} else {
+			query = "SELECT username, privilege "
+					+ "FROM "+board+".regionprivileges "
+					+ "WHERE rname = ?";
+		}
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			if (board.equals("freforall")) {
+				pstmt.setInt(1, Integer.parseInt(region));
+			} else {
+				pstmt.setString(1, region);
+			}
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				String[] partInfo = {result.getString("username"), result.getString("privilege")};
+				part.add(partInfo);
+			}
+		} catch (SQLException e) {
+			part = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return part;
+	}
+	
+	public static List<String> getAdminsOfBoard(Connection conn, String board) {
+		List<String> admins = new ArrayList<String>();
+		if (board.equals("freeforall")) {
+			return admins;
+		}
+		String query = "SELECT username FROM main.boardadmins WHERE bname = ?";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, board);
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				admins.add(result.getString("username"));
+			}
+		} catch (SQLException e) {
+			admins = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return admins;
+	}
+
 }
 
 

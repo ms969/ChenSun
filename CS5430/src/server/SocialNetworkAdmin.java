@@ -2,6 +2,7 @@ package server;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +190,7 @@ public class SocialNetworkAdmin {
 		}
 	}
 
-	public static String displayFriendableUsers(Connection conn, String username, String prefix, List<String[]> friendableUsers) {
+	public static String displayFriendableUsers(Connection conn, String prefix, List<String[]> friendableUsers) {
 		String command;
 		if (prefix == "") {
 			command = "print Users in the system:;";
@@ -230,7 +231,7 @@ public class SocialNetworkAdmin {
 		return command;
 	}
 	
-	public static String displayDeletableUsers(Connection conn, List<String[]> users) {
+	public static String displayDeletableUsers(List<String[]> users) {
 		String command = "print Users in your A Cappella group that you can delete:;";
 		for (String[] u: users) {
 			command += "print " + u[0] + ";";
@@ -268,7 +269,7 @@ public class SocialNetworkAdmin {
 		return command;
 	}
 	
-	public static String displayRoleChange(Connection conn, List<String[]> users) {
+	public static String displayRoleChange(List<String[]> users) {
 		String command = "print Users in your A Cappella group that you can change roles for:;";
 		for (String[] u: users) {
 			command += "print " + u[0] + " (" + u[1].toUpperCase() + ");";
@@ -294,9 +295,8 @@ public class SocialNetworkAdmin {
 		}
 	}
 	
-	public static String displaySATransferableUsers(Connection conn, String username) {
+	public static String displaySATransferableUsers(List<String> admins) {
 		String command = "print Users in your A Cappella group that you can transfer SA role to:;";
-		List<String> admins = DatabaseAdmin.getAdminsOfGroup(conn, username);
 		for (String a: admins) {
 			command += "print " + a + " (ADMIN);";
 		}
@@ -356,6 +356,70 @@ public class SocialNetworkAdmin {
 		DBManager.closeConnection(conn);
 		return command;
 	}
+	
+	/**
+	 * Precond: if board is freeforall, region is post, if not, board and regions are valid
+	 * @param conn
+	 * @param board
+	 * @param region
+	 * @return
+	 */
+	public static String displayParticipants(Connection conn, String board, String region) {
+		String command = "print Displaying participants in "+board+"/"+region+":;";
+		List<String> admins = DatabaseAdmin.getAdminsOfBoard(conn, board);
+		for (String a: admins) {
+			command += "print " + a + " (Admin);";
+		}
+		List<String[]> part = DatabaseAdmin.getParticipants(conn, board, region);
+		for (String[] p: part) {
+			command += "print " + p[0];
+			if (p[1].equals("view")) {
+				command += " (view only)";
+			}
+			command += ";";
+		}
+		//command += "print ;print Other Commands: addParticipants, removeParticipants, editParticipants;";
+		return command;
+	}
+
+	public static String addParticipants() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public static List<String> getAddableParticipants(Connection conn, String username, String board, String region) {
+		List<String> addables = new ArrayList<String>();
+		// friends that are not already participants of the region and not admins
+		List<String> friends = DatabaseAdmin.getFriends(conn, username);
+		List<String[]> participants = DatabaseAdmin.getParticipants(conn, board, region);
+		for (String f: friends) {
+			if (!DatabaseAdmin.isAdmin(conn, f)) {
+				boolean isPart = false;
+				for (String[] p: participants) {
+					if (f.equals(p[0])) {
+						isPart = true;
+						break;
+					}
+				}
+				if (!isPart) {
+					addables.add(f);
+				}
+			}
+		}
+		return addables;
+	}
+	
+	public static String displayAddableParticipants(Connection conn, List<String> addables) {
+		String command = "print To add an admin, use the 'addAdmin' command. Admins are added to the " +
+				"entire board and has to be approved by all other admins of the board.;print ;" +
+				"print Friends you can add as a participant to this region/post.;";
+				;
+		for (String a: addables) {
+			command += "print " + a + ";";
+		}
+		return command;
+	}
+	
 }
 
 

@@ -164,4 +164,26 @@ public class SocialNetworkDatabaseRegions {
 		}
 		else return regionsAndPosts;
 	}
+	
+	public static boolean isRegionManager(Connection conn, String username, String board, String region) {
+		boolean isManager = false;
+		String query = "SELECT managedby FROM " + board + ".regions " +
+				"WHERE rname = ?";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, region);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				isManager = username.equals(result.getString("managedby"));
+			}
+		} catch (SQLException e) {
+			isManager = false;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return isManager;
+	}
 }
