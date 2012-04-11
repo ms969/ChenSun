@@ -186,4 +186,26 @@ public class SocialNetworkDatabaseRegions {
 		}
 		return isManager;
 	}
+	
+	public static int addParticipant(Connection conn, String board, String region, 
+			String user, String priv, String grantedBy) {
+		int status = 0;
+		String query = "INSERT INTO " + board + ".regionprivileges " +
+				"(rname, username, privilege, grantedBy) " +
+				"VALUES (?, ?, ?, ?)";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, region);
+			pstmt.setString(2, user);
+			pstmt.setString(3, priv);
+			pstmt.setString(4, grantedBy);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
 }

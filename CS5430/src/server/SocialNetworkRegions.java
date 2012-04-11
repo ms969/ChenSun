@@ -82,4 +82,19 @@ public class SocialNetworkRegions {
 					"If the problem persists, contact an admin.";
 		}
 	}
+	
+	public static String addParticipant(Connection conn, String board, String region, 
+			String username, String priv, String grantedBy) {
+		String success = "print "+username+" has been successfully added to the region " +
+				"with "+priv+" privilege.;";
+		String error = "print Database Error while adding "+username+" to region. " +
+				"Please try again or contact a system admin.;";
+		int status = SocialNetworkDatabaseRegions.addParticipant(
+				conn, board, region, username, priv, grantedBy);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
+	}
 }

@@ -417,7 +417,10 @@ public class SocialNetworkAdmin {
 		for (String a: addables) {
 			command += "print " + a + ";";
 		}
-		command += "print To add participants, type '<user1>, <user2>';askForInput;";
+		command += "print To add participants with view and post privilege, " +
+				"type 'viewpost <user1>, <user2>';" +
+				"print To add participants with view only privilege, " +
+				"type 'view <user1>, <user2>';askForInput;";
 		return command;
 	}
 	

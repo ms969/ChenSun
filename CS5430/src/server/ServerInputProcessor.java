@@ -9,7 +9,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +21,11 @@ import shared.ProjectConfig;
 import comm.CommManager;
 
 import crypto.Hash;
-import database.*;
+import database.DBManager;
+import database.DatabaseAdmin;
+import database.SocialNetworkDatabaseBoards;
+import database.SocialNetworkDatabasePosts;
+import database.SocialNetworkDatabaseRegions;
 
 public class ServerInputProcessor extends InputProcessor {
 	private OutputStream os;
@@ -32,7 +35,7 @@ public class ServerInputProcessor extends InputProcessor {
 	
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	private static final String INVALID = "print Invalid command.;";
-	private static final String CANCEL = "print Canceled.;";
+	private static final String CANCEL = "print Cancelled.;";
 	private static final String HELP = "print To see a list of commands type 'help'.;";
 
 	private String user = null;
@@ -665,82 +668,7 @@ public class ServerInputProcessor extends InputProcessor {
 		CommManager.send(command, os, c, sk);
 		DBManager.closeConnection(conn);
 	}
-	
-	//----------------------cleaning----------------------------------------
-	// XXX working here and the actual method below.
-	private void processAddParticipants2() throws IOException {
-		// check if user is admin
-		Connection conn = DBManager.getConnection();
-		String board = currentPath[0];
-		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
-		if (admins.contains(user)) {
-			// get a list of the user's friends
-			List<String> usersFriends = DatabaseAdmin.getFriends(conn, user);
 
-			// get a list of participants
-			String region = currentPath[1];
-			ArrayList<String> participants = new ArrayList<String>();
-			Statement stmt = null;
-			String query = "SELECT username, privilege FROM " + board
-					+ ".regionprivileges WHERE rname = '" + region + "'";
-			try {
-				stmt = conn.createStatement();
-				ResultSet partResult = stmt.executeQuery(query);
-				while (partResult.next()) {
-					participants.add(partResult.getString("username"));
-				}
-				stmt.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-			ArrayList<String> addableUsers = new ArrayList<String>();
-			for (String friend : usersFriends) {
-				if (!participants.contains(friend)) {
-					addableUsers.add(friend);
-				}
-			}
-			boolean userAddable = false;
-			ArrayList<String[]> addInfo = new ArrayList<String[]>();
-
-			while (!userAddable) {
-				String command = "print List of people you could add:;";
-				for (String user : addableUsers) {
-					command += "print " + user + ";";
-				}
-				command += "print ;print [To add user: (<user1>, <privilege>), "
-						+ "(<user2>, <privilege>) where <privilege> = view or viewpost];" +
-						"askForInput";
-				CommManager.send(command, os, c, sk);
-				String input = CommManager.receive(is, c, sk);
-				if (input.equals("cancel")) {
-					CommManager.send("", os, c, sk);
-					return;
-				}
-				addInfo = parseAddUserInfo(input);
-				String notOkUsers = "";
-				userAddable = true;
-				for (String[] userInfo : addInfo) {
-					if (!addableUsers.contains(userInfo[0])) {
-						userAddable = false;
-						notOkUsers += userInfo[0] + ", ";
-					}
-				}
-				if (!userAddable) {
-					notOkUsers = notOkUsers.substring(0,
-							notOkUsers.length() - 2);
-					CommManager.send("print Cannot add " + notOkUsers
-							+ " as participants of this region.;", os, c, sk);
-				}
-			}
-
-			// toAdd is addable
-			addParticipant(addInfo);
-		} else {
-			CommManager.send("print You do not have permission to add participants to this " +
-					"region.", os, c, sk);
-		}
-	}
-	
 	private void processAddParticipants() throws IOException {
 		Connection conn = DBManager.getConnection();
 		String command = addParticipantsError(conn);
@@ -751,34 +679,55 @@ public class ServerInputProcessor extends InputProcessor {
 			String region = currentPath[1];
 			List<String> addables = SocialNetworkAdmin.getAddableParticip(
 					conn, user, board, region);
-			boolean validParticip = false;
-			command = "";
+
 			List<String> addUsers = null;
+			String priv = "";
+			
+			// Validity check
+			command = "";
+			boolean validParticip = false;
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayAddableParticip(addables);
 				CommManager.send(command, os, c, sk);
 				String input = CommManager.receive(is, c, sk);
-				addUsers = Arrays.asList(input.split(" *, *"));
-				validParticip = addables.containsAll(addUsers);
-				if (!validParticip) {
-					command = "print You do not have permission to add all the users " +
-							"you specified.;print ;";
+
+				if (input.equals("cancel")) {
+					CommManager.send(CANCEL, os, c, sk);
+					return;
+				}
+				
+				// Checking for valid command
+				boolean validCommand = false;
+				String value = "";
+				if (input.matches("^view .+")) {
+					priv = "view";
+					validCommand = true;
+					value = getValue(input);
+				} else if (input.matches("^viewpost .+")) {
+					priv = "viewpost";
+					validCommand = true;
+					value = getValue(input);
+				} else {
+					command = INVALID;
+				}
+				if (validCommand) {
+					addUsers = Arrays.asList(value.split(" *, *"));
+					validParticip = addables.containsAll(addUsers);
+					if (!validParticip) {
+						command = "print You do not have permission to add all the " +
+								"users you specified.;print ;";
+					}
 				}
 			}
 			// Participants to add are valid
-			for (String user: addUsers) {
-				addParticipant(conn, user);
+			command = "";
+			for (String u: addUsers) {
+				command += SocialNetworkRegions.addParticipant(conn, board, region, 
+						u, priv, user);
 			}
+			CommManager.send(command, os, c, sk);
 		}
-		// only has permission to do this if owner of freeforall post or region
-		// "To add an admin, use the addAdmin command. Admins are added to the 
-		// entire board and has to be approved by all other admins of the board"
-		// display friends that are not already participants and not admins
 		DBManager.closeConnection(conn);
-	}
-	
-	private void addParticipant(Connection conn, String user2) {
-		
 	}
 
 	/**
@@ -814,46 +763,9 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		return command;
 	}
-
-	private ArrayList<String[]> parseAddUserInfo(String input) {
-		ArrayList<String[]> addInfo = new ArrayList<String[]>();
-		String[] infoPairs = input.split(" *, *");
-		for (String pair : infoPairs) {
-			pair = pair.trim();
-			String[] userInfo = pair.substring(1, pair.length() - 1).trim()
-					.split(" *, *");
-			addInfo.add(userInfo);
-		}
-
-		return addInfo;
-	}
-
-	private void addParticipant(ArrayList<String[]> addInfo) {
-		// add everything to the database
-		String region = currentPath[1];
-		Connection conn = DBManager.getConnection();
-		String query = "INSERT INTO board.regionprivileges (rname, username, privilege, grantedBy) VALUES ";
-		for (String[] userInfo : addInfo) {
-			query += "('" + region + "', '" + userInfo[0] + "', '"
-					+ userInfo[1] + "', '" + user + "'), ";
-		}
-		query = query.substring(0, query.length() - 2);
-
-		if (DEBUG) {
-			System.out.println("addParticipants query: " + query);
-		}
-
-		try {
-			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(query);
-			stmt.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		// print confirmation
-		CommManager.send("print Participants added.", os, c, sk);
-	}
-
+	
+	//----------------------cleaning----------------------------------------
+	// XXX working here and the actual method below.
 	private void processRemoveParticipants() throws IOException {
 		// TODO: What's the policy for deleting admins from a board?
 
