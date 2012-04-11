@@ -381,11 +381,6 @@ public class SocialNetworkAdmin {
 		//command += "print ;print Other Commands: addParticipants, removeParticipants, editParticipants;";
 		return command;
 	}
-
-	public static String addParticipants() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
 	public static List<String> getAddableParticip(Connection conn, String username, String board, String region) {
 		List<String> addables = new ArrayList<String>();
