@@ -15,33 +15,6 @@ import java.util.ArrayList;
 public class SocialNetworkDatabaseBoards {
 	
 	/**
-	 * Utility function placed here for now...
-	 * Function to get the user's role.
-	 */
-	public static String getUserRole(Connection conn, String username) {
-		String userRole = "SELECT role FROM main.users WHERE username = ?";
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		String role = "";
-		try {
-			pstmt = conn.prepareStatement(userRole);
-			pstmt.setString(1, username);
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				role = rs.getString("role");
-			}
-		}
-		catch (SQLException e) {
-			e.printStackTrace();
-		}
-		finally {
-			DBManager.closePreparedStatement(pstmt);
-			DBManager.closeResultSet(rs);
-		}
-		return role;
-	}
-	
-	/**
 	 * Checks whether the user is part of this board.
 	 * Assumes the board is valid.
 	 */
@@ -195,12 +168,18 @@ public class SocialNetworkDatabaseBoards {
 	 * Transactional method that creates a board.
 	 * Assumes that the user is an admin.
 	 * TODO LATER (author) 1) Checks that the user has permission to create a board
-	 * 2) It creates a reference to the board in the "main" database
+	 * 2) It creates a reference to the board in the "main" database, and adds this
+	 * 		user as an admin.
 	 * 3) It creates a database to store the board's regions, posts, etc.
 	 * @throws IOException 
 	 */
 	public static String createBoard(Connection conn, String createdBy, String boardName) 
 	throws IOException {
+		
+		if (!DatabaseAdmin.isAdmin(conn, createdBy)) {
+			return "print Error: Board could not be created (not authorized);";
+		}
+		
 		//PreparedStatement rolePstmt = null;
 		PreparedStatement insertBoardPstmt = null;
 		PreparedStatement addAdminPstmt = null;
@@ -212,7 +191,7 @@ public class SocialNetworkDatabaseBoards {
 		boolean sqlex = false;
 		String sqlexmsg = "";
 		String insertBoard = "INSERT INTO main.boards VALUES (?, ?)";
-		String insertAdmin = "INSERT INTO " + boardName + ".admins VALUES (?)";
+		String insertAdmin = "INSERT INTO main.boardadmins VALUES (?, ?)";
 		try {
 			conn.setAutoCommit(false);
 			insertBoardPstmt = conn.prepareStatement(insertBoard);
@@ -224,7 +203,8 @@ public class SocialNetworkDatabaseBoards {
 			if (firstsuccess == 1) { /*1 row successfully inserted*/
 				secondsuccess = createBoardDatabase(conn, boardName);
 				if (secondsuccess) {
-					addAdminPstmt.setString(1, createdBy);
+					addAdminPstmt.setString(1, boardName);
+					addAdminPstmt.setString(2, createdBy);
 					thirdsuccess = addAdminPstmt.executeUpdate();
 					if (thirdsuccess == 1) {
 						conn.commit();
@@ -290,8 +270,6 @@ public class SocialNetworkDatabaseBoards {
 	 * */
 	public static String getBoardList(Connection conn, String username) {
 		String boardlist = "print Boards:;print \tfreeforall;";
-		/*First, get a list of all the boards*/
-		String allBoards = "SELECT bname FROM main.boards";
 
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
@@ -299,16 +277,34 @@ public class SocialNetworkDatabaseBoards {
 		ResultSet privResult = null;
 		boolean sqlex = false;
 		try {
-			stmt = conn.createStatement();
-			boards = stmt.executeQuery(allBoards);
-			String role = getUserRole(conn, username);
 			String getRegionPrivs, getRegionAdmins;
-			while (boards.next()) {
-				/* For each Board ID, check its RegionPrivileges to see
-				 * if there exists one tuple with username = this user
-				 */
-				String bname = boards.getString("bname");
-				if (role.equals("member")) {
+			String role = DatabaseAdmin.getUserRole(conn, username);
+			
+			if (!role.equals("")) { // an admin
+				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE username = ?";
+				pstmt = conn.prepareStatement(getRegionAdmins);
+				pstmt.setString(1, username);
+				privResult = pstmt.executeQuery();
+				while (privResult.next()) { // returns true if there is a result set.
+					boardlist += "print \t" + privResult.getString("bname") + ";";
+				}
+				privResult.close();
+				pstmt.close();
+				privResult = null;
+				pstmt = null;
+			}
+			else if (role.equals("member")) {
+				stmt = conn.createStatement();
+
+				/*First, get a list of all the boards*/
+				String allBoards = "SELECT bname FROM main.boards";
+				boards = stmt.executeQuery(allBoards);
+
+				while (boards.next()) {
+					/* For each Board ID, check its RegionPrivileges to see
+					 * if there exists one tuple with username = this user
+					 */
+					String bname = boards.getString("bname");
 					getRegionPrivs = "SELECT privilege FROM " 
 						+ bname + ".regionprivileges WHERE username = ?";
 					pstmt = conn.prepareStatement(getRegionPrivs);
@@ -322,24 +318,9 @@ public class SocialNetworkDatabaseBoards {
 					privResult = null;
 					pstmt = null;
 				}
-				else if (!role.equals("")) { // an admin
-					getRegionAdmins = "SELECT * FROM " 
-						+ bname + ".admins WHERE username = ?";
-					pstmt = conn.prepareStatement(getRegionAdmins);
-					pstmt.setString(1, username);
-					privResult = pstmt.executeQuery();
-					if (privResult.next()) { // returns true if there is a result set.
-						boardlist += "print \t" + bname + ";";
-					}
-					privResult.close();
-					pstmt.close();
-					privResult = null;
-					pstmt = null;
-				}
-				else { //there was an sql exception when getting the role.
-					sqlex = true;
-					break;
-				}
+			}
+			else { //there was an sql exception when getting the role.
+				sqlex = true;
 			}
 		}
 		catch (SQLException e) {
@@ -368,19 +349,20 @@ public class SocialNetworkDatabaseBoards {
 			return null;
 		}
 		ArrayList<String> admins = new ArrayList<String>();
-		String query = "SELECT * FROM " + board + ".admins";
-		Statement stmt = null;
+		String query = "SELECT * FROM main.boardadmins WHERE bname = ?";
+		PreparedStatement pstmt = null;
 		ResultSet adminResults = null;
 		try {
-			stmt = conn.createStatement();
-			adminResults = stmt.executeQuery(query);
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, board);
+			adminResults = pstmt.executeQuery(query);
 			while (adminResults.next()) {
 				admins.add(adminResults.getString("username"));
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			DBManager.closeStatement(stmt);
+			DBManager.closePreparedStatement(pstmt);
 			DBManager.closeResultSet(adminResults);
 		}
 		return admins;
