@@ -59,7 +59,7 @@ public class SocialNetworkRegions {
 		}
 	}
 
-	public static String viewRegions(String username, String boardName){
+	public static String viewRegions(String username, String boardName, boolean isGoTo){
 		if (boardName == null) {
 			return "Invalid Call to Function";
 		}
@@ -74,7 +74,16 @@ public class SocialNetworkRegions {
 					"If the problem persists, contact an admin.";
 		}
 		if (boardExists.booleanValue()) {
-			//TODO check authorized to go to board HERE.
+			//AUTHORIZATION CHECK
+			if (isGoTo) {
+				Boolean authorized = SocialNetworkDatabaseBoards.authorizedGoToBoard(dbconn, username, boardName);
+				if (authorized == null) {
+					return "print Error: Database error while checking authorization. If the problem persists, contact an admin.";
+				}
+				else if (!authorized.booleanValue()) {
+					return "print Error: Not authorized to view this board.";
+				}
+			}
 			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, bname);
 			DBManager.closeConnection(dbconn);
 			return msg;

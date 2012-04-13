@@ -90,7 +90,7 @@ public class SocialNetworkDatabaseRegions {
 		Boolean isAd = DatabaseAdmin.isAdmin(conn, username);
 		Boolean isBoardAd = SocialNetworkDatabaseBoards.isBoardAdmin(conn, username, boardName);
 		if (isAd == null || isBoardAd == null) {
-			return "print Error: Database error while creating the region (Verifying Authorizations). Contact the admin,";
+			return "print Error: Database error while creating the region (Verifying Authorizations). Contact the admin.";
 		}
 		if (!isAd || !isBoardAd) {
 			return "print Error: User is not authorized to create this region (Make this msg more ambig l8r!)";

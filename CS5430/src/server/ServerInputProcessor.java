@@ -1012,7 +1012,7 @@ public class ServerInputProcessor extends InputProcessor {
 				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts
-								.viewPostList(user, boardName, null), os, c, sk);
+								.viewPostList(user, boardName, null, false), os, c, sk);
 			} else { // Inside the post
 				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
@@ -1024,14 +1024,14 @@ public class ServerInputProcessor extends InputProcessor {
 			if (regionName == null) { // Merely in the board
 				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
-						+ SocialNetworkRegions.viewRegions(user, boardName), os, c, sk);
+						+ SocialNetworkRegions.viewRegions(user, boardName, false), os, c, sk);
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // Merely in the region
 					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPostList(user, boardName,
-									regionName), os, c, sk);
+									regionName, false), os, c, sk);
 				} else { // Inside the post
 					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
