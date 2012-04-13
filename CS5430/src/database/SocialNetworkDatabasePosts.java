@@ -48,8 +48,109 @@ public class SocialNetworkDatabasePosts {
 		return postExists;
 	}
 	
-	public static boolean isFFAPostCreator(Connection conn, String username, int post) {
-		boolean isCreator = false;
+	/**
+	 * AUTHORIZATION FUNCTION
+	 * Returns whether this user can go to/reply under the specified post # in the FFA board.
+	 * The user must be the post's author or have a privilege in the post.
+	 * Assumes post already exists.
+	 * AuthType = "view" or "reply". For view, merely checks that a priv exists.
+	 * For reply, checks that the priv is "viewpost"
+	 */
+	public static Boolean authorizedFFAPost(Connection conn, String username, int postNum, String authType) {
+		
+		Boolean isPostCreator = isFFAPostCreator(conn, username, postNum);
+		if (isPostCreator == null) {
+			return null;
+		}
+		else if (isPostCreator.booleanValue()) {
+			return new Boolean(true);
+		}
+		else {		
+			/*Retrieve the privilege for a given post and user*/
+			PreparedStatement getPriv = null;
+			String getPrivString = "SELECT privilege " +
+					"FROM freeforall.postprivileges " +
+					"WHERE pid = ? AND username = ?";
+			ResultSet privResult = null;
+			
+			Boolean authorized = null;
+			
+			try {
+				getPriv = conn.prepareStatement(getPrivString);
+				getPriv.setInt(1, postNum);
+				getPriv.setString(2, username);
+				
+				privResult = getPriv.executeQuery();
+				
+				//the privilege is at least View
+				if (authType.equals("view")) {
+					authorized = new Boolean(privResult.next());
+				}
+				else if (authType.equals("reply")) {
+					if (privResult.next()) {
+						authorized = new Boolean(privResult.getString("privilege").equals("viewpost"));
+					}
+					else {
+						authorized = new Boolean(false);
+					}
+				}
+			}
+			catch (SQLException e) {
+				e.printStackTrace();
+			}
+			finally {
+				DBManager.closeResultSet(privResult);
+				DBManager.closePreparedStatement(getPriv);
+			}
+			return authorized;
+		}
+	}
+	
+	/**
+	 * AUTHORIZATION FUNCTION
+	 * Returns whether the user can post under the specified region of this board.
+	 * Assumes the board and region are valid, and board =/= freeforall
+	 * You are authorized to post if you have post privileges under this region.
+	 * 
+	 * This doubles as both the POSTING AND REPLYING Authorization Function
+	 */
+	public static Boolean authorizedToPostNotFFA(Connection conn, String username, String boardName, String regionName) {	
+		/*Retrieve the privilege for the given user and region*/
+		PreparedStatement getPriv = null;
+		String getPrivString = "SELECT privilege " +
+		"FROM " + boardName + ".regionprivileges " +
+		"WHERE rname = ? AND username = ?";
+		ResultSet privResult = null;
+
+		Boolean authorized = null;
+
+		try {
+			getPriv = conn.prepareStatement(getPrivString);
+			getPriv.setString(1, regionName);
+			getPriv.setString(2, username);
+
+			privResult = getPriv.executeQuery();
+
+			//the privilege is at least View
+			if (privResult.next()) {
+				authorized = new Boolean(privResult.getString("privilege").equals("viewpost"));
+			}
+			else {
+				authorized = new Boolean(false);
+			}
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closeResultSet(privResult);
+			DBManager.closePreparedStatement(getPriv);
+		}
+		return authorized;
+	}
+	
+	public static Boolean isFFAPostCreator(Connection conn, String username, int post) {
+		Boolean isCreator = null;
 		String query = "SELECT postedby FROM freeforall.posts " +
 				"WHERE pid = ?";
 		PreparedStatement pstmt = null;
@@ -59,10 +160,10 @@ public class SocialNetworkDatabasePosts {
 			pstmt.setInt(1, post);
 			result = pstmt.executeQuery();
 			if (result.next()) {
-				isCreator = username.equals(result.getString("postedby"));
+				isCreator = new Boolean(username.equals(result.getString("postedby")));
 			}
 		} catch (SQLException e) {
-			isCreator = false;
+			isCreator = null;
 		} finally {
 			DBManager.closeResultSet(result);
 			DBManager.closePreparedStatement(pstmt);

@@ -36,6 +36,52 @@ public class SocialNetworkDatabaseRegions {
 	}
 	
 	/**
+	 * Returns whether the user is authorized to go to this region
+	 * Equivalent checking as in GetRegionList
+	 * For Admins: Must be within the "admin" list of the board (admins can go to any region)
+	 * For Users: Must be within the "RegionPrivileges" list of the board for this region.
+	 * Assumes the board and region exist, and that user is already authorized to be in the board.
+	 * Board =/= 'freeforall'
+	 */
+	public static Boolean authorizedGoToRegion(Connection conn, String username, String boardName, String regionName) {
+		PreparedStatement regionPstmt = null;
+		String fetchPrivMember = "SELECT privilege FROM " +
+		boardName + ".regionprivileges " +
+		"WHERE username = ? AND rname = ?";
+
+		String fetchPrivAdmin = "SELECT * FROM main.boardadmins WHERE username = ? AND bname = ?";
+		
+		ResultSet result = null;
+		
+		Boolean authorized = null;
+		try {
+			String role = DatabaseAdmin.getUserRole(conn, username);
+			if (!role.equals("member")) {
+				regionPstmt = conn.prepareStatement(fetchPrivMember);
+				regionPstmt.setString(2, regionName);
+			}
+			else if (!role.equals("")) { //user is an admin
+				regionPstmt = conn.prepareStatement(fetchPrivAdmin);
+				regionPstmt.setString(2, boardName);
+			}
+			else { //error occurred while acquiring role
+				return authorized; // null
+			}
+			regionPstmt.setString(1, username);
+			result = regionPstmt.executeQuery();
+			authorized = new Boolean(result.next()); //if theres a valid entry, you are authorized!
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		finally {
+			DBManager.closePreparedStatement(regionPstmt);
+			DBManager.closeResultSet(result);
+		}
+		return authorized;
+	}
+	
+	/**
 	 * Creates a region under the given board with the given region name.
 	 * ASSUMES that the boardName is valid.
 	 */
@@ -94,9 +140,8 @@ public class SocialNetworkDatabaseRegions {
 				boardName + ".regionprivileges " +
 				"WHERE username = ?";
 		
-		Statement regionStmt = null;
-		String fetchRegionsAdmin = "SELECT * FROM " +
-				boardName + ".regions";
+		PreparedStatement regionStmt = null;
+		String fetchRegionsAdmin = "SELECT * FROM main.boardadmins WHERE bname = ?";
 		
 		PreparedStatement recentPostsPstmt = null;
 		String fetchRecentPosts = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(P.dateLastUpdated), MAX(R.dateReplied)" +
@@ -115,8 +160,9 @@ public class SocialNetworkDatabaseRegions {
 				regionsResults = regionPstmt.executeQuery();
 			}
 			else if (!role.equals("")) { //user is an admin
-				regionStmt = conn.createStatement();
-				regionsResults = regionStmt.executeQuery(fetchRegionsAdmin);
+				regionStmt = conn.prepareStatement(fetchRegionsAdmin);
+				regionStmt.setString(1, boardName);
+				regionsResults = regionStmt.executeQuery();
 			}
 			else { //error occurred while acquiring role
 				return "print Error: Database Error while querying viewable regions. Contact an admin.;";
