@@ -671,7 +671,7 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void processAddParticipants() throws IOException {
 		Connection conn = DBManager.getConnection();
-		String command = addParticipantsError(conn);
+		String command = participantsError(conn);
 		if (!command.equals("")) {
 			CommManager.send(command, os, c, sk);
 		} else {
@@ -736,7 +736,7 @@ public class ServerInputProcessor extends InputProcessor {
 	 * @param conn
 	 * @return
 	 */
-	private String addParticipantsError(Connection conn) {
+	private String participantsError(Connection conn) {
 		String command = "";
 		String wrongLocation = "print Goto a region or freeforall post to view " +
 				"participants in that region/post.;";
