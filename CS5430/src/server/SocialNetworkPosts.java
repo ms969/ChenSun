@@ -4,6 +4,7 @@ import java.sql.Connection;
 
 import database.SocialNetworkDatabasePosts;
 import database.DBManager;
+import database.SocialNetworkDatabaseRegions;
 
 /**
  * Look at corresponding SQL.java file for specs.
@@ -183,7 +184,7 @@ public class SocialNetworkPosts {
 		}
 	}
 	
-	public static String viewPostList(String username, String boardName, String regionName) {
+	public static String viewPostList(String username, String boardName, String regionName, boolean isGoTo) {
 		if (boardName == null || (!("freeforall").equals(boardName) && regionName == null)) {
 			return "Invalid Call to Function";
 		}
@@ -208,7 +209,16 @@ public class SocialNetworkPosts {
 						"If the problem persists, contact an admin.";
 			}
 			else if (regionExists.booleanValue()) {
-				//TODO check authorized to go to board HERE.
+				//AUTHORIZATION CHECK
+				if (isGoTo) {
+					Boolean authorized = SocialNetworkDatabaseRegions.authorizedGoToRegion(dbconn, username, boardName, regionName);
+					if (authorized == null) {
+						return "print Error: Database error while checking authorization. If the problem persists, contact an admin.";
+					}
+					else if (!authorized.booleanValue()) {
+						return "print Error: Not authorized to view this region.";
+					}
+				}
 				String msg = SocialNetworkDatabasePosts.getPostList(dbconn, username,
 						bname, rname);
 				DBManager.closeConnection(dbconn);
