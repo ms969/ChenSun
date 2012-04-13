@@ -3,6 +3,7 @@ package server;
 import java.sql.Connection;
 
 import database.SocialNetworkDatabaseBoards;
+import database.SocialNetworkDatabasePosts;
 import database.SocialNetworkDatabaseRegions;
 import database.DBManager;
 
@@ -86,12 +87,17 @@ public class SocialNetworkRegions {
 	
 	public static String addParticipant(Connection conn, String board, String region, 
 			String username, String priv, String grantedBy) {
-		String success = "print "+username+" has been successfully added to the region " +
+		String success = "print "+username+" has been successfully added to the region/post " +
 				"with "+priv+" privilege.;";
-		String error = "print Database Error while adding "+username+" to region. " +
+		String error = "print Database Error while adding "+username+" to region/post. " +
 				"Please try again or contact a system admin.;";
-		int status = SocialNetworkDatabaseRegions.addParticipant(
-				conn, board, region, username, priv, grantedBy);
+		int status = 0;
+		if (board.equals("freeforall")) {
+			status = SocialNetworkDatabasePosts.addFFAParticipipant(conn, Integer.parseInt(region), username, priv);
+		} else {
+			status = SocialNetworkDatabaseRegions.addParticipant(
+					conn, board, region, username, priv, grantedBy);
+		}
 		if (status == 1) {
 			return success;
 		} else {

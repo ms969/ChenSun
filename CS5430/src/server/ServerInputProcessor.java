@@ -687,7 +687,7 @@ public class ServerInputProcessor extends InputProcessor {
 			command = "";
 			boolean validParticip = false;
 			while (!validParticip) {
-				command += SocialNetworkAdmin.displayAddableParticip(addables);
+				command += SocialNetworkAdmin.displayAddableParticip(addables, board);
 				CommManager.send(command, os, c, sk);
 				String input = CommManager.receive(is, c, sk);
 

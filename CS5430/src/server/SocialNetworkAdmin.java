@@ -388,7 +388,7 @@ public class SocialNetworkAdmin {
 		List<String> friends = DatabaseAdmin.getFriends(conn, username);
 		List<String[]> participants = DatabaseAdmin.getParticipants(conn, board, region);
 		for (String f: friends) {
-			if (!DatabaseAdmin.isAdmin(conn, f)) {
+			if (board == "freeforall" || !DatabaseAdmin.isAdmin(conn, f)) {
 				boolean isPart = false;
 				for (String[] p: participants) {
 					if (f.equals(p[0])) {
@@ -404,11 +404,14 @@ public class SocialNetworkAdmin {
 		return addables;
 	}
 	
-	public static String displayAddableParticip(List<String> addables) {
-		String command = "print To add an admin, use the 'addAdmin' command. Admins " +
-				"are added to the entire board and has to be approved by all other " +
-				"admins of the board.;print ;" +
-				"print Friends you can add as a participant to this region/post.;";
+	public static String displayAddableParticip(List<String> addables, String board) {
+		String command = "";
+		if (!board.equals("freeforall")) {
+			command = "print To add an admin, use the 'addAdmin' command. Admins " +
+					"are added to the entire board and has to be approved by all other " +
+					"admins of the board.;print ;";
+		}
+		command += "print Friends you can add as a participant to this region/post.;";
 		for (String a: addables) {
 			command += "print " + a + ";";
 		}

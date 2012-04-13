@@ -628,4 +628,21 @@ public class SocialNetworkDatabasePosts {
 		}
 		else return postAndReplies;
 	}
+	
+	public static int addFFAParticipipant(Connection conn, int post, String username, String priv) {
+		int status = 0;
+		String query = "INSERT INTO freeforall.postprivileges (pid, username, privilege) " +
+				"VALUES (?, ?, ?)";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setInt(1, post);
+			pstmt.setString(2, username);
+			pstmt.setString(3, priv);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = 0;
+		}
+		return status;
+	}
 }
