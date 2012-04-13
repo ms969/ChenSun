@@ -767,7 +767,6 @@ public class ServerInputProcessor extends InputProcessor {
 	//----------------------cleaning----------------------------------------
 	// XXX working here and the actual method below.
 	private void processRemoveParticipants() throws IOException {
-		// TODO: What's the policy for deleting admins from a board?
 
 		// check if user is admin
 		Connection conn = DBManager.getConnection();
