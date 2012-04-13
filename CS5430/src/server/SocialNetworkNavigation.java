@@ -89,7 +89,7 @@ public class SocialNetworkNavigation {
 	public static String goToBoard(String username, String[] currentPath, String boardName) {
 		String toReturn = "";
 		if (boardName.trim().toLowerCase().equals("freeforall")) {
-			toReturn = SocialNetworkPosts.viewPostList(username, "freeforall", null);
+			toReturn = SocialNetworkPosts.viewPostList(username, "freeforall", null, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
 				currentPath[0] = "freeforall";
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
@@ -99,7 +99,7 @@ public class SocialNetworkNavigation {
 			}
 		}
 		else {
-			toReturn = SocialNetworkRegions.viewRegions(username, boardName);
+			toReturn = SocialNetworkRegions.viewRegions(username, boardName, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
 				currentPath[0] = boardName;
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
@@ -121,7 +121,7 @@ public class SocialNetworkNavigation {
 			return "Invalid Call to Function";
 		}
 		else {
-			String toReturn = SocialNetworkPosts.viewPostList(username, currentPath[0], regionName);
+			String toReturn = SocialNetworkPosts.viewPostList(username, currentPath[0], regionName, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
 				currentPath[1] = regionName;
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
