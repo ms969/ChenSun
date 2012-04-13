@@ -264,10 +264,10 @@ public class SocialNetworkDatabaseBoards {
 	}
 	
 	/** Returns whether the user is authorized to go to this board.
-	 * Equivalent checking to GetBoardList:
+	 * Equivalent checking as in GetBoardList:
 	 * For Admins: Must be within the "admin" list of the board
-	 * For Users: Must be within the "RegionPrivileges" list of the board for one region
-	 * Assumes the board already exists.
+	 * For Users: Must be within the "RegionPrivileges" list of the board for some region
+	 * Assumes the board already exists and is not 'freeforall' board
 	 */
 	public static Boolean authorizedGoToBoard(Connection conn, String username, String boardname) {
 		Statement stmt = null;
