@@ -1018,7 +1018,7 @@ public class ServerInputProcessor extends InputProcessor {
 				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts.viewPost(user, boardName, null,
-								Integer.parseInt(postNum)), os, c, sk);
+								Integer.parseInt(postNum), false), os, c, sk);
 			}
 		} else { // a regular board
 			String regionName = currentPath[1];
@@ -1037,7 +1037,7 @@ public class ServerInputProcessor extends InputProcessor {
 					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPost(user, boardName,
-									regionName, Integer.parseInt(postNum)), os, c, sk);
+									regionName, Integer.parseInt(postNum), false), os, c, sk);
 				}
 			}
 		}

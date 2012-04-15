@@ -283,7 +283,8 @@ public class SocialNetworkDatabaseBoards {
 			if (!role.equals("")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE bname = ? AND username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
-				pstmt.setString(1, username);
+				pstmt.setString(1, boardname);
+				pstmt.setString(2, username);
 				privResult = pstmt.executeQuery();
 				authorized = new Boolean(privResult.next());
 				privResult.close();
