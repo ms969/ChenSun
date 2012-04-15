@@ -140,8 +140,8 @@ public class SocialNetworkDatabaseRegions {
 				boardName + ".regionprivileges " +
 				"WHERE username = ?";
 		
-		PreparedStatement regionStmt = null;
-		String fetchRegionsAdmin = "SELECT * FROM main.boardadmins WHERE bname = ?";
+		Statement regionStmt = null;
+		String fetchRegionsAdmin = "SELECT * FROM " + boardName + ".regions";
 		
 		PreparedStatement recentPostsPstmt = null;
 		String fetchRecentPosts = "SELECT rname, pid, P.postedBy, P.datePosted, MAX(P.dateLastUpdated), MAX(R.dateReplied)" +
@@ -160,9 +160,8 @@ public class SocialNetworkDatabaseRegions {
 				regionsResults = regionPstmt.executeQuery();
 			}
 			else if (!role.equals("")) { //user is an admin
-				regionStmt = conn.prepareStatement(fetchRegionsAdmin);
-				regionStmt.setString(1, boardName);
-				regionsResults = regionStmt.executeQuery();
+				regionStmt = conn.createStatement();
+				regionsResults = regionStmt.executeQuery(fetchRegionsAdmin);
 			}
 			else { //error occurred while acquiring role
 				return "print Error: Database Error while querying viewable regions. Contact an admin.;";

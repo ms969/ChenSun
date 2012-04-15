@@ -141,7 +141,7 @@ public class SocialNetworkNavigation {
 	 */
 	public static String goToPost(String username, String[] currentPath, int postNum) {
 		if (("freeforall").equals(currentPath[0])) {
-			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], null, postNum);
+			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], null, postNum, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
 				currentPath[1] = "" + postNum;
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
@@ -152,7 +152,7 @@ public class SocialNetworkNavigation {
 			return toReturn;
 		}
 		else if (currentPath[1] != null && currentPath[0] != null){
-			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], currentPath[1], postNum);
+			String toReturn = SocialNetworkPosts.viewPost(username, currentPath[0], currentPath[1], postNum, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
 				currentPath[2] = "" + postNum;
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
