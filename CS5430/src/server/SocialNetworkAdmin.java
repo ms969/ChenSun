@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import shared.ProjectConfig;
+import shared.Utils;
 
 import database.DBManager;
 import database.DatabaseAdmin;
@@ -20,7 +21,7 @@ public class SocialNetworkAdmin {
 		String command = "";
 		int requestCount = DatabaseAdmin.getFriendReqCount(conn, username);
 		if (requestCount != 0) {
-			command = ";print Pending Friend Requests (" + requestCount
+			command = "print Pending Friend Requests (" + requestCount
 				+ ") [To view: friendRequests];";
 		}
 		return command;
@@ -30,8 +31,18 @@ public class SocialNetworkAdmin {
 		String command = "";
 		int requestCount = DatabaseAdmin.getRegReqCount(conn, username);
 		if (requestCount != 0) {
-			command = ";print Pending User Registration Requests ("
+			command = "print Pending User Registration Requests ("
 					+ requestCount + ") [To view: regRequests];";
+		}
+		return command;
+	}
+	
+	public static String adminReqNotification(Connection conn, String username) {
+		String command = "";
+		int requestCount = DatabaseAdmin.getAdminReqeustCount(conn, username);
+		if (requestCount > 0) {
+			command = "print Pending Board Admin Requests (" + 
+					requestCount + ") [To view: adminRequests];";
 		}
 		return command;
 	}
@@ -338,7 +349,7 @@ public class SocialNetworkAdmin {
 		}
 	}
 	
-	public static String printUserInfo(String username, String role, String aname) {
+	private static String printUserInfo(String username, String role, String aname) {
 		String command = "print Logged in as: " + username + ";";
 		command += "print Role: " + role.toUpperCase() + ";";
 		command += "print A Cappella Group: " + aname + ";print ;";
@@ -347,7 +358,14 @@ public class SocialNetworkAdmin {
 	
 	public static String printUserInfo(Connection conn, String username) {
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
-		return printUserInfo(userInfo[0], userInfo[3], userInfo[2]);
+		String command = printUserInfo(userInfo[0], userInfo[3], userInfo[2]);
+		command += friendReqNotification(conn, username);
+		if (userInfo[3].equals("sa") || userInfo[3].equals("admin")) {
+			command += regReqNotification(conn, username);
+			command += adminReqNotification(conn, username);
+		}
+		command += Utils.getHR(80) + "print ;";
+		return command;
 	}
 	
 	public static String printUserInfo(String username) {
@@ -478,6 +496,29 @@ public class SocialNetworkAdmin {
 		}
 	}
 	
+	public static String displayAddableAdmins(List<String> addables) {
+		String command = "print Admins you are friends with:;";
+		for (String a: addables) {
+			command += "print " + a + ";";
+		}
+		command += "print Type the username of the admin you want to add:;" +
+				"askForInput;";
+		return command;
+	}
+	
+	public static String addAdminRequest(Connection conn, String board, String username) {
+		String success = "print Request for " + username + " to be added to " + board +
+				"has been processed.;print Once all the board admins approve, he/she " +
+				"will be added to the board.;";
+		String error = "print Database Error while processing add admin request for " + 
+				username + ". Please try again or contact a System Admin.;";
+		int status = DatabaseAdmin.addAdminRequest(conn, board, username);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
+	}
 }
 
 

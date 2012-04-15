@@ -816,6 +816,79 @@ public class DatabaseAdmin {
 		}
 		return status;
 	}
+	
+	public static List<String> getAddableAdmins(Connection conn, String board, String username) {
+		List<String> addables = new ArrayList<String>();
+		List<String> friends = getFriends(conn, username);
+		List<String> admins = getAdmins(conn);
+		List<String> adminsOfBoard = getAdminsOfBoard(conn, board);
+		for (String f: friends) {
+			if (admins.contains(f) && !adminsOfBoard.contains(f)) {
+				addables.add(f);
+			}
+		}
+		return addables;
+	}
+	
+	public static List<String> getAdmins(Connection conn) {
+		List<String> admins = new ArrayList<String>();
+		String query = "SELECT username FROM main.users " +
+				"WHERE role = 'admin' OR role = 'sa'";
+		Statement stmt = null;
+		ResultSet result = null;
+		try {
+			stmt = conn.createStatement();
+			result = stmt.executeQuery(query);
+			while (result.next()) {
+				admins.add(result.getString("username"));
+			}
+		} catch (SQLException e) {
+			admins = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closeStatement(stmt);
+		}
+		return admins;
+	}
+	
+	public static int addAdminRequest(Connection conn, String board, String username) {
+		int status = 0;
+		String query = "INSERT INTO main.pendingadmins VALUE (?, ?)";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, board);
+			pstmt.setString(2, username);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+	
+	public static int getAdminReqeustCount(Connection conn, String username) {
+		int count = -1;
+		String query = "SELECT count(username) as c FROM main.pendingadmins " +
+				"WHERE bname IN (SELECT bname FROM main.admins WHERE username = ?)";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				count = result.getInt("c");
+			}
+		} catch (SQLException e) {
+			count = -1;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return count;
+	}
 }
 
 

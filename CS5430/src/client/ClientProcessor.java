@@ -1,20 +1,23 @@
 package client;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 
-import javax.crypto.*;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+
+import shared.Utils;
 
 import comm.CommManager;
 
 import crypto.Hash;
-import crypto.SharedKeyCryptoComm;
 
-import java.security.*;
-import java.util.Arrays;
-
-import shared.InputProcessor;
-
-public class ClientProcessor extends InputProcessor {
+public class ClientProcessor {
 	private boolean loggedIn = false;
 	private boolean exit = false;
 	private String salt;
@@ -40,7 +43,7 @@ public class ClientProcessor extends InputProcessor {
 		String[] commands = response.split(delims);
 		for (int i = 0; i < commands.length; i++) {
 			if (commands[i].matches("^print.+")) {
-				String value = getValue(commands[i]);
+				String value = Utils.getValue(commands[i]);
 				System.out.println(value);
 			}
 			if (commands[i].equals("askForInput")) {
@@ -53,11 +56,11 @@ public class ClientProcessor extends InputProcessor {
 				CommManager.send("" + isExit(), serverOut, c, sk);
 			}
 			if (commands[i].matches("^setLoggedIn.+")) {
-				String value = getValue(commands[i]);
+				String value = Utils.getValue(commands[i]);
 				setLoggedIn(Boolean.parseBoolean(value));
 			}
 			if (commands[i].matches("^setExit.+")) {
-				String value = getValue(commands[i]);
+				String value = Utils.getValue(commands[i]);
 				setExit(Boolean.parseBoolean(value));
 			}
 			if (commands[i].equals("help")) {
@@ -67,7 +70,7 @@ public class ClientProcessor extends InputProcessor {
 				getPassword();
 			}
 			if (commands[i].matches("^setSalt.+")) {
-				String value = getValue(commands[i]);
+				String value = Utils.getValue(commands[i]);
 				setSalt(value);
 			}
 			if (commands[i].equals("createPassword")) {

@@ -42,3 +42,10 @@ CREATE TABLE main.boardadmins (
     FOREIGN KEY (bname) REFERENCES boards(bname) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );/* new */
+CREATE TABLE main.pendingadmins (
+    bname VARCHAR(500) NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    PRIMARY KEY (bname, username),
+    FOREIGN KEY (bname) REFERENCES boards(bname) ON DELETE CASCADE,
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+); /* new */

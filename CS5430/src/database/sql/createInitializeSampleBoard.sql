@@ -57,4 +57,6 @@ VALUES ("postswithreplies", null, "Kevin", NOW(), "XybtTMu+sC8=KStQPekGLEA=", NO
 INSERT INTO helloworldboard.replies
 VALUES ("postswithreplies", 2, null, "MJ", NOW(), "79zfBNMaHuM=/KJWGEHlpfdIvQ5H5MHraw==");
 INSERT INTO helloworldboard.posts
-VALUES ("postswithreplies", null, "Kevin", NOW(), "66SOxcRFM3Q=Wh7Dvh+TdF4=", NOW())
+VALUES ("postswithreplies", null, "Kevin", NOW(), "66SOxcRFM3Q=Wh7Dvh+TdF4=", NOW());
+INSERT INTO main.pendingadmins
+VALUES ("helloworldboard", "Adam");

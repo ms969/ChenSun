@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -15,19 +11,18 @@ import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
-import shared.InputProcessor;
 import shared.ProjectConfig;
+import shared.Utils;
 
 import comm.CommManager;
 
 import crypto.Hash;
 import database.DBManager;
 import database.DatabaseAdmin;
-import database.SocialNetworkDatabaseBoards;
 import database.SocialNetworkDatabasePosts;
 import database.SocialNetworkDatabaseRegions;
 
-public class ServerInputProcessor extends InputProcessor {
+public class ServerInputProcessor {
 	private OutputStream os;
 	private InputStream is;
 	private Cipher c;
@@ -219,6 +214,14 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
+		if (inputLine.matches("^adminRequests")) {
+			if (user != null) {
+				processAdminRequests();
+			} else {
+				CommManager.send(INVALID, os, c, sk);
+			}
+			return;
+		}
 		 
 		CommManager.send(INVALID+HELP, os, c, sk);
 	}
@@ -237,7 +240,7 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void processLogin(String inputLine) {
 		Connection conn = DBManager.getConnection();
-		String username = getValue(inputLine);
+		String username = Utils.getValue(inputLine);
 
 		boolean userExist = false;
 		boolean pwMatch = false;
@@ -269,19 +272,7 @@ public class ServerInputProcessor extends InputProcessor {
 		// Output for Client
 		if (userExist && pwMatch) {
 			user = username;
-			command = "setLoggedIn true;" + SocialNetworkAdmin.printUserInfo(user, role, aname);
-
-			// Get friend requests
-			command += SocialNetworkAdmin.friendReqNotification(conn, username);
-
-			// if admin or SA, get pending registration requests
-			if (role.equals("admin") || role.equals("sa")) {
-				String regReqCommand = SocialNetworkAdmin.regReqNotification(conn, username);
-				command += regReqCommand + ";";
-			}
-
-			String hr = getHR(80);
-			command += hr + "print ;";
+			command = "setLoggedIn true;" + SocialNetworkAdmin.printUserInfo(conn, username);
 
 			// printing out boards
 			CommManager.send(command + SocialNetworkNavigation.printPath(currentPath)
@@ -381,7 +372,7 @@ public class ServerInputProcessor extends InputProcessor {
 		if (currentUser[3].equals("admin") || currentUser[3].equals("sa")) {
 			String command = "";
 			if (input.matches("^approve.+")) {
-				String value = getValue(input);
+				String value = Utils.getValue(input);
 				String delim = " *, *";
 				String[] approvedUsers = value.split(delim);
 				for (String u: approvedUsers) {
@@ -391,7 +382,7 @@ public class ServerInputProcessor extends InputProcessor {
 				return;
 			}
 			if (input.matches("^remove.+")) {
-				String value = getValue(input);
+				String value = Utils.getValue(input);
 				String delim = " *, *";
 				String[] deletingUsers = value.split(delim);
 				for (String u: deletingUsers) {
@@ -420,7 +411,7 @@ public class ServerInputProcessor extends InputProcessor {
 		while (!userExist) {
 			String prefix = "";
 			if (!input.equals("addFriend")) {
-				prefix = getValue(input);
+				prefix = Utils.getValue(input);
 			}
 			command += SocialNetworkAdmin.displayFriendableUsers(
 					conn, prefix, friendableUsers);
@@ -478,14 +469,14 @@ public class ServerInputProcessor extends InputProcessor {
 		if (input.equals("cancel")) {
 			command = CANCEL;
 		} else if (input.matches("^approve.+")) {
-			String value = getValue(input);
+			String value = Utils.getValue(input);
 			String delim = " *, *";
 			String[] approvedFriends = value.split(delim);
 			for (String u: approvedFriends) {
 				command += SocialNetworkAdmin.friendApprove(conn, u, user);
 			}
 		} else if (input.matches("^remove.+")) {
-			String value = getValue(input);
+			String value = Utils.getValue(input);
 			String delim = " *, *";
 			String[] usersToDelete = value.split(delim);
 			for (String u: usersToDelete) {
@@ -710,11 +701,11 @@ public class ServerInputProcessor extends InputProcessor {
 				if (input.matches("^view .+")) {
 					priv = "view";
 					validCommand = true;
-					value = getValue(input);
+					value = Utils.getValue(input);
 				} else if (input.matches("^viewpost .+")) {
 					priv = "viewpost";
 					validCommand = true;
-					value = getValue(input);
+					value = Utils.getValue(input);
 				} else {
 					command = INVALID;
 				}
@@ -1087,8 +1078,55 @@ public class ServerInputProcessor extends InputProcessor {
 
 	private void processAddAdmin() {
 		Connection conn = DBManager.getConnection();
+		String error = adminEditError(conn);
+		if (!error.equals("")) {
+			CommManager.send(error, os, c, sk);
+		} else {
+			String board = currentPath[0];
+			List<String> addables = DatabaseAdmin.getAddableAdmins(conn, board, user);
+			String command = "";
+			boolean valid = false;
+			String toAdd = null;
+			while (!valid) {
+				command += SocialNetworkAdmin.displayAddableAdmins(addables);
+				CommManager.send(command, os, c, sk);
+				toAdd = CommManager.receive(is, c, sk);
+				
+				if (toAdd.equals("cancel")) {
+					CommManager.send(CANCEL, os, c, sk);
+					return;
+				}
+				
+				valid = addables.contains(toAdd);
+				if (!valid) {
+					command = "print Cannot add " + toAdd + ";";
+				}
+			}
+			
+			SocialNetworkAdmin.addAdminRequest(conn, board, toAdd);
+		}
+		DBManager.closeConnection(conn);
+	}
+	
+	private String adminEditError(Connection conn) {
+		String wrongLocation = "print Goto a board (not freeforall) to add admin to it.;";
 		String board = currentPath[0];
-		List<String> admins = DatabaseAdmin.getAdminsOfBoard(conn, board);
+		if (board == null) {
+			return wrongLocation;
+		} else if (board.equals("freeforall")) {
+			return wrongLocation;
+		} else {
+			List<String> boardAdmins = DatabaseAdmin.getAdminsOfBoard(conn, board);
+			if (!boardAdmins.contains(user)) {
+				return INVALID;
+			}
+		}
+		return "";
+	}
+
+	private void processAdminRequests() {
+		// TODO Auto-generated method stub
+		
 	}
 
 	/**
