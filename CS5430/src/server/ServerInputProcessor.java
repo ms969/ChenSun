@@ -1261,6 +1261,12 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canPost) {
+			//AUTHORIZATION FUNCTION and EXISTS CHECK
+			String authToPost = SocialNetworkPosts.authorizedToPost(user, currentPath[0], currentPath[1]);
+			if (!authToPost.equals("true")) {
+				CommManager.send(authToPost, os, c, sk);
+				return ;
+			}
 			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
 			String content = CommManager.receive(is, c, sk);
@@ -1323,6 +1329,12 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canReply) {
+			//AUTHORIZATION FUNCTION and EXISTS CHECK
+			String authToReply = SocialNetworkPosts.authorizedToReply(user, currentPath[0], currentPath[1], Integer.parseInt(postNum));
+			if (!authToReply.equals("true")) {
+				CommManager.send(authToReply, os, c, sk);
+				return ;
+			}
 			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
 			String content = CommManager.receive(is, c, sk);
