@@ -1113,18 +1113,18 @@ public class ServerInputProcessor extends InputProcessor {
 	private void processRefresh() {
 		String boardName = currentPath[0];
 		if (boardName == null) {
-			CommManager.send(SocialNetworkNavigation.printPath(currentPath)
+			CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 					+ "print ;" + SocialNetworkBoards.viewBoards(user), os, c, sk);
 		} else if (boardName.equals("freeforall")) {
 			/* No regions */
 			String postNum = currentPath[1];
 			if (postNum == null) { // Merely in the board
-				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
+				CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts
 								.viewPostList(user, boardName, null, false), os, c, sk);
 			} else { // Inside the post
-				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
+				CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts.viewPost(user, boardName, null,
 								Integer.parseInt(postNum), false), os, c, sk);
@@ -1132,18 +1132,18 @@ public class ServerInputProcessor extends InputProcessor {
 		} else { // a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) { // Merely in the board
-				CommManager.send(SocialNetworkNavigation.printPath(currentPath)
+				CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkRegions.viewRegions(user, boardName, false), os, c, sk);
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // Merely in the region
-					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
+					CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPostList(user, boardName,
 									regionName, false), os, c, sk);
 				} else { // Inside the post
-					CommManager.send(SocialNetworkNavigation.printPath(currentPath)
+					CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPost(user, boardName,
 									regionName, Integer.parseInt(postNum), false), os, c, sk);
@@ -1261,6 +1261,12 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canPost) {
+			//AUTHORIZATION FUNCTION and EXISTS CHECK
+			String authToPost = SocialNetworkPosts.authorizedToPost(user, currentPath[0], currentPath[1]);
+			if (!authToPost.equals("true")) {
+				CommManager.send(authToPost, os, c, sk);
+				return ;
+			}
 			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
 			String content = CommManager.receive(is, c, sk);
@@ -1323,6 +1329,12 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 		}
 		if (canReply) {
+			//AUTHORIZATION FUNCTION and EXISTS CHECK
+			String authToReply = SocialNetworkPosts.authorizedToReply(user, currentPath[0], currentPath[1], Integer.parseInt(postNum));
+			if (!authToReply.equals("true")) {
+				CommManager.send(authToReply, os, c, sk);
+				return ;
+			}
 			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
 					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
 			String content = CommManager.receive(is, c, sk);
