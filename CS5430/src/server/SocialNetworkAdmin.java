@@ -364,7 +364,7 @@ public class SocialNetworkAdmin {
 	 * @param region
 	 * @return
 	 */
-	public static String displayParticip(Connection conn, String board, String region) {
+	public static String displayParticipAndAdmins(Connection conn, String board, String region) {
 		String command = "print Displaying participants in "+board+"/"+region+":;";
 		List<String> admins = DatabaseAdmin.getAdminsOfBoard(conn, board);
 		for (String a: admins) {
@@ -420,6 +420,62 @@ public class SocialNetworkAdmin {
 				"print To add participants with view only privilege, " +
 				"type 'view <user1>, <user2>';askForInput;";
 		return command;
+	}
+	
+	public static String displayRemoveParticip(Connection conn, String board, String region) {
+		String command = "print Displaying participants in "+board+"/"+region+":;";
+		List<String[]> part = DatabaseAdmin.getParticipants(conn, board, region);
+		for (String[] p: part) {
+			command += "print " + p[0];
+			if (p[1].equals("view")) {
+				command += " (view only)";
+			}
+			command += ";";
+		}
+		command += "print To remove participants, type their usernames separated " +
+				"by comma: '<user1>, <user2>';askForInput;";
+		return command;
+	}
+	
+	public static String displayEditableParticip(List<String[]> editables) {
+		String command = "print Participants you can edit in this region/post.;";
+		for (String[] e: editables) {
+			command += "print " + e[0];
+			if (e[1].equals("view")) {
+				command += " (view only)";
+			} else if (e[1].equals("viewpost")) {
+				command += " (view and post)";
+			}
+			command += ";";
+		}
+		command += "print Type the name of the user you wish to change permission for:;" +
+				"askForInput;";
+		return command;
+	}
+	
+	public static String removeParticipant(Connection conn, String board, String region, String username) {
+		String success = "print " + username + " has been removed from " + 
+				board + "/" + region + ";";
+		String error = "print Database Error while removing " + username + ". Please " +
+				"try again or contact the System Admin.;";
+		int status = DatabaseAdmin.removeParticipant(conn, board, region, username);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
+	}
+	
+	public static String editParticipant(Connection conn, String board, String region, String username, String priv) {
+		String success = "print permission for username has been changed.;";
+		String error = "print Database Error while changing permission for "+username+". " +
+				"Please try again or contact the System Admin.;";
+		int status = DatabaseAdmin.editParticipant(conn, board, region, username, priv);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
 	}
 	
 }

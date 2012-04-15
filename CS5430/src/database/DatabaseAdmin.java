@@ -704,6 +704,40 @@ public class DatabaseAdmin {
 		return part;
 	}
 	
+	public static List<String> getParticipantsOne(Connection conn, String board, String region) {
+		List<String> part = new ArrayList<String>();
+		String query;
+		if (board.equals("freeforall")) {
+			query = "SELECT username " +
+					"FROM freeforall.postprivileges " +
+					"WHERE pid = ?";
+		} else {
+			query = "SELECT username "
+					+ "FROM "+board+".regionprivileges "
+					+ "WHERE rname = ?";
+		}
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			if (board.equals("freforall")) {
+				pstmt.setInt(1, Integer.parseInt(region));
+			} else {
+				pstmt.setString(1, region);
+			}
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				part.add(result.getString("username"));
+			}
+		} catch (SQLException e) {
+			part = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return part;
+	}
+	
 	public static List<String> getAdminsOfBoard(Connection conn, String board) {
 		List<String> admins = new ArrayList<String>();
 		if (board.equals("freeforall")) {
@@ -727,7 +761,61 @@ public class DatabaseAdmin {
 		}
 		return admins;
 	}
+	
+	public static int removeParticipant(Connection conn, String board, String region, String username) {
+		int status = 0;
+		String query = "";
+		if (board.equals("freeforall")) {
+			query = "DELETE FROM freeforall.postprivileges WHERE pid = ? AND username = ?";
+		} else {
+			query = "DELETE FROM "+board+".regionprivileges WHERE rname = ? AND username = ?";
+		}
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			if (board.equals("freeforall")) {
+				pstmt.setInt(1, Integer.parseInt(region));
+			} else {
+				pstmt.setString(1, region);
+			}
+			pstmt.setString(2, username);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
 
+	public static int editParticipant(Connection conn, String board, String region, String username, String priv) {
+		int status = 0;
+		String query = "";
+		if (board.equals("freeforall")) {
+			query = "UPDATE freeforall.postprivileges SET privilege = ? " +
+					"WHERE pid = ? AND username = ?";
+		} else {
+			query = "UPDATE " + board + ".regionprivileges SET privilege = ? " +
+					"WHERE rname = ? AND username = ?";
+		}
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, priv);
+			pstmt.setString(3, username);
+			if (board.equals("freeforall")) {
+				pstmt.setInt(2, Integer.parseInt(region));
+			} else {
+				pstmt.setString(2, region);
+			}
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
 }
 
 

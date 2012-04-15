@@ -211,6 +211,14 @@ public class ServerInputProcessor extends InputProcessor {
 			}
 			return;
 		}
+		if (inputLine.matches("^addAdmin$")) {
+			if (user != null) {
+				processAddAdmin();
+			} else {
+				CommManager.send(INVALID, os, c, sk);
+			}
+			return;
+		}
 		 
 		CommManager.send(INVALID+HELP, os, c, sk);
 	}
@@ -347,7 +355,7 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processRegRequests() throws IOException {
+	private void processRegRequests() {
 		Connection conn = DBManager.getConnection();
 		String[] currentUser = DatabaseAdmin.getUserInfo(conn, user);
 		// makes sure user is an admin
@@ -397,7 +405,7 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 	}
 
-	private void processAddFriend(String input) throws IOException {
+	private void processAddFriend(String input) {
 		Connection conn = DBManager.getConnection();
 		// Stores a list of users that is not the current user, who is not a
 		// friend of the
@@ -439,7 +447,7 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void addFriend(Connection conn, String username) throws IOException {
+	private void addFriend(Connection conn, String username) {
 		// username exists in the system.
 		CommManager.send("print Are you sure you want to add " + username
 				+ " as a friend? (y/n);askForInput", os, c, sk);
@@ -455,7 +463,7 @@ public class ServerInputProcessor extends InputProcessor {
 		CommManager.send(command, os, c, sk);
 	}
 
-	private void processFriendRequests() throws IOException {
+	private void processFriendRequests() {
 		Connection conn = DBManager.getConnection();
 		String command = SocialNetworkAdmin.friendRequests(conn, user);
 		CommManager.send(command, os, c, sk);
@@ -489,7 +497,7 @@ public class ServerInputProcessor extends InputProcessor {
 		CommManager.send(command, os, c, sk);
 	}
 
-	private void processDeleteUser() throws IOException {
+	private void processDeleteUser() {
 		Connection conn = DBManager.getConnection();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, user);
 
@@ -530,7 +538,7 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void deleteUser(Connection conn, String username) throws IOException {
+	private void deleteUser(Connection conn, String username) {
 		// username is a deletable user
 		CommManager.send("print User deletions cannot be undone.;"
 				+ "print Are you sure you want to delete this user? (y/n);askForInput", 
@@ -554,7 +562,7 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processChangeUserRole() throws IOException {
+	private void processChangeUserRole() {
 		Connection conn = DBManager.getConnection();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, user);
 		
@@ -601,7 +609,7 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processTransferSA() throws IOException {
+	private void processTransferSA() {
 		Connection conn = DBManager.getConnection();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, user);
 		
@@ -661,7 +669,7 @@ public class ServerInputProcessor extends InputProcessor {
 			if (region == null) {
 				command = wrongLocation;
 			} else {
-				command = SocialNetworkAdmin.displayParticip(conn, board, region);
+				command = SocialNetworkAdmin.displayParticipAndAdmins(conn, board, region);
 			}
 		}
 		
@@ -669,7 +677,7 @@ public class ServerInputProcessor extends InputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processAddParticipants() throws IOException {
+	private void processAddParticipants() {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
@@ -763,220 +771,322 @@ public class ServerInputProcessor extends InputProcessor {
 		}
 		return command;
 	}
+
+//	private void processRemoveParticipants2() throws IOException {
+//
+//		// check if user is admin
+//		Connection conn = DBManager.getConnection();
+//		String board = currentPath[0];
+//		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
+//		if (admins.contains(user)) {
+//			// get a list of participants
+//			String region = currentPath[1];
+//			ArrayList<String> participants = new ArrayList<String>();
+//			Statement stmt = null;
+//			String query = "SELECT username, privilege FROM " + board
+//					+ ".regionprivileges WHERE rname = '" + region + "'";
+//			try {
+//				stmt = conn.createStatement();
+//				ResultSet partResult = stmt.executeQuery(query);
+//				while (partResult.next()) {
+//					participants.add(partResult.getString("username"));
+//				}
+//				stmt.close();
+//			} catch (SQLException e) {
+//				e.printStackTrace();
+//			}
+//
+//			boolean userRemovable = false;
+//			String[] toRemove = null;
+//
+//			while (!userRemovable) {
+//				String command = "print List of people you could remove:;";
+//				for (String user : participants) {
+//					command += "print " + user + ";";
+//				}
+//				command += "print ;print [To remove participants: <user1>, <user2>];askForInput";
+//				CommManager.send(command, os, c, sk);
+//				String input = CommManager.receive(is, c, sk);
+//				if (input.equals("cancel")) {
+//					CommManager.send("", os, c, sk);
+//					return;
+//				}
+//				toRemove = input.trim().split(" *, *");
+//
+//				String notOkUsers = "";
+//				userRemovable = true;
+//				for (String userInfo : toRemove) {
+//					if (!participants.contains(userInfo)) {
+//						userRemovable = false;
+//						notOkUsers += userInfo + ", ";
+//					}
+//				}
+//				if (!userRemovable) {
+//					notOkUsers = notOkUsers.substring(0,
+//							notOkUsers.length() - 2);
+//					CommManager.send("print Cannot remove " + notOkUsers
+//							+ " from this region.;", os, c, sk);
+//				}
+//			}
+//
+//			// toRemove is removable
+//			removeParticipant(toRemove);
+//		} else {
+//			CommManager.send("print You do not have permission to add participants to this region.", os, c, sk);
+//		}
+//	}
 	
-	//----------------------cleaning----------------------------------------
-	// XXX working here and the actual method below.
-	private void processRemoveParticipants() throws IOException {
-
-		// check if user is admin
+	private void processRemoveParticipants() {
 		Connection conn = DBManager.getConnection();
-		String board = currentPath[0];
-		ArrayList<String> admins = SocialNetworkDatabaseBoards.getBoardAdmins(conn, board);
-		if (admins.contains(user)) {
-			// get a list of participants
+		String command = participantsError(conn);
+		if (!command.equals("")) {
+			CommManager.send(command, os, c, sk);
+		} else {
+			String board = currentPath[0];
 			String region = currentPath[1];
-			ArrayList<String> participants = new ArrayList<String>();
-			Statement stmt = null;
-			String query = "SELECT username, privilege FROM " + board
-					+ ".regionprivileges WHERE rname = '" + region + "'";
-			try {
-				stmt = conn.createStatement();
-				ResultSet partResult = stmt.executeQuery(query);
-				while (partResult.next()) {
-					participants.add(partResult.getString("username"));
-				}
-				stmt.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			List<String> removables = DatabaseAdmin.getParticipantsOne(
+					conn, board, region);
 
-			boolean userRemovable = false;
-			String[] toRemove = null;
-
-			while (!userRemovable) {
-				String command = "print List of people you could remove:;";
-				for (String user : participants) {
-					command += "print " + user + ";";
-				}
-				command += "print ;print [To remove participants: <user1>, <user2>];askForInput";
+			List<String> usersToRemove = null;
+			
+			// Validity check
+			command = "";
+			boolean validParticip = false;
+			while (!validParticip) {
+				command += SocialNetworkAdmin.displayRemoveParticip(conn, board, region);
 				CommManager.send(command, os, c, sk);
 				String input = CommManager.receive(is, c, sk);
+
 				if (input.equals("cancel")) {
-					CommManager.send("", os, c, sk);
+					CommManager.send(CANCEL, os, c, sk);
 					return;
 				}
-				toRemove = input.trim().split(" *, *");
-
-				String notOkUsers = "";
-				userRemovable = true;
-				for (String userInfo : toRemove) {
-					if (!participants.contains(userInfo)) {
-						userRemovable = false;
-						notOkUsers += userInfo + ", ";
-					}
-				}
-				if (!userRemovable) {
-					notOkUsers = notOkUsers.substring(0,
-							notOkUsers.length() - 2);
-					CommManager.send("print Cannot remove " + notOkUsers
-							+ " from this region.;", os, c, sk);
+				
+				usersToRemove = Arrays.asList(input.split(" *, *"));
+				validParticip = removables.containsAll(usersToRemove);
+				if (!validParticip) {
+					command = "print You do not have permission to remove all the " +
+							"users you specified.;print ;";
 				}
 			}
-
-			// toRemove is removable
-			removeParticipant(toRemove);
-		} else {
-			CommManager.send("print You do not have permission to add participants to this region.", os, c, sk);
-		}
-	}
-
-	private void removeParticipant(String[] toRemove) {
-		// add everything to the database
-		String region = currentPath[1];
-		String board = currentPath[0];
-		Connection conn = DBManager.getConnection();
-		String query = "DELETE FROM " + board
-				+ ".regionprivileges WHERE rname = '" + region + "' AND (";
-		for (int i = 0; i < toRemove.length; i++) {
-			query += "username = '" + toRemove[i] + "'";
-			if (i != toRemove.length - 1) {
-				query += " OR ";
+			
+			// Participants to remove are valid
+			command = "";
+			for (String u: usersToRemove) {
+				command += SocialNetworkAdmin.removeParticipant(conn, board, region, u);
 			}
-		}
-		query += ")";
-
-		if (DEBUG) {
-			System.out.println("remove participant query: " + query);
-		}
-
-		try {
-			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(query);
-			stmt.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		// print confirmation
-		CommManager.send("print Participants removed.", os, c, sk);
-	}
-
-	private void processEditParticipants() throws IOException {
-		Connection conn = DBManager.getConnection();
-		Statement stmt = null;
-		try {
-			stmt = conn.createStatement();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		String board = currentPath[0];
-		String region = currentPath[1];
-
-		// Stores a list of changeable users
-		// Users[0]: username, Users[1]: permission
-		ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
-		try {
-			String query = "SELECT username, privilege FROM " + board
-					+ ".regionprivileges " + "WHERE rname = '" + region + "'";
-
-			if (DEBUG) {
-				System.out.println("Edit participant query: " + query);
-			}
-
-			ResultSet usersResult = stmt.executeQuery(query);
-			while (usersResult.next()) {
-				String[] userInfo = { usersResult.getString("username"),
-						usersResult.getString("privilege") };
-				changeableUsers.add(userInfo);
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		boolean userChangeable = false;
-		String input = "";
-		ArrayList<String[]> changingUsersInfo = new ArrayList<String[]>();
-		String[] usersToChange = null;
-
-		while (!userChangeable) {
-			String command = "print List of people you can edit permission for:;";
-			for (String[] userInfo : changeableUsers) {
-				String permission = null;
-				if (userInfo[1].equals("view")) {
-					permission = "View Only";
-				} else {
-					permission = "View and Post";
-				}
-				command += "print " + userInfo[0] + " (" + permission + ");";
-			}
-			command += "print ;print [To toggle permission status: <user1>, <user2>];"
-					+ "askForInput";
 			CommManager.send(command, os, c, sk);
+		}
+		DBManager.closeConnection(conn);
+	}
 
-			input = CommManager.receive(is, c, sk);
-			if (input.equals("cancel")) {
-				CommManager.send("", os, c, sk);
-				return;
-			}
-			String toChange = "";
-			usersToChange = input.trim().split(" *, *");
-			userChangeable = true;
-			for (String user : usersToChange) {
-				boolean userChangeable2 = false;
-				for (String[] userInfo : changeableUsers) {
-					if (user.equals(userInfo[0])) {
-						changingUsersInfo.add(userInfo);
-						userChangeable2 = true;
+//	private void removeParticipant(String[] toRemove) {
+//		// add everything to the database
+//		String region = currentPath[1];
+//		String board = currentPath[0];
+//		Connection conn = DBManager.getConnection();
+//		String query = "DELETE FROM " + board
+//				+ ".regionprivileges WHERE rname = '" + region + "' AND (";
+//		for (int i = 0; i < toRemove.length; i++) {
+//			query += "username = '" + toRemove[i] + "'";
+//			if (i != toRemove.length - 1) {
+//				query += " OR ";
+//			}
+//		}
+//		query += ")";
+//
+//		if (DEBUG) {
+//			System.out.println("remove participant query: " + query);
+//		}
+//
+//		try {
+//			Statement stmt = conn.createStatement();
+//			stmt.executeUpdate(query);
+//			stmt.close();
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//		// print confirmation
+//		CommManager.send("print Participants removed.", os, c, sk);
+//	}
+	
+	//----------------------cleaning----------------------------------------
+	// XXX working here
+//	private void processEditParticipants2() throws IOException {
+//		Connection conn = DBManager.getConnection();
+//		Statement stmt = null;
+//		try {
+//			stmt = conn.createStatement();
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//
+//		String board = currentPath[0];
+//		String region = currentPath[1];
+//
+//		// Stores a list of changeable users
+//		// Users[0]: username, Users[1]: permission
+//		ArrayList<String[]> changeableUsers = new ArrayList<String[]>();
+//		try {
+//			String query = "SELECT username, privilege FROM " + board
+//					+ ".regionprivileges " + "WHERE rname = '" + region + "'";
+//
+//			if (DEBUG) {
+//				System.out.println("Edit participant query: " + query);
+//			}
+//
+//			ResultSet usersResult = stmt.executeQuery(query);
+//			while (usersResult.next()) {
+//				String[] userInfo = { usersResult.getString("username"),
+//						usersResult.getString("privilege") };
+//				changeableUsers.add(userInfo);
+//			}
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//
+//		boolean userChangeable = false;
+//		String input = "";
+//		ArrayList<String[]> changingUsersInfo = new ArrayList<String[]>();
+//		String[] usersToChange = null;
+//
+//		while (!userChangeable) {
+//			String command = "print List of people you can edit permission for:;";
+//			for (String[] userInfo : changeableUsers) {
+//				String permission = null;
+//				if (userInfo[1].equals("view")) {
+//					permission = "View Only";
+//				} else {
+//					permission = "View and Post";
+//				}
+//				command += "print " + userInfo[0] + " (" + permission + ");";
+//			}
+//			command += "print ;print [To toggle permission status: <user1>, <user2>];"
+//					+ "askForInput";
+//			CommManager.send(command, os, c, sk);
+//
+//			input = CommManager.receive(is, c, sk);
+//			if (input.equals("cancel")) {
+//				CommManager.send("", os, c, sk);
+//				return;
+//			}
+//			String toChange = "";
+//			usersToChange = input.trim().split(" *, *");
+//			userChangeable = true;
+//			for (String user : usersToChange) {
+//				boolean userChangeable2 = false;
+//				for (String[] userInfo : changeableUsers) {
+//					if (user.equals(userInfo[0])) {
+//						changingUsersInfo.add(userInfo);
+//						userChangeable2 = true;
+//						break;
+//					}
+//				}
+//				if (!userChangeable2) {
+//					toChange += "user, ";
+//					userChangeable = false;
+//				}
+//			}
+//			if (!userChangeable) {
+//				toChange = toChange.substring(0, toChange.length() - 2);
+//				CommManager.send("print Cannot change permission for " + toChange
+//						+ ";", os, c, sk);
+//			}
+//		}
+//
+//		// toChange is changeable
+//		changePermission(usersToChange);
+//	}
+	
+	private void processEditParticipants() {
+		Connection conn = DBManager.getConnection();
+		String command = participantsError(conn);
+		if (!command.equals("")) {
+			CommManager.send(command, os, c, sk);
+		} else {
+			String board = currentPath[0];
+			String region = currentPath[1];
+			List<String[]> editables = DatabaseAdmin.getParticipants(
+					conn, board, region);
+
+			String toEdit = "";
+			String priv = "";
+			
+			// Validity check
+			command = "";
+			boolean validParticip = false;
+			while (!validParticip) {
+				command += SocialNetworkAdmin.displayEditableParticip(editables);
+				CommManager.send(command, os, c, sk);
+				toEdit = CommManager.receive(is, c, sk);
+
+				if (toEdit.equals("cancel")) {
+					CommManager.send(CANCEL, os, c, sk);
+					return;
+				}
+				
+				for (String[] e: editables) {
+					if (e[0].equals(toEdit)) {
+						validParticip = true;
+						if (e[1].equals("view")) {
+							priv = "viewpost";
+						} else if (e[1].equals("viewpost")) {
+							priv = "view";
+						}
 						break;
 					}
 				}
-				if (!userChangeable2) {
-					toChange += "user, ";
-					userChangeable = false;
+				if (!validParticip) {
+					command = "print You are not authorized to change permission " +
+							"for the user you specified.;print ;";
 				}
 			}
-			if (!userChangeable) {
-				toChange = toChange.substring(0, toChange.length() - 2);
-				CommManager.send("print Cannot change permission for " + toChange
-						+ ";", os, c, sk);
-			}
+			
+			// Participant to edit is valid
+			command = SocialNetworkAdmin.editParticipant(
+					conn, board, region, toEdit, priv);
+			CommManager.send(command, os, c, sk);
 		}
-
-		// toChange is changeable
-		changePermission(usersToChange);
+		DBManager.closeConnection(conn);
 	}
 
-	private void changePermission(String[] usersToChange) {
-		// TODO: not done
-		// add everything to the database
-		String board = currentPath[0];
-		String region = currentPath[1];
-		Connection conn = DBManager.getConnection();
+//	private void changePermission(String[] usersToChange) {
+//		// TODO: not done
+//		// add everything to the database
+//		String board = currentPath[0];
+//		String region = currentPath[1];
+//		Connection conn = DBManager.getConnection();
+//
+//		String query = "UPDATE " + board + ".regionprivileges WHERE rname = '"
+//				+ region + "' AND (";
+//		// (username = 'userInfo' OR username = 'userInfo')
+//		for (int i = 0; i < usersToChange.length; i++) {
+//			query += "username = '" + usersToChange[i] + "'";
+//			if (i != usersToChange.length - 1) {
+//				query += " OR ";
+//			}
+//		}
+//		query += ")";
+//
+//		if (DEBUG) {
+//			System.out.println("remove participant query: " + query);
+//		}
+//
+//		try {
+//			Statement stmt = conn.createStatement();
+//			stmt.executeUpdate(query);
+//			stmt.close();
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//		// print confirmation
+//		CommManager.send("print Participants removed.", os, c, sk);
+//	}
+	
+	
 
-		String query = "UPDATE " + board + ".regionprivileges WHERE rname = '"
-				+ region + "' AND (";
-		// (username = 'userInfo' OR username = 'userInfo')
-		for (int i = 0; i < usersToChange.length; i++) {
-			query += "username = '" + usersToChange[i] + "'";
-			if (i != usersToChange.length - 1) {
-				query += " OR ";
-			}
-		}
-		query += ")";
-
-		if (DEBUG) {
-			System.out.println("remove participant query: " + query);
-		}
-
-		try {
-			Statement stmt = conn.createStatement();
-			stmt.executeUpdate(query);
-			stmt.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		// print confirmation
-		CommManager.send("print Participants removed.", os, c, sk);
+	private void processAddAdmin() {
+		
 	}
 
 	/**
