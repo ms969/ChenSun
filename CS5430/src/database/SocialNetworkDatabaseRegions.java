@@ -56,7 +56,7 @@ public class SocialNetworkDatabaseRegions {
 		Boolean authorized = null;
 		try {
 			String role = DatabaseAdmin.getUserRole(conn, username);
-			if (!role.equals("member")) {
+			if (role.equals("member")) {
 				regionPstmt = conn.prepareStatement(fetchPrivMember);
 				regionPstmt.setString(2, regionName);
 			}
