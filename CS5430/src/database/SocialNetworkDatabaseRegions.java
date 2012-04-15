@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class SocialNetworkDatabaseRegions {
 	//private static int numPostsPerBoard = 2;
@@ -55,7 +56,7 @@ public class SocialNetworkDatabaseRegions {
 		Boolean authorized = null;
 		try {
 			String role = DatabaseAdmin.getUserRole(conn, username);
-			if (!role.equals("member")) {
+			if (role.equals("member")) {
 				regionPstmt = conn.prepareStatement(fetchPrivMember);
 				regionPstmt.setString(2, regionName);
 			}
