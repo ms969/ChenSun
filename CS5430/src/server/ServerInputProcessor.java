@@ -1086,7 +1086,9 @@ public class ServerInputProcessor extends InputProcessor {
 	
 
 	private void processAddAdmin() {
-		
+		Connection conn = DBManager.getConnection();
+		String board = currentPath[0];
+		List<String> admins = DatabaseAdmin.getAdminsOfBoard(conn, board);
 	}
 
 	/**
