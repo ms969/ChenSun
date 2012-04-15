@@ -14,6 +14,8 @@ import java.util.ArrayList;
 
 public class SocialNetworkDatabaseBoards {
 	
+	public static String createBoardSqlURL = "sql/createNewBoardDB.sql";
+	
 	/**
 	 * Checks whether the user is part of this board.
 	 * Assumes the board is valid.
@@ -100,7 +102,7 @@ public class SocialNetworkDatabaseBoards {
 		String[] queries;
 		/*Read in file contents and set correct references to bid*/
 		try {
-			createBoardSql = new File("src/database/createNewBoardDB.sql");
+			createBoardSql = new File(createBoardSqlURL);
 			sqlReader = new BufferedReader(new FileReader(createBoardSql));
 			line = sqlReader.readLine();
 			while (line != null) {
