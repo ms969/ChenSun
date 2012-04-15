@@ -282,7 +282,7 @@ public class SocialNetworkDatabaseBoards {
 			String getRegionPrivs, getRegionAdmins;
 			String role = DatabaseAdmin.getUserRole(conn, username);
 			
-			if (role.equals("admin")) { // an admin
+			if (role.equals("admin") || role.equals("sa")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE bname = ? AND username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
 				pstmt.setString(1, boardname);
@@ -343,7 +343,7 @@ public class SocialNetworkDatabaseBoards {
 			String getRegionPrivs, getRegionAdmins;
 			String role = DatabaseAdmin.getUserRole(conn, username);
 			
-			if (role.equals("admin")) { // an admin
+			if (role.equals("admin") || role.equals("sa")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
 				pstmt.setString(1, username);
