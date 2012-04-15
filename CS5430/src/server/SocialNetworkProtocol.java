@@ -24,7 +24,7 @@ public class SocialNetworkProtocol implements Runnable {
 		this.pk = pk;
 	}
 
-	public void main() throws Exception {
+	public void main() throws IOException {
 		SecretKey sk = PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
 		Cipher c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
 		// Getting client socket's input and output streams
@@ -48,9 +48,11 @@ public class SocialNetworkProtocol implements Runnable {
 	public void run(){
 		try {
 			main();
-		} catch (Exception e) {
-			// TODO What to do with the exceptions?
-			e.printStackTrace();
+		} catch (IOException e) {
+			System.err.println("Error: Cannot find CreateDB SQL file.");
+			try {
+				clientSocket.close();
+			} catch (IOException e1) {	}
 		}
 	}
 

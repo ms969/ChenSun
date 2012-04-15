@@ -1274,7 +1274,7 @@ public class ServerInputProcessor {
 		}
 	}
 
-	private void processPost() throws IOException {
+	private void processPost() {
 		/* Verify the user is in the right place to create a post */
 		String boardName = currentPath[0];
 		boolean canPost = false;
@@ -1341,7 +1341,7 @@ public class ServerInputProcessor {
 	 * 
 	 * @throws IOException
 	 */
-	private void processReply() throws IOException {
+	private void processReply() {
 		/* Verify the user is in the right place to create a post */
 		String boardName = currentPath[0];
 		String postNum = "";
