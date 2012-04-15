@@ -14,6 +14,8 @@ import java.util.ArrayList;
 
 public class SocialNetworkDatabaseBoards {
 	
+	public static String createBoardSqlURL = "sql/createNewBoardDB.sql";
+	
 	/**
 	 * Checks whether the user is part of this board.
 	 * Assumes the board is valid.
@@ -100,7 +102,7 @@ public class SocialNetworkDatabaseBoards {
 		String[] queries;
 		/*Read in file contents and set correct references to bid*/
 		try {
-			createBoardSql = new File("src/database/createNewBoardDB.sql");
+			createBoardSql = new File(createBoardSqlURL);
 			sqlReader = new BufferedReader(new FileReader(createBoardSql));
 			line = sqlReader.readLine();
 			while (line != null) {
@@ -280,7 +282,7 @@ public class SocialNetworkDatabaseBoards {
 			String getRegionPrivs, getRegionAdmins;
 			String role = DatabaseAdmin.getUserRole(conn, username);
 			
-			if (!role.equals("")) { // an admin
+			if (role.equals("admin") || role.equals("sa")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE bname = ? AND username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
 				pstmt.setString(1, boardname);
@@ -292,7 +294,7 @@ public class SocialNetworkDatabaseBoards {
 				privResult = null;
 				pstmt = null;
 			}
-			else if (role.equals("member")) {
+			else if (!role.equals("")) {
 				stmt = conn.createStatement();
 
 				getRegionPrivs = "SELECT privilege FROM " 
@@ -341,7 +343,7 @@ public class SocialNetworkDatabaseBoards {
 			String getRegionPrivs, getRegionAdmins;
 			String role = DatabaseAdmin.getUserRole(conn, username);
 			
-			if (!role.equals("")) { // an admin
+			if (role.equals("admin") || role.equals("sa")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
 				pstmt.setString(1, username);
@@ -354,7 +356,7 @@ public class SocialNetworkDatabaseBoards {
 				privResult = null;
 				pstmt = null;
 			}
-			else if (role.equals("member")) {
+			else if (!role.equals("")) {
 				stmt = conn.createStatement();
 
 				/*First, get a list of all the boards*/

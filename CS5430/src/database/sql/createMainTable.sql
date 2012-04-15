@@ -33,7 +33,7 @@ CREATE TABLE main.registrationrequests (
 CREATE TABLE main.boards (
     bname VARCHAR(500) NOT NULL PRIMARY KEY,
     managedby VARCHAR(100),
-    FOREIGN KEY (createdby) REFERENCES users(username) ON DELETE SET NULL
+    FOREIGN KEY (managedby) REFERENCES users(username) ON DELETE SET NULL
 );
 CREATE TABLE main.boardadmins (
     bname VARCHAR(500) NOT NULL,
