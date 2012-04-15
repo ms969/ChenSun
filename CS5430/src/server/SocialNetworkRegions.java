@@ -70,6 +70,7 @@ public class SocialNetworkRegions {
 		Connection dbconn = DBManager.getConnection();
 		Boolean boardExists = SocialNetworkDatabaseBoards.boardExists(dbconn, bname);
 		if (boardExists == null) {
+			DBManager.getConnection();
 			return "print Error: Database error while verifying existence of board. " +
 					"If the problem persists, contact an admin.";
 		}
@@ -78,9 +79,11 @@ public class SocialNetworkRegions {
 			if (isGoTo) {
 				Boolean authorized = SocialNetworkDatabaseBoards.authorizedGoToBoard(dbconn, username, boardName);
 				if (authorized == null) {
+					DBManager.closeConnection(dbconn);
 					return "print Error: Database error while checking authorization. If the problem persists, contact an admin.";
 				}
 				else if (!authorized.booleanValue()) {
+					DBManager.closeConnection(dbconn);
 					return "print Error: Not authorized to view this board.";
 				}
 			}
@@ -89,6 +92,7 @@ public class SocialNetworkRegions {
 			return msg;
 		}
 		else {
+			DBManager.closeConnection(dbconn);
 			return "print Error: Encapsulating Board does not exist. Refresh. " +
 					"If the problem persists, contact an admin.";
 		}
