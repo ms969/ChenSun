@@ -110,30 +110,45 @@ public class SocialNetworkDatabasePosts {
 	 * AUTHORIZATION FUNCTION
 	 * Returns whether the user can post under the specified region of this board.
 	 * Assumes the board and region are valid, and board =/= freeforall
-	 * You are authorized to post if you have post privileges under this region.
+	 * For regular mem's are authorized to post if you have post privileges under this region
+	 * For admins, you must be an admin of the board.
 	 * 
 	 * This doubles as both the POSTING AND REPLYING Authorization Function
 	 */
 	public static Boolean authorizedToPostNotFFA(Connection conn, String username, String boardName, String regionName) {	
 		/*Retrieve the privilege for the given user and region*/
-		PreparedStatement getPriv = null;
-		String getPrivString = "SELECT privilege " +
+		PreparedStatement privPstmt = null;
+		String getPrivMemberString = "SELECT privilege " +
 		"FROM " + boardName + ".regionprivileges " +
 		"WHERE rname = ? AND username = ?";
 		ResultSet privResult = null;
+		
+		String getPrivAdminString = "SELECT * FROM main.boardadmins WHERE bname = ? AND username = ?";
 
 		Boolean authorized = null;
 
 		try {
-			getPriv = conn.prepareStatement(getPrivString);
-			getPriv.setString(1, regionName);
-			getPriv.setString(2, username);
+			String role = DatabaseAdmin.getUserRole(conn, username);
+			if (role.equals("member")) {
+				privPstmt = conn.prepareStatement(getPrivMemberString);
+				privPstmt.setString(1, regionName);
+			}
+			else if (!role.equals("")) {
+				privPstmt = conn.prepareStatement(getPrivAdminString);
+				privPstmt.setString(1, boardName);
+			}
+			privPstmt.setString(2, username);
 
-			privResult = getPriv.executeQuery();
+			privResult = privPstmt.executeQuery();
 
 			//the privilege is at least View
 			if (privResult.next()) {
-				authorized = new Boolean(privResult.getString("privilege").equals("viewpost"));
+				if (role.equals("member")) {
+					authorized = new Boolean(privResult.getString("privilege").equals("viewpost"));
+				}
+				else {
+					authorized = new Boolean(true);
+				}
 			}
 			else {
 				authorized = new Boolean(false);
@@ -144,7 +159,7 @@ public class SocialNetworkDatabasePosts {
 		}
 		finally {
 			DBManager.closeResultSet(privResult);
-			DBManager.closePreparedStatement(getPriv);
+			DBManager.closePreparedStatement(privPstmt);
 		}
 		return authorized;
 	}

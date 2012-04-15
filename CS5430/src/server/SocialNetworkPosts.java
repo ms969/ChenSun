@@ -22,8 +22,8 @@ public class SocialNetworkPosts {
 		return exists;
 	}
 	
-	public static String createReply(String username, String content, 
-			String boardName, String regionName, int postNum) {
+	//Returns "true" when everything is good, or a msg when something is wrong.
+	public static String authorizedToReply(String username, String boardName, String regionName, int postNum) {
 		Connection dbconn = DBManager.getConnection();
 		String bname = boardName.trim().toLowerCase();
 		if (bname.equals("freeforall")) { //regionName might be null
@@ -44,9 +44,8 @@ public class SocialNetworkPosts {
 					DBManager.closeConnection(dbconn);
 					return "print Error: Not authorized to reply to this post.";
 				}
-				String msg = SocialNetworkDatabasePosts.createReplyFreeForAll(dbconn, username, content, postNum);
 				DBManager.closeConnection(dbconn);
-				return msg;
+				return "true";
 			}
 			else {
 				DBManager.closeConnection(dbconn);
@@ -87,10 +86,8 @@ public class SocialNetworkPosts {
 						DBManager.closeConnection(dbconn);
 						return "print Error: Not authorized to reply to this post.";
 					}
-					String msg = SocialNetworkDatabasePosts.createReply(dbconn, username, content,
-							bname, rname, postNum);
 					DBManager.closeConnection(dbconn);
-					return msg;
+					return "true";
 				}
 				else {
 					DBManager.closeConnection(dbconn);
@@ -109,6 +106,25 @@ public class SocialNetworkPosts {
 			return "print Error: Board does not exist. Refresh. " +
 			"If the problem persists, contact an admin.";
 		}
+	}
+	
+	//ASSUMES authorizedToReply HAS BEEN CALLED
+	//SO THAT ALL PARAMETERS ARE VALID, AUTHS ARE VALID.
+	public static String createReply(String username, String content, 
+			String boardName, String regionName, int postNum) {
+		Connection dbconn = DBManager.getConnection();
+		String bname = boardName.trim().toLowerCase();
+		if (bname.equals("freeforall")) { //regionName might be null
+			String msg = SocialNetworkDatabasePosts.createReplyFreeForAll(dbconn, username, content, postNum);
+			DBManager.closeConnection(dbconn);
+			return msg;
+		}
+		//regionname not null
+		String rname = regionName.trim().toLowerCase();
+		String msg = SocialNetworkDatabasePosts.createReply(dbconn, username, content,
+				bname, rname, postNum);
+		DBManager.closeConnection(dbconn);
+		return msg;
 	}
 	
 	public static String viewPost(String username, String boardName, 
@@ -194,15 +210,13 @@ public class SocialNetworkPosts {
 		}
 	}
 	
-	public static String createPost(String username, String content, 
+	public static String authorizedToPost (String username,
 			String boardName, String regionName) {
 		String bname = boardName.trim().toLowerCase();
 		Connection dbconn = DBManager.getConnection();
 		if (bname.equals("freeforall")) { //regionName might be null
 			//everyone can post in the freeforall board
-			String msg = SocialNetworkDatabasePosts.createPostFreeForAll(dbconn, username, content);
-			DBManager.closeConnection(dbconn);
-			return msg;
+			return "true";
 		}
 		//regionName should not be null
 		String rname = regionName.trim().toLowerCase();
@@ -228,10 +242,8 @@ public class SocialNetworkPosts {
 					DBManager.closeConnection(dbconn);
 					return "print Error: Not authorized to post in this region";
 				}
-				String msg = SocialNetworkDatabasePosts.createPost(dbconn, username, content,
-						bname, rname);
 				DBManager.closeConnection(dbconn);
-				return msg;
+				return "true";
 			}
 			else {
 				return "print Error: Region does not exist. Refresh. " +
@@ -242,6 +254,26 @@ public class SocialNetworkPosts {
 			return "print Error: Board does not exist. Refresh. " +
 			"If the problem persists, contact an admin.";
 		}
+	}
+	
+	//THIS FUNCTION ASSUMES EVERYTHING IS VALID/EXISTS
+	//(assumed AUTHORIZED TO POST has already been called!)
+	public static String createPost(String username, String content, 
+			String boardName, String regionName) {
+		String bname = boardName.trim().toLowerCase();
+		Connection dbconn = DBManager.getConnection();
+		if (bname.equals("freeforall")) { //regionName might be null
+			//everyone can post in the freeforall board
+			String msg = SocialNetworkDatabasePosts.createPostFreeForAll(dbconn, username, content);
+			DBManager.closeConnection(dbconn);
+			return msg;
+		}
+		//regionName should not be null
+		String rname = regionName.trim().toLowerCase();
+		String msg = SocialNetworkDatabasePosts.createPost(dbconn, username, content,
+				bname, rname);
+		DBManager.closeConnection(dbconn);
+		return msg;
 	}
 	
 	public static String viewPostList(String username, String boardName, String regionName, boolean isGoTo) {
