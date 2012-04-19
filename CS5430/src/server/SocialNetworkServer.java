@@ -20,7 +20,7 @@ import crypto.SharedKeyCrypto;
 //TODO should we merely just exit if the server finds an error?
 
 public class SocialNetworkServer {
-	private static final int LISTEN_PORT_NUM = 5329;
+	private static final int LISTEN_PORT_NUM = ProjectConfig.SERVER_CLIENT_CONN_PORT;
 	private static PrivateKey privk = null;
 	private static PublicKey pubk = null;
 	private static final boolean DEBUG = ProjectConfig.DEBUG;

@@ -519,6 +519,110 @@ public class SocialNetworkAdmin {
 			return error;
 		}
 	}
+	
+	public static String displayAdminRequests(List<String[]> requests) {
+		String command = "";
+		if (requests == null) {
+			command = "print Database error. Please contact System Admin.;";
+		} else if (requests.size() == 0) {
+			command = "print No pending admin requests at the time.;";
+		} else {
+			command = "print Admins waiting approval to be added to boards:;";
+			for (String[] r: requests) {
+				command += "print " + r[0] + ". " + r[1] + " - " + r[2] + ";";
+			}
+			command += "print To approve requests, use the request number:" +
+					" 'approve ###, ###';";
+			command += "print To remove requests, type 'remove ###, ###';";
+			command += "askForInput;";
+		}
+		return command;
+	}
+	
+	public static String approveAdmin(Connection conn, String board, String username) {
+		String command = "";
+		String error = "print Database Error while adding " + username + " as an admin " +
+				"to " + board + ". Please try again or contact a System Admin.;";
+		String success = "print " + username + " has been added as an admin to " +
+				board + ".;";
+		try {
+			conn.setAutoCommit(false);
+			// add approval to addadminapproval table
+			// query number of admin for the board
+			// if num of entry in approval match num of admin
+				// remove admin request
+				// add admin to board
+			
+			// for a request to show up, there has to be an entry in request for a board
+			// the user belongs to and the user hasn't approved that entry yet.
+			// SELECT bname, username FROM pendingadmins WHERE bname IN (
+			// SELECT bname FROM boardadmins WHERE username = ?)
+			// SELECT bname, admin FROM addadminapprovals WHERE 
+			int deleteStatus = DatabaseAdmin.removeAdminRequest(conn, board, username);
+			int addStatus = DatabaseAdmin.addAdminToBoard(conn, board, username);
+			if (deleteStatus != 1 || addStatus != 1) {
+				conn.rollback();
+				command = error;
+			} else {
+				conn.commit();
+				command = success;
+			}
+		} catch (SQLException e) {
+			command = error;
+		} finally {
+			DBManager.trueAutoCommit(conn);
+		}
+		return command;
+	}
+	
+	public static String removeAdmin(Connection conn, String board, String username) {
+		String success = "print Admin Request of " + username + " for " + board + 
+				" has been removed.;";
+		String error = "print Database Error while removing admin request of " + 
+				username + " for " + board + ";";
+		int status = DatabaseAdmin.removeAdminRequest(conn, board, username);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
+	}
+	
+	public static String approveAdminReqs(Connection conn, String[] indices, List<String[]> requests) {
+		String command = "";
+		for (String i: indices) {
+			try {
+				int index = Integer.parseInt(i);
+				if (index >= requests.size() || index < 0) {
+					throw new NumberFormatException();
+				}
+				String[] request = requests.get(index);
+				command += approveAdmin(conn, request[1], request[2]);
+			} catch (NumberFormatException e) {
+				command = "print Wrong format.;" + ServerInputProcessor.CANCEL;
+				break;
+			}
+		}
+		return command;
+	}
+	
+	public static String removeAdminReqs(Connection conn, String[] indices, List<String[]> requests) {
+		String command = "";
+		for (String i: indices) {
+			try {
+				int index = Integer.parseInt(i);
+				if (index >= requests.size() || index < 0) {
+					throw new NumberFormatException();
+				}
+				String[] request = requests.get(index);
+				command += removeAdmin(conn, request[1], request[2]);
+			} catch (NumberFormatException e) {
+				command = "print Wrong format.;" + ServerInputProcessor.CANCEL;
+				break;
+			}
+		}
+		return command;
+	}
 }
 
 

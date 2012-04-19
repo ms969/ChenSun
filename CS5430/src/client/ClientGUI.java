@@ -6,11 +6,13 @@ import java.net.*;
 import java.security.*;
 import javax.crypto.*;
 
+import shared.ProjectConfig;
+
 import crypto.PublicKeyCryptoClient;
 import crypto.SharedKeyCryptoComm;
 
 public class ClientGUI {
-	private static final int SERVER_PORT = 5329;
+	private static final int SERVER_PORT = ProjectConfig.SERVER_CLIENT_CONN_PORT;
 	private static final String SERVER_HOST_NAME = "localhost";
 
 

@@ -29,9 +29,9 @@ public class ServerInputProcessor {
 	private SecretKey sk;
 	
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
-	private static final String INVALID = "print Invalid command.;";
-	private static final String CANCEL = "print Cancelled.;";
-	private static final String HELP = "print To see a list of commands type 'help'.;";
+	public static final String INVALID = "print Invalid command.;";
+	public static final String CANCEL = "print Cancelled.;";
+	public static final String HELP = "print To see a list of commands type 'help'.;";
 
 	private String user = null;
 	private String[] currentPath; // 0 = board/"freeforall"; 1 = region/FFApost; 2 = post/null
@@ -245,7 +245,7 @@ public class ServerInputProcessor {
 		boolean userExist = false;
 		boolean pwMatch = false;
 		
-		String pwhash = "", aname = "", role = "";
+		String pwhash = "";
 		String command = "";
 		
 		// check username existence
@@ -253,8 +253,6 @@ public class ServerInputProcessor {
 		if (userInfo != null) {
 			userExist = true;
 			pwhash = userInfo[1];
-			aname = userInfo[2];
-			role = userInfo[3];
 		}
 		if (userExist) {
 			command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
@@ -900,9 +898,7 @@ public class ServerInputProcessor {
 //		// print confirmation
 //		CommManager.send("print Participants removed.", os, c, sk);
 //	}
-	
-	//----------------------cleaning----------------------------------------
-	// XXX working here
+
 //	private void processEditParticipants2() throws IOException {
 //		Connection conn = DBManager.getConnection();
 //		Statement stmt = null;
@@ -1042,7 +1038,6 @@ public class ServerInputProcessor {
 	}
 
 //	private void changePermission(String[] usersToChange) {
-//		// TODO: not done
 //		// add everything to the database
 //		String board = currentPath[0];
 //		String region = currentPath[1];
@@ -1107,7 +1102,7 @@ public class ServerInputProcessor {
 		}
 		DBManager.closeConnection(conn);
 	}
-	
+	// XXX change the the admin check to the owner of board
 	private String adminEditError(Connection conn) {
 		String wrongLocation = "print Goto a board (not freeforall) to add admin to it.;";
 		String board = currentPath[0];
@@ -1125,9 +1120,36 @@ public class ServerInputProcessor {
 	}
 
 	private void processAdminRequests() {
-		// TODO Auto-generated method stub
-		
+		Connection conn = DBManager.getConnection();
+		List<String[]> requests = DatabaseAdmin.getAdminRequests(conn, user);
+		String command = "";
+		// XXX take out loop and send msg
+		command += SocialNetworkAdmin.displayAdminRequests(requests);
+		CommManager.send(command, os, c, sk);
+		if (command.endsWith("askForInput;")) {
+			String input = CommManager.receive(is, c, sk);
+			
+			if (input.equals("cancel")) {
+				CommManager.send(CANCEL, os, c, sk);
+				return;
+			}
+			
+			command = "";
+			if (input.matches("^approve .+")) {
+				String[] values = Utils.getValue(input).split(" *, *");
+				command = SocialNetworkAdmin.approveAdminReqs(conn, values, requests);
+			} else if (input.matches("^remove .+")) {
+				String[] values = Utils.getValue(input).split(" *, *");
+				command = SocialNetworkAdmin.removeAdminReqs(conn, values, requests);
+			} else {
+				command = INVALID+CANCEL;
+			}
+			CommManager.send(command, os, c, sk);
+		}
+		DBManager.closeConnection(conn);
 	}
+	
+	
 
 	/**
 	 * Creates a board. MUST be in the home directory.

@@ -43,9 +43,28 @@ CREATE TABLE main.boardadmins (
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );/* new */
 CREATE TABLE main.pendingadmins (
+    /*pa_id INT,*/
     bname VARCHAR(500) NOT NULL,
     username VARCHAR(100) NOT NULL,
-    PRIMARY KEY (bname, username),
+    PRIMARY KEY (pa_id),
     FOREIGN KEY (bname) REFERENCES boards(bname) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 ); /* new */
+CREATE TABLE main.addadminapprovals (
+    bname VARCHAR(500) NOT NULL,
+    admin VARCHAR(100) NOT NULL,
+    approval VARCHAR(100) NOT NULL,
+    PRIMARY KEY (bname, admin, approval),
+    FOREIGN KEY (bname) REFERENCES boards(bname) ON DELETE CASCADE,
+    FOREIGN KEY (admin) REFERENCES users(username) ON DELETE CASCADE,
+    FOREIGN KEY (approval) REFERENCES users(username) ON DELETE CASCADE
+);
+CREATE TABLE main.deleteadminapprovals (
+    bname VARCHAR(500) NOT NULL,
+    admin VARCHAR(100) NOT NULL,
+    approval VARCHAR(100) NOT NULL,
+    PRIMARY KEY (bname, admin, approval),
+    FOREIGN KEY (bname) REFERENCES boards(bname) ON DELETE CASCADE,
+    FOREIGN KEY (admin) REFERENCES users(username) ON DELETE CASCADE,
+    FOREIGN KEY (approval) REFERENCES users(username) ON DELETE CASCADE
+);
