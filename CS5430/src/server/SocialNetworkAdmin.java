@@ -37,16 +37,6 @@ public class SocialNetworkAdmin {
 		return command;
 	}
 	
-	public static String adminReqNotification(Connection conn, String username) {
-		String command = "";
-		int requestCount = DatabaseAdmin.getAdminReqeustCount(conn, username);
-		if (requestCount > 0) {
-			command = "print Pending Board Admin Requests (" + 
-					requestCount + ") [To view: adminRequests];";
-		}
-		return command;
-	}
-	
 	public static String insertRegRequest(Connection conn, String newUser, int aid, String pwdStore) {
 		String command = "";
 		int success = DatabaseAdmin.insertRegRequest(conn, newUser, aid, pwdStore);
@@ -362,7 +352,6 @@ public class SocialNetworkAdmin {
 		command += friendReqNotification(conn, username);
 		if (userInfo[3].equals("sa") || userInfo[3].equals("admin")) {
 			command += regReqNotification(conn, username);
-			command += adminReqNotification(conn, username);
 		}
 		command += Utils.getHR(80) + "print ;";
 		return command;
@@ -501,126 +490,46 @@ public class SocialNetworkAdmin {
 		for (String a: addables) {
 			command += "print " + a + ";";
 		}
-		command += "print Type the username of the admin you want to add:;" +
-				"askForInput;";
+		command += "print To add admins, type their usernames separated " +
+				"by comma: '<user1>, <user2>';askForInput;";
 		return command;
 	}
 	
-	public static String addAdminRequest(Connection conn, String board, String username) {
-		String success = "print Request for " + username + " to be added to " + board +
-				"has been processed.;print Once all the board admins approve, he/she " +
-				"will be added to the board.;";
-		String error = "print Database Error while processing add admin request for " + 
-				username + ". Please try again or contact a System Admin.;";
-		int status = DatabaseAdmin.addAdminRequest(conn, board, username);
+	public static String addAdmin(Connection conn, String board, String username) {
+		String success = "print " + username + " has been added as an admin to " +
+				board + ".;";
+		String error = "print Database Error while adding " + username + " to " + board +
+				"as admin. Please try again or contact the System Admin.;";
+		int status = DatabaseAdmin.addAdminToBoard(conn, board, username);
 		if (status == 1) {
 			return success;
 		} else {
 			return error;
 		}
-	}
-	
-	public static String displayAdminRequests(List<String[]> requests) {
-		String command = "";
-		if (requests == null) {
-			command = "print Database error. Please contact System Admin.;";
-		} else if (requests.size() == 0) {
-			command = "print No pending admin requests at the time.;";
-		} else {
-			command = "print Admins waiting approval to be added to boards:;";
-			for (String[] r: requests) {
-				command += "print " + r[0] + ". " + r[1] + " - " + r[2] + ";";
-			}
-			command += "print To approve requests, use the request number:" +
-					" 'approve ###, ###';";
-			command += "print To remove requests, type 'remove ###, ###';";
-			command += "askForInput;";
-		}
-		return command;
-	}
-	
-	public static String approveAdmin(Connection conn, String board, String username) {
-		String command = "";
-		String error = "print Database Error while adding " + username + " as an admin " +
-				"to " + board + ". Please try again or contact a System Admin.;";
-		String success = "print " + username + " has been added as an admin to " +
-				board + ".;";
-		try {
-			conn.setAutoCommit(false);
-			// add approval to addadminapproval table
-			// query number of admin for the board
-			// if num of entry in approval match num of admin
-				// remove admin request
-				// add admin to board
-			
-			// for a request to show up, there has to be an entry in request for a board
-			// the user belongs to and the user hasn't approved that entry yet.
-			// SELECT bname, username FROM pendingadmins WHERE bname IN (
-			// SELECT bname FROM boardadmins WHERE username = ?)
-			// SELECT bname, admin FROM addadminapprovals WHERE 
-			int deleteStatus = DatabaseAdmin.removeAdminRequest(conn, board, username);
-			int addStatus = DatabaseAdmin.addAdminToBoard(conn, board, username);
-			if (deleteStatus != 1 || addStatus != 1) {
-				conn.rollback();
-				command = error;
-			} else {
-				conn.commit();
-				command = success;
-			}
-		} catch (SQLException e) {
-			command = error;
-		} finally {
-			DBManager.trueAutoCommit(conn);
-		}
-		return command;
 	}
 	
 	public static String removeAdmin(Connection conn, String board, String username) {
-		String success = "print Admin Request of " + username + " for " + board + 
-				" has been removed.;";
-		String error = "print Database Error while removing admin request of " + 
-				username + " for " + board + ";";
-		int status = DatabaseAdmin.removeAdminRequest(conn, board, username);
+		String success = "print " + username + " has been removed from " + board + ".;";
+		String error = "print Database Error while removing " + username + " from " + 
+				board + ";";
+		int status = DatabaseAdmin.removeAdminFromBoard(conn, board, username);
 		if (status == 1) {
 			return success;
 		} else {
 			return error;
 		}
 	}
-	
-	public static String approveAdminReqs(Connection conn, String[] indices, List<String[]> requests) {
-		String command = "";
-		for (String i: indices) {
-			try {
-				int index = Integer.parseInt(i);
-				if (index >= requests.size() || index < 0) {
-					throw new NumberFormatException();
-				}
-				String[] request = requests.get(index);
-				command += approveAdmin(conn, request[1], request[2]);
-			} catch (NumberFormatException e) {
-				command = "print Wrong format.;" + ServerInputProcessor.CANCEL;
-				break;
+
+	public static String displayRemovableAdmins(List<String> removables,
+			String user) {
+		String command = "print Admins of this board:;";
+		for (String r: removables) {
+			if (!r.equals(user)) {
+				command += "print " + r + ";";
 			}
 		}
-		return command;
-	}
-	
-	public static String removeAdminReqs(Connection conn, String[] indices, List<String[]> requests) {
-		String command = "";
-		for (String i: indices) {
-			try {
-				int index = Integer.parseInt(i);
-				if (index >= requests.size() || index < 0) {
-					throw new NumberFormatException();
-				}
-				String[] request = requests.get(index);
-				command += removeAdmin(conn, request[1], request[2]);
-			} catch (NumberFormatException e) {
-				command = "print Wrong format.;" + ServerInputProcessor.CANCEL;
-				break;
-			}
-		}
+		command += "print To remove admins, type their usernames separated by comma: " +
+				"'<user1>, <user2>';askForInput;";
 		return command;
 	}
 }

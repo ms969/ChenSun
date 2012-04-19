@@ -851,92 +851,27 @@ public class DatabaseAdmin {
 		return admins;
 	}
 	
-	public static int addAdminRequest(Connection conn, String board, String username) {
-		int status = 0;
-		String query = "INSERT INTO main.pendingadmins VALUE (?, ?)";
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, board);
-			pstmt.setString(2, username);
-			status = pstmt.executeUpdate();
-		} catch (SQLException e) {
-			status = 0;
-		} finally {
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return status;
-	}
-	
-	public static int getAdminReqeustCount(Connection conn, String username) {
-		int count = -1;
-		String query = "SELECT count(username) as c FROM main.pendingadmins " +
-				"WHERE bname IN (SELECT bname FROM main.admins WHERE username = ?)";
-		PreparedStatement pstmt = null;
-		ResultSet result = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, username);
-			result = pstmt.executeQuery();
-			if (result.next()) {
-				count = result.getInt("c");
-			}
-		} catch (SQLException e) {
-			count = -1;
-		} finally {
-			DBManager.closeResultSet(result);
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return count;
-	}
-	
-	public static List<String[]> getAdminRequests(Connection conn, String username) {
-		List<String[]> requests = new ArrayList<String[]>();
-		String query = "SELECT bname, username FROM main.pendingadmins " +
-				"WHERE bname IN (SELECT bname FROM main.admins WHERE username = ?)";
-		PreparedStatement pstmt = null;
-		ResultSet result = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, username);
-			result = pstmt.executeQuery();
-			int counter = 0;
-			while (result.next()) {
-				String[] req = {counter + "", 
-						result.getString("bname"), result.getString("username")};
-				counter++;
-				requests.add(req);
-			}
-		} catch (SQLException e) {
-			requests = null;
-		} finally {
-			DBManager.closeResultSet(result);
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return requests;
-	}
-	
-	public static int removeAdminRequest(Connection conn, String board, String username) {
-		int status = 0;
-		String query = "DELETE FROM main.pendingadmins WHERE board = ? AND username = ?";
-		PreparedStatement pstmt = null;
-		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, board);
-			pstmt.setString(2, username);
-			status = pstmt.executeUpdate();
-		} catch (SQLException e) {
-			status = 0;
-		} finally {
-			DBManager.closePreparedStatement(pstmt);
-		}
-		return status;
-	}
-	
 	public static int addAdminToBoard(Connection conn, String board, String username) {
 		int status = 0;
 		String query = "INSERT INTO main.boardadmins (bname, username) " +
 				"VALUES (?, ?)";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, board);
+			pstmt.setString(2, username);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
+	}
+	
+	public static int removeAdminFromBoard(Connection conn, String board, String username) {
+		int status = 0;
+		String query = "DELETE FROM main.boardadmins WHERE bname = ? AND username = ?";
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = conn.prepareStatement(query);
