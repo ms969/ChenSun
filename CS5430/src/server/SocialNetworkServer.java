@@ -47,6 +47,11 @@ public class SocialNetworkServer {
 		
 		ServerSocket serverSocket = initializeSocket();
 		
+		/*Starts a thread for the DBA to input commands*/
+		SocialNetworkDBAThread thread = new SocialNetworkDBAThread();
+		Thread t = new Thread(thread);
+		t.start();
+		
 		
 		while (true) {
 			acceptClient(serverSocket);
