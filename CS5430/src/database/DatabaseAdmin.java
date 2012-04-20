@@ -851,9 +851,10 @@ public class DatabaseAdmin {
 		return admins;
 	}
 	
-	public static int addAdminRequest(Connection conn, String board, String username) {
+	public static int addAdminToBoard(Connection conn, String board, String username) {
 		int status = 0;
-		String query = "INSERT INTO main.pendingadmins VALUE (?, ?)";
+		String query = "INSERT INTO main.boardadmins (bname, username) " +
+				"VALUES (?, ?)";
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = conn.prepareStatement(query);
@@ -868,26 +869,21 @@ public class DatabaseAdmin {
 		return status;
 	}
 	
-	public static int getAdminReqeustCount(Connection conn, String username) {
-		int count = -1;
-		String query = "SELECT count(username) as c FROM main.pendingadmins " +
-				"WHERE bname IN (SELECT bname FROM main.admins WHERE username = ?)";
+	public static int removeAdminFromBoard(Connection conn, String board, String username) {
+		int status = 0;
+		String query = "DELETE FROM main.boardadmins WHERE bname = ? AND username = ?";
 		PreparedStatement pstmt = null;
-		ResultSet result = null;
 		try {
 			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, username);
-			result = pstmt.executeQuery();
-			if (result.next()) {
-				count = result.getInt("c");
-			}
+			pstmt.setString(1, board);
+			pstmt.setString(2, username);
+			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
-			count = -1;
+			status = 0;
 		} finally {
-			DBManager.closeResultSet(result);
 			DBManager.closePreparedStatement(pstmt);
 		}
-		return count;
+		return status;
 	}
 }
 

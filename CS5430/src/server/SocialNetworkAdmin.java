@@ -37,16 +37,6 @@ public class SocialNetworkAdmin {
 		return command;
 	}
 	
-	public static String adminReqNotification(Connection conn, String username) {
-		String command = "";
-		int requestCount = DatabaseAdmin.getAdminReqeustCount(conn, username);
-		if (requestCount > 0) {
-			command = "print Pending Board Admin Requests (" + 
-					requestCount + ") [To view: adminRequests];";
-		}
-		return command;
-	}
-	
 	public static String insertRegRequest(Connection conn, String newUser, int aid, String pwdStore) {
 		String command = "";
 		int success = DatabaseAdmin.insertRegRequest(conn, newUser, aid, pwdStore);
@@ -362,7 +352,6 @@ public class SocialNetworkAdmin {
 		command += friendReqNotification(conn, username);
 		if (userInfo[3].equals("sa") || userInfo[3].equals("admin")) {
 			command += regReqNotification(conn, username);
-			command += adminReqNotification(conn, username);
 		}
 		command += Utils.getHR(80) + "print ;";
 		return command;
@@ -501,23 +490,47 @@ public class SocialNetworkAdmin {
 		for (String a: addables) {
 			command += "print " + a + ";";
 		}
-		command += "print Type the username of the admin you want to add:;" +
-				"askForInput;";
+		command += "print To add admins, type their usernames separated " +
+				"by comma: '<user1>, <user2>';askForInput;";
 		return command;
 	}
 	
-	public static String addAdminRequest(Connection conn, String board, String username) {
-		String success = "print Request for " + username + " to be added to " + board +
-				"has been processed.;print Once all the board admins approve, he/she " +
-				"will be added to the board.;";
-		String error = "print Database Error while processing add admin request for " + 
-				username + ". Please try again or contact a System Admin.;";
-		int status = DatabaseAdmin.addAdminRequest(conn, board, username);
+	public static String addAdmin(Connection conn, String board, String username) {
+		String success = "print " + username + " has been added as an admin to " +
+				board + ".;";
+		String error = "print Database Error while adding " + username + " to " + board +
+				"as admin. Please try again or contact the System Admin.;";
+		int status = DatabaseAdmin.addAdminToBoard(conn, board, username);
 		if (status == 1) {
 			return success;
 		} else {
 			return error;
 		}
+	}
+	
+	public static String removeAdmin(Connection conn, String board, String username) {
+		String success = "print " + username + " has been removed from " + board + ".;";
+		String error = "print Database Error while removing " + username + " from " + 
+				board + ";";
+		int status = DatabaseAdmin.removeAdminFromBoard(conn, board, username);
+		if (status == 1) {
+			return success;
+		} else {
+			return error;
+		}
+	}
+
+	public static String displayRemovableAdmins(List<String> removables,
+			String user) {
+		String command = "print Admins of this board:;";
+		for (String r: removables) {
+			if (!r.equals(user)) {
+				command += "print " + r + ";";
+			}
+		}
+		command += "print To remove admins, type their usernames separated by comma: " +
+				"'<user1>, <user2>';askForInput;";
+		return command;
 	}
 }
 
