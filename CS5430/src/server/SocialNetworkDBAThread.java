@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
+import java.util.Arrays;
 //import java.util.Arrays;
 
 import crypto.Hash;
@@ -75,7 +76,7 @@ public class SocialNetworkDBAThread implements Runnable{
 				System.out.println(">> ");
 				keyboard.read(charbuf2);
 				
-				if (pwdsMatch(charbuf, charbuf2)) {
+				if (Arrays.equals(charbuf, charbuf2)) {
 					//generates a pwhash for storage into the database.
 					pwhash = Hash.createPwdHashStore(charbuf);
 					//TODO clear both buffers
@@ -96,18 +97,5 @@ public class SocialNetworkDBAThread implements Runnable{
 		catch (IOException e) {
 			System.out.println("Error getting your input! Exiting command...");
 		}
-	}
-	
-	//util function stolen from ClientProcessor.
-	//Checks that two buffers are equal...
-	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
-		if (pwdChar1.length != pwdChar2.length) {
-			return false;
-		}
-		for (int i = 0; i < pwdChar1.length; i++) {
-			if (pwdChar1[i] != pwdChar2[i])
-				return false;
-		}
-		return true;
 	}
 }
