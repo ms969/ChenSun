@@ -6,7 +6,7 @@ goto                    Command for moving between boards, regions,
                         board1, goto board1 will take you into 
                         board1.
 
-refresh                 Refreshes the current page.    
+refresh                 Refreshes the current page.
 
 createBoard             Creates a posting board.
 
@@ -19,6 +19,10 @@ post                    Creates a post in the freeforall board or
 
 reply                   Creates a reply in a post.
 
+participant             Displays a list of the participants in the 
+                        current region. Must be in a region to 
+                        invoke this command.
+
 showFriends             Displays your friend list.
 
 addFriend               Displays a list of users that you could 
@@ -29,8 +33,39 @@ friendRequests          View friend requests.
 
 logout                  Signs out the current user.
 -------------------------------------------------------------------
-regRequests             Admin and SA only command. View 
-                        registration requests for your group.
+Admin only commands:
+-------------------------------------------------------------------
+regRequests             View registration requests for your group.
+                        
+addParticipants         Adds participants to the current region,
+                        or a freeforall post. You must be in a 
+                        region or freeforall post to invoke this 
+                        command, and you must be the manager of 
+                        the region or owner of the freeforall post.
+                        
+removeParticipants      Displays a list of participants that you 
+                        can remove. You must be in a region or a
+                        freeforall post to invoke this command, 
+                        and you must be the manager of the region 
+                        or owner of the freeforall post.
+                        
+editParticipant         Edits the privilege level of a participant 
+                        in the current region. You must be in a 
+                        region or a freeforall post to invoke this 
+                        command, and you must be the manager of 
+                        the region or owner of the freeforall post.
+                        
+addAdmins               Adds admin to the current board. You must 
+                        be within a board to invoke this command,
+                        and you must be the manager of the board.
+                        Freeforall boards don't have admins.
+                        
+removeAdmins            Remove admins from the current board. You
+                        must be within a board to invoke this 
+                        command, and you must be the manager of the
+                        board. Freeforall boards don't have admins.
+-------------------------------------------------------------------
+SA only commands:
 -------------------------------------------------------------------
 changeUserRole          SA only command. Change an user's role.
 

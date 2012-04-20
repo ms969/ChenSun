@@ -885,6 +885,50 @@ public class DatabaseAdmin {
 		}
 		return status;
 	}
+	
+	public static List<String[]> getBoardList(Connection conn) {
+		List<String[]> boards = new ArrayList<String[]>();
+		String query = "SELECT * FROM main.boards";
+		Statement stmt = null;
+		ResultSet result = null;
+		try {
+			stmt = conn.createStatement();
+			result = stmt.executeQuery(query);
+			while (result.next()) {
+				String[] boardInfo = {result.getString("bname"), 
+						result.getString("managedby")};
+				boards.add(boardInfo);
+			}
+		} catch (SQLException e) {
+			boards = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closeStatement(stmt);
+		}
+		return boards;
+	}
+	
+	// XXX working here
+	public static List<String[]> ownsRegions(Connection conn, String username) {
+		List<String[]> regions = new ArrayList<String[]>();
+		List<String[]> boards = getBoardList(conn);
+		if (boards == null) {
+			return null;
+		}
+		for (String[] board: boards) {
+			updateBoardManager(conn, board[0], board[1], username);
+			String query = "UPDATE board.region SET managedby = ? WHERE managedby = ?";
+			
+		}
+		return regions;
+	}
+	
+	private static int updateBoardManager(Connection conn, String board, String bManager, 
+			String username) {
+		int status = 0;
+		
+		return status;
+	}
 }
 
 

@@ -54,7 +54,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^regRequests$")) {
+		if (inputLine.matches("^regRequests$") ||
+				inputLine.matches("^regRequest$")) {
 			if (user != null) {
 				processRegRequests();
 			} else {
@@ -118,7 +119,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^friendRequests$")) {
+		if (inputLine.matches("^friendRequests$") ||
+				inputLine.matches("^friendRequest$")) {
 			if (user != null) {
 				processFriendRequests();
 			} else {
@@ -126,7 +128,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^deleteUser$")) {
+		if (inputLine.matches("^deleteUser$") ||
+				inputLine.matches("^deleteUsers$")) {
 			if (user != null) {
 				processDeleteUser();
 			} else {
@@ -134,7 +137,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^showFriends$")) {
+		if (inputLine.matches("^showFriends$") ||
+				inputLine.matches("^showFriend$")) {
 			if (user != null) {
 				processShowFriends();
 			} else {
@@ -175,7 +179,8 @@ public class ServerInputProcessor {
 			return;
 		}
 		
-		if (inputLine.matches("^participants$")) {
+		if (inputLine.matches("^participants$") ||
+				inputLine.matches("^participant$")) {
 			if (user != null) {
 				processParticipants();
 			} else {
@@ -183,7 +188,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^addParticipants$")) {
+		if (inputLine.matches("^addParticipants$") || 
+				inputLine.matches("^addParticipant$")) {
 			if (user != null) {
 				processAddParticipants();
 			} else {
@@ -191,7 +197,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^removeParticipants$")) {
+		if (inputLine.matches("^removeParticipants$") ||
+				inputLine.matches("^removeParticipant$")) {
 			if (user != null) {
 				processRemoveParticipants();
 			} else {
@@ -199,7 +206,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^editParticipants$")) {
+		if (inputLine.matches("^editParticipants$") ||
+				inputLine.matches("^editParticipant$")) {
 			if (user != null) {
 				processEditParticipants();
 			} else {
@@ -207,7 +215,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^addAdmins$")) {
+		if (inputLine.matches("^addAdmins$") ||
+				inputLine.matches("^addAdmin$")) {
 			if (user != null) {
 				processAddAdmins();
 			} else {
@@ -215,7 +224,8 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		if (inputLine.matches("^removeAdmins$")) {
+		if (inputLine.matches("^removeAdmins$") ||
+				inputLine.matches("^removeAdmin$")) {
 			if (user != null) {
 				processRemoveAdmins();
 			} else {
