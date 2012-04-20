@@ -13,6 +13,20 @@ public class Hash {
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	public static final int SALT_STRING_LENGTH = 24;
 	public static final int SALT_BYTE_LENGTH = 16;
+	
+	public static byte[] generateChecksum(byte[] charbuf) {
+		try {
+			// get a message digest object using the MD5 algorithm
+			MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+			// calculate the digest and print it out
+			messageDigest.update(charbuf);
+			return messageDigest.digest();
+		} catch (NoSuchAlgorithmException e) {
+			if (DEBUG)
+				e.printStackTrace(); //this shouldn't happen though.
+		}
+		return null;
+	}
 
 	public static String generateHash(byte[] pwd) {
 		try {

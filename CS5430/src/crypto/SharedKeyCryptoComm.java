@@ -1,8 +1,10 @@
 package crypto;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 
 import java.security.*;
+import java.util.Arrays;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -13,12 +15,14 @@ import javax.crypto.spec.IvParameterSpec;
  * Implements shared key communications between the server and the client
  * 
  * Sent message:
- * ivp_1 + {msg}k_CS
+ * checksum(ivp + encmsglen + actualmsg) + ivp + encmsglen + encmsg
  *
  */
 public class SharedKeyCryptoComm {
 	
 	public static String ALG = "Blowfish/CBC/PKCS5Padding";
+	
+	public static int MD5CHECKSUMLEN = (128/8); //in bytes
 	
 	private static SecureRandom createSecureRandom() {
 		SecureRandom sr = null;
@@ -35,15 +39,15 @@ public class SharedKeyCryptoComm {
 		sr.nextBytes(iv);
 		return iv;
 	}
-	
-	/** Reads an IV with the given size
+
+	/** Reads all possible data into buf.
 	 *  Returns false when there is an IOException
 	 * **/
-	private static boolean readIV(InputStream is, byte[] iv) {
+	private static boolean readIntoBuffer(InputStream is, byte[] buf) {
 		try {
-			int bytesRead = is.read(iv);
-			while (bytesRead != iv.length) {
-				bytesRead += is.read(iv, bytesRead, iv.length - bytesRead);
+			int bytesRead = is.read(buf);
+			while (bytesRead != buf.length) {
+				bytesRead += is.read(buf, bytesRead, buf.length - bytesRead);
 			}
 		}
 		catch (IOException ioe){
@@ -77,14 +81,30 @@ public class SharedKeyCryptoComm {
 				c.init(Cipher.ENCRYPT_MODE, sk, ivp);
 			}
 			catch (Exception e) {/*This cannot happen*/}
+
+			byte[] msgbytes = msg.getBytes("UTF8");
+			byte[] encmsg = null;
+			try {
+				encmsg = c.doFinal(msgbytes);
+			} catch (Exception e) { //exception should not happen...
+				e.printStackTrace();
+			}
+			byte[] encmsglen = ByteBuffer.allocate(4).putInt(encmsg.length).array();
+			
+			byte[] totalmsg = new byte[iv.length + encmsglen.length + msgbytes.length];
+			//iv, msglen, and msgbytes.
+			System.arraycopy(iv, 0, totalmsg, 0, iv.length);
+			System.arraycopy(encmsglen, 0, totalmsg, iv.length, encmsglen.length);
+			System.arraycopy(msgbytes, 0, totalmsg, iv.length + encmsglen.length, msgbytes.length);
+			
+			//get checksum
+			byte[] checksum = Hash.generateChecksum(totalmsg);
+
+			os.write(checksum); //128 bits
 			os.write(iv);
-			CipherOutputStream cos = new CipherOutputStream(new NonClosingCipherOutputStream(os), c);
-			PrintWriter pw = new PrintWriter(cos);
-			pw.println(msg);
-			pw.flush();
-			cos.flush();
-			pw.close();
-			cos.close();
+			os.write(encmsglen);
+			os.write(encmsg);
+			os.flush();
 		}
 		catch (IOException e) {
 			System.out.println("Error/Timeout sending the message: " + msg);
@@ -93,35 +113,69 @@ public class SharedKeyCryptoComm {
 		return true;
 	}
 	
+	/**
+	 * RETURNS NULL IF CHECKSUM CHECK FAILS!!!
+	 */
 	public static String receive(InputStream is, Cipher c, SecretKey sk) {
 		int blockSize = c.getBlockSize();
+		byte[] checksum = new byte[MD5CHECKSUMLEN]; //MD5
 		byte[] iv = new byte[blockSize];
-		
-		try {
-			//fetch iv
-			if (!readIV(is, iv)) {
-				System.out.println("Error/Timeout receiving the message.");
-				return null;
-			}
-			
-			IvParameterSpec ivp = new IvParameterSpec(iv);
-			try {
-				c.init(Cipher.DECRYPT_MODE, sk, ivp);
-			}
-			catch (Exception e) {/*cannot happen*/}
-			
+		byte[] size = new byte[4]; //int
 
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					new CipherInputStream(new NonClosingCipherInputStream(is),c)));
-			
-			//get msg
-			String msg = br.readLine();
-			br.close();
-			return msg;
-		}
-		catch (IOException ioe) {
-			System.out.println("Error/Timeout receiving the message.");
+		//first fetch the checksum
+		if (!readIntoBuffer(is, checksum)) {
+			System.out.println("Error/Timeout receiving the message. (checksum)");
 			return null;
 		}
+
+		//fetch iv
+		if (!readIntoBuffer(is, iv)) {
+			System.out.println("Error/Timeout receiving the message. (iv)");
+			return null;
+		}
+
+		//fetch size of enc msg
+		if (!readIntoBuffer(is, size)) {
+			System.out.println("Error/Timeout receiving the message. (encmsglen)");
+			return null;
+		}
+
+		int encmsglen = ByteBuffer.wrap(size).getInt();
+
+		byte[] encmsg = new byte[encmsglen];
+
+		//read the actual message in
+		if (!readIntoBuffer(is, encmsg)) {
+			System.out.println("Error/Timeout receiving the message. (encmsg)");
+			return null;
+		}
+		
+		IvParameterSpec ivp = new IvParameterSpec(iv);
+		try {
+			c.init(Cipher.DECRYPT_MODE, sk, ivp);
+		}
+		catch (Exception e) {/*cannot happen*/}
+
+		byte[] msgbytes = null;
+		String msg = null;
+		try {
+			msgbytes = c.doFinal(encmsg);
+			msg = new String(msgbytes, "UTF8");
+		} catch (Exception e) {
+			e.printStackTrace(); //this should not happen
+		} 
+		
+		//generate checksum of received msg.
+		byte[] wholeMessage = new byte[iv.length + size.length + msgbytes.length];
+		System.arraycopy(iv, 0, wholeMessage, 0, iv.length);
+		System.arraycopy(encmsglen, 0, wholeMessage, iv.length, size.length);
+		System.arraycopy(msgbytes, 0, wholeMessage, iv.length + size.length, msgbytes.length);
+		
+		//compare the checksum received to the generated checksum.
+		if (Arrays.equals(checksum, Hash.generateChecksum(wholeMessage))) {
+			System.out.println("Generated checksum for message does not equal the received checksum!");
+			return msg;
+		}
+		return null; //returns null on checksum mismatch
 	}
 }
