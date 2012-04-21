@@ -56,7 +56,7 @@ public class PublicKeyCryptoClient {
 	 * is and os are the inputstream and output stream of the Socket
 	 * used to connect to the server
 	 */
-	public static SecretKey clientSideAuth(InputStream is, OutputStream os, PublicKey serverPubK) {
+	public static KeyNonceBundle clientSideAuth(InputStream is, OutputStream os, PublicKey serverPubK) {
 		
 		/*Generate a symmetric session key. 
 		 * For Blowfish, the default is 128 bit length*/
@@ -177,8 +177,7 @@ public class PublicKeyCryptoClient {
 		byte[] recvnonce = new byte[NONCE_LENGTH];
 		System.arraycopy(secondmsg, 0, recvnonce, 0, NONCE_LENGTH);
 		BigInteger firstNonceNum = new BigInteger(nonce);
-		firstNonceNum = firstNonceNum.add(BigInteger.ONE);
-		byte[] firstNonceNumPlusOne = firstNonceNum.toByteArray();
+		byte[] firstNonceNumPlusOne = firstNonceNum.add(BigInteger.ONE).toByteArray();
 		byte[] firstNonceNumPlusOneCorrectLen = new byte[NONCE_LENGTH];
 		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		if (!Arrays.equals(recvnonce, firstNonceNumPlusOneCorrectLen)) {
@@ -195,11 +194,10 @@ public class PublicKeyCryptoClient {
 			if (DEBUG) {
 				System.out.println("Second nonce received: " + secondNonceNum);
 			}
-			secondNonceNum = secondNonceNum.shiftLeft(1);
+			byte[] secondNonceTimesTwo = secondNonceNum.shiftLeft(1).toByteArray();
 			if (DEBUG) {
-				System.out.println("Second nonce * 2: " + secondNonceNum);
+				System.out.println("Second nonce * 2: " + secondNonceTimesTwo);
 			}
-			byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
 			byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
 			System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
 			byte[] thirdmsg = new byte[NONCE_LENGTH];
@@ -226,7 +224,8 @@ public class PublicKeyCryptoClient {
 			if (DEBUG) {
 				System.out.println("Success");
 			}
-			return key;
+			
+			return new KeyNonceBundle(key, firstNonceNum, secondNonceNum);
 		}
 	}
 	
