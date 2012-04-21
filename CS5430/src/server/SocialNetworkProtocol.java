@@ -30,23 +30,29 @@ public class SocialNetworkProtocol implements Runnable {
 
 	public void main() throws IOException {
 		KeyNonceBundle knb = PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
-		Cipher c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
-		// Getting client socket's input and output streams
-		
-		iprocessor = new ServerInputProcessor(clientSocket.getOutputStream(),
-				clientSocket.getInputStream(), c, knb.getSk());
-		
-		// request input
-		
-		
-		String inputLine;
-		while ((inputLine = CommManager.receive(clientSocket.getInputStream(), c, knb.getSk())) != null) {
-			System.out.println(inputLine);
-			iprocessor.processCommand(inputLine);
+		if (knb == null) {
+			System.out.println("Authentication Protocol Failed - Some client was unresponsive / malicious");
+			//thread must exit.
 		}
-
-		// closing the connection
-		clientSocket.close();
+		else {
+			Cipher c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
+			// Getting client socket's input and output streams
+			
+			iprocessor = new ServerInputProcessor(clientSocket.getOutputStream(),
+					clientSocket.getInputStream(), c, knb.getSk(), knb.getSendNonce(), knb.getRecvNonce());
+			
+			// request input
+			
+			
+			String inputLine;
+			while ((inputLine = CommManager.receive(clientSocket.getInputStream(), c, knb.getSk(), knb.getRecvNonce())) != null) {
+				System.out.println(inputLine);
+				iprocessor.processCommand(inputLine);
+			}
+	
+			// closing the connection
+			clientSocket.close();
+		}
 	}
 
 	public void run(){

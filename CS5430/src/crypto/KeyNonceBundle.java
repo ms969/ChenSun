@@ -9,8 +9,8 @@ import javax.crypto.SecretKey;
 public class KeyNonceBundle {
 	
 	private SecretKey sk;
-	public BigInteger sendNonce = null;
-	public BigInteger recvNonce = null;
+	private BigInteger sendNonce = null;
+	private BigInteger recvNonce = null;
 	
 	public KeyNonceBundle(SecretKey sk, BigInteger sendNonce, BigInteger recvNonce) {
 		this.sk = sk;

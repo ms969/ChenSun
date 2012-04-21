@@ -22,8 +22,8 @@ public class ClientGUI {
 		Socket kkSocket = null;
 		OutputStream serverOut = null;
 		InputStream serverIn = null;
-		SecretKey sk = null;
 		Cipher c = null;
+		KeyNonceBundle knb = null;
 
 		try {
 			kkSocket = new Socket(InetAddress.getByName(SERVER_HOST_NAME),
@@ -33,8 +33,7 @@ public class ClientGUI {
 			if (pubk == null) {
 				System.exit( 1 );
 			}
-			KeyNonceBundle knb = PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
-			sk = knb.getSk();
+			knb = PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
 			c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
 			
 			serverOut = kkSocket.getOutputStream();
@@ -47,11 +46,16 @@ public class ClientGUI {
 					+ SERVER_HOST_NAME);
 			System.exit(1);
 		}
+		if (knb == null) { //the protocol failed...
+			System.out.println("Authentication Protocol Failed - Server is unsafe to connect to!");
+			System.exit(1);
+		}
 		System.out.println("Connected to " + SERVER_HOST_NAME + ":"
 				+ SERVER_PORT);
 		
 		BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
-		ClientProcessor processor = new ClientProcessor(serverOut, serverIn, keyboard, c, sk);
+		ClientProcessor processor = new ClientProcessor(serverOut, serverIn, keyboard, c, 
+				knb.getSk(), knb.getSendNonce(), knb.getRecvNonce());
 		
 		// System welcome message
 		System.out.println("Welcome to the system.");

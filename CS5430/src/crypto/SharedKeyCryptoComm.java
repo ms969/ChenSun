@@ -1,6 +1,7 @@
 package crypto;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 import java.security.*;
@@ -70,7 +71,8 @@ public class SharedKeyCryptoComm {
 		return c;
 	}
 	
-	public static boolean send(byte[] msgbytes, OutputStream os, Cipher c, SecretKey sk) {
+	public static boolean send(byte[] msgbytes, OutputStream os, Cipher c, SecretKey sk, 
+			BigInteger sendNonce) {
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
@@ -115,10 +117,11 @@ public class SharedKeyCryptoComm {
 		return true;
 	}
 	
-	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
+	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk, 
+			BigInteger sendNonce) {
 		try {
 			byte[] msgbytes = msg.getBytes("UTF8"); //the exception won't happen
-			return send(msgbytes, os, c , sk);
+			return send(msgbytes, os, c , sk, sendNonce);
 		}
 		catch (Exception e) {/*Should not happen*/}
 		return false;
@@ -127,7 +130,8 @@ public class SharedKeyCryptoComm {
 	/**
 	 * RETURNS NULL IF CHECKSUM CHECK FAILS!!!
 	 */
-	public static byte[] receiveBytes(InputStream is, Cipher c, SecretKey sk) {
+	public static byte[] receiveBytes(InputStream is, Cipher c, SecretKey sk, 
+			BigInteger recvNonce) {
 		int blockSize = c.getBlockSize();
 		byte[] checksum = new byte[MD5CHECKSUMLEN]; //MD5
 		byte[] iv = new byte[blockSize];
@@ -191,9 +195,9 @@ public class SharedKeyCryptoComm {
 		return null; //returns null on checksum mismatch
 	}
 	
-	public static String receiveString(InputStream is, Cipher c, SecretKey sk) {
+	public static String receiveString(InputStream is, Cipher c, SecretKey sk, BigInteger recvNonce) {
 		try {
-			return new String(receiveBytes(is, c, sk), "UTF8");
+			return new String(receiveBytes(is, c, sk, recvNonce), "UTF8");
 		} catch (Exception e) {/*Should not happen*/}
 		return null;
 	}
