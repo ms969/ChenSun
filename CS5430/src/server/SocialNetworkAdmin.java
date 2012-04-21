@@ -44,7 +44,7 @@ public class SocialNetworkAdmin {
 			command = "print Registration request for " + newUser
 					+ " has been sent.;print Once an admin from your group "
 					+ "approves, you will be added to the system.;print ;";
-		} else if (success == -1) {
+		} else if (success == -2) {
 			command = "print User already pending registration approval. Try again with a different username.;print ;";
 		} else {
 			command = "print Registration failed due to database error. " +

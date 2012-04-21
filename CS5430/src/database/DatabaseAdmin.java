@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class DatabaseAdmin {
 	 * @return 1 if successfully added.
 	 */
 	public static int addUser(Connection conn, String username, String pwhash, int aid) {
-		int status = 0;
+		int status = -1;
 		String query = "INSERT INTO main.users (username, pwhash, aid, role) " +
 				"VALUE (?, ?, ?, 'member')";
 		PreparedStatement pstmt = null;
@@ -63,7 +64,7 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -71,7 +72,7 @@ public class DatabaseAdmin {
 	}
 	
 	public static int deleteUser(Connection conn, String username) {
-		int status = 0;
+		int status = -1;
 		String query = "DELETE FROM main.users WHERE username = ?";
 		PreparedStatement pstmt = null;
 		try {
@@ -80,7 +81,7 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -356,7 +357,7 @@ public class DatabaseAdmin {
 	 */
 	public static int addFriendsFromGroup(Connection conn, String username, int aid) {
 		System.out.println("In addFriendsFromGroup");
-		int status = 0;
+		int status = -1;
 		List<String> friends = getAllUsersOfGroup(conn, aid);
 		for (String f: friends) {
 			if (!f.equals(username)) {
@@ -440,7 +441,7 @@ public class DatabaseAdmin {
 	}
 
 	public static int deleteFriendRequest(Connection conn, String requester, String requestee) {
-		int status = 0;
+		int status = -1;
 		String query = "DELETE FROM main.friendrequests WHERE requester = ? AND requestee = ?";
 		PreparedStatement pstmt = null;
 		try {
@@ -450,7 +451,7 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -458,7 +459,7 @@ public class DatabaseAdmin {
 	}
 
 	public static int addFriend(Connection conn, String username1, String username2) {
-		int status = 0;
+		int status = -1;
 		String query = "INSERT INTO main.friends (username1, username2) VALUES (?, ?)";
 		PreparedStatement pstmt = null;
 		try {
@@ -477,7 +478,7 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -526,7 +527,7 @@ public class DatabaseAdmin {
 				+ "VALUE (?, ?, ?)";
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
-		int status = 0;
+		int status = -1;
 		try {
 			pstmt = conn.prepareStatement(query);
 			pstmt.setString(1, newUser);
@@ -535,9 +536,9 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
-				status = -1;
+				status = -2;
 			} else {
-				status = 0;
+				status = -1;
 			}
 		} finally {
 			DBManager.closeResultSet(result);
@@ -621,7 +622,7 @@ public class DatabaseAdmin {
 	 * @return 1 if successfully deleted.
 	 */
 	public static int deleteRegRequest(Connection conn, String username) {
-		int status = 0;
+		int status = -1;
 		String query = "DELETE FROM main.registrationrequests WHERE username = ?";
 		PreparedStatement pstmt = null;
 		try {
@@ -630,7 +631,7 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -638,7 +639,7 @@ public class DatabaseAdmin {
 	}
 	
 	public static int changeRole(Connection conn, String username, String role) {
-		int status = 0;
+		int status = -1;
 		String query = "UPDATE main.users SET role = ? WHERE username = ?";
 		PreparedStatement pstmt = null;
 		try {
@@ -648,7 +649,7 @@ public class DatabaseAdmin {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -763,7 +764,7 @@ public class DatabaseAdmin {
 	}
 	
 	public static int removeParticipant(Connection conn, String board, String region, String username) {
-		int status = 0;
+		int status = -1;
 		String query = "";
 		if (board.equals("freeforall")) {
 			query = "DELETE FROM freeforall.postprivileges WHERE pid = ? AND username = ?";
@@ -781,7 +782,7 @@ public class DatabaseAdmin {
 			pstmt.setString(2, username);
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -789,7 +790,7 @@ public class DatabaseAdmin {
 	}
 
 	public static int editParticipant(Connection conn, String board, String region, String username, String priv) {
-		int status = 0;
+		int status = -1;
 		String query = "";
 		if (board.equals("freeforall")) {
 			query = "UPDATE freeforall.postprivileges SET privilege = ? " +
@@ -810,7 +811,7 @@ public class DatabaseAdmin {
 			}
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -852,7 +853,7 @@ public class DatabaseAdmin {
 	}
 	
 	public static int addAdminToBoard(Connection conn, String board, String username) {
-		int status = 0;
+		int status = -1;
 		String query = "INSERT INTO main.boardadmins (bname, username) " +
 				"VALUES (?, ?)";
 		PreparedStatement pstmt = null;
@@ -862,7 +863,7 @@ public class DatabaseAdmin {
 			pstmt.setString(2, username);
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -870,7 +871,7 @@ public class DatabaseAdmin {
 	}
 	
 	public static int removeAdminFromBoard(Connection conn, String board, String username) {
-		int status = 0;
+		int status = -1;
 		String query = "DELETE FROM main.boardadmins WHERE bname = ? AND username = ?";
 		PreparedStatement pstmt = null;
 		try {
@@ -879,7 +880,7 @@ public class DatabaseAdmin {
 			pstmt.setString(2, username);
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
-			status = 0;
+			status = -1;
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -909,26 +910,36 @@ public class DatabaseAdmin {
 	}
 	
 	// XXX working here
-	public static List<String[]> ownsRegions(Connection conn, String username) {
-		List<String[]> regions = new ArrayList<String[]>();
+	public static int replaceRegionManager(Connection conn, String username) {
+		int status = 1;
 		List<String[]> boards = getBoardList(conn);
 		if (boards == null) {
-			return null;
+			return -1;
 		}
-		for (String[] board: boards) {
-			updateBoardManager(conn, board[0], board[1], username);
-			String query = "UPDATE board.region SET managedby = ? WHERE managedby = ?";
+		Statement stmt = null;
+		try {
+			stmt = conn.createStatement();
+			// board[0]: bname, board[1]: managedby
+			for (String[] board: boards) {
+				String query = "UPDATE " + board[0] + ".region SET managedby = '" + 
+						board[1] + "' WHERE managedby = '" + username + "'";
+				stmt.addBatch(query);
+			}
+			int[] statuses = stmt.executeBatch();
+			for (int s: statuses) {
+				if (s == Statement.EXECUTE_FAILED) {
+					status = -1;
+					break;
+				}
+			}
 			
+		} catch (SQLException e) {
+			status = -1;
 		}
-		return regions;
-	}
-	
-	private static int updateBoardManager(Connection conn, String board, String bManager, 
-			String username) {
-		int status = 0;
-		
+
 		return status;
 	}
+	
 }
 
 
