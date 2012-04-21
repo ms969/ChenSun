@@ -3,6 +3,7 @@ package server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +30,9 @@ public class ServerInputProcessor {
 	private Cipher c;
 	private SecretKey sk;
 	
+	private BigInteger sendNonce;
+	private BigInteger recvNonce;
+	
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	public static final String INVALID = "print Invalid command.;";
 	public static final String CANCEL = "print Cancelled.;";
@@ -37,12 +41,23 @@ public class ServerInputProcessor {
 	private String user = null;
 	private String[] currentPath; // 0 = board/"freeforall"; 1 = region/FFApost; 2 = post/null
 
+	public void sendWithNonce(String msg) {
+		CommManager.send(msg, os, c, sk, sendNonce);
+		this.sendNonce = this.sendNonce.add(BigInteger.ONE);
+	}
+	
+	public String recvWithNonce() {
+		String msg = CommManager.receive(is, c, sk, recvNonce);
+		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
+		return msg;
+	}
+	
 	public void processCommand(String inputLine) throws IOException {
 		if (inputLine.matches("^login .+")) {
 			if (user == null) {
 				processLogin(inputLine);
 			} else {
-				CommManager.send("print Already logged in.;" , os, c, sk);
+				sendWithNonce("print Already logged in.;" );
 			}
 			return;
 		}
@@ -50,7 +65,7 @@ public class ServerInputProcessor {
 			if (user == null) {
 				processRegistration();
 			} else {
-				CommManager.send("print Cannot register while logged in.;" , os, c, sk);
+				sendWithNonce("print Cannot register while logged in.;" );
 			}
 			return;
 		}
@@ -59,7 +74,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processRegRequests();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -67,7 +82,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processAddFriend(inputLine);
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -75,7 +90,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processCreateBoard(inputLine);
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -83,7 +98,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processRefresh();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -91,7 +106,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processGoto(inputLine);
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -99,7 +114,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processCreateRegion(inputLine);
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -107,7 +122,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processPost();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -115,7 +130,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processReply();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -124,7 +139,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processFriendRequests();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -133,7 +148,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processDeleteUser();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -142,7 +157,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processShowFriends();
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
@@ -150,7 +165,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processChangeUserRole();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -158,7 +173,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processTransferSA();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
@@ -166,15 +181,15 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processLogout();
 			} else {
-				CommManager.send(INVALID , os, c, sk);
+				sendWithNonce(INVALID );
 			}
 			return;
 		}
 		if (inputLine.matches("^help$")) {
 			if (user != null) {
-				CommManager.send("help", os, c, sk);
+				sendWithNonce("help");
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
@@ -184,7 +199,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processParticipants();
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
@@ -193,7 +208,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processAddParticipants();
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
@@ -202,7 +217,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processRemoveParticipants();
 			} else {
-				CommManager.send(INVALID, os, c, sk);	
+				sendWithNonce(INVALID);	
 			}
 			return;
 		}
@@ -211,7 +226,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processEditParticipants();
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
@@ -220,7 +235,7 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processAddAdmins();
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
@@ -229,16 +244,16 @@ public class ServerInputProcessor {
 			if (user != null) {
 				processRemoveAdmins();
 			} else {
-				CommManager.send(INVALID, os, c, sk);
+				sendWithNonce(INVALID);
 			}
 			return;
 		}
 		 
-		CommManager.send(INVALID+HELP, os, c, sk);
+		sendWithNonce(INVALID+HELP);
 	}
 
 	public ServerInputProcessor(OutputStream os, InputStream is, 
-			Cipher c, SecretKey sk) {
+			Cipher c, SecretKey sk, BigInteger sendNonce, BigInteger recvNonce) {
 		this.os = os;
 		this.is = is;
 		this.c = c;
@@ -247,6 +262,8 @@ public class ServerInputProcessor {
 		for (int i = 0; i < currentPath.length; i++) {
 			currentPath[i] = null;
 		}
+		this.sendNonce = sendNonce;
+		this.recvNonce = recvNonce;
 	}
 
 	private void processLogin(String inputLine) {
@@ -270,8 +287,8 @@ public class ServerInputProcessor {
 		}
 		// ask for password
 		command += "print Input password:;getPassword";
-		CommManager.send(command, os, c, sk);
-		String enteredPwdHash = CommManager.receive(is, c, sk);
+		sendWithNonce(command);
+		String enteredPwdHash = recvWithNonce();
 		
 		// check password
 		if (userExist) {
@@ -284,26 +301,26 @@ public class ServerInputProcessor {
 			command = "setLoggedIn true;" + SocialNetworkAdmin.printUserInfo(conn, username);
 
 			// printing out boards
-			CommManager.send(command + SocialNetworkNavigation.printPath(currentPath)
-					+ SocialNetworkBoards.viewBoards(user), os, c, sk);
+			sendWithNonce(command + SocialNetworkNavigation.printPath(currentPath)
+					+ SocialNetworkBoards.viewBoards(user));
 		} else {
-			CommManager.send("print username does not exist or invalid password.", os, c, sk);
+			sendWithNonce("print username does not exist or invalid password.");
 		}
 		DBManager.closeConnection(conn);
 	}
 
 	private void processRegistration(){
 		String newUser = "";
-		CommManager.send("print Choose a username:;askForInput;", os, c, sk);
+		sendWithNonce("print Choose a username:;askForInput;");
 
 		boolean invalid = true;
 		Connection conn = DBManager.getConnection();
 
 		// check if username already exist
 		while (invalid) {
-			newUser = CommManager.receive(is, c, sk);
+			newUser = recvWithNonce();
 			if (newUser.equals("cancel")) {
-				CommManager.send(CANCEL, os, c, sk);
+				sendWithNonce(CANCEL);
 				return;
 			}
 			String[] userInfo = DatabaseAdmin.getUserInfo(conn, newUser);
@@ -320,7 +337,7 @@ public class ServerInputProcessor {
 				command = "print Invalid username format. Please choose another one.;" +
 						"askForInput;";
 			}
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		}
 
 		// username isn't already in the DB
@@ -334,11 +351,11 @@ public class ServerInputProcessor {
 		// check if chosen group exist
 		while (!groupExist) {
 			command += SocialNetworkAdmin.displayGroupList(conn, groupList, newUser);
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 			
-			groupNum = CommManager.receive(is, c, sk);
+			groupNum = recvWithNonce();
 			if (groupNum.equals("cancel")) {
-				CommManager.send(CANCEL, os, c, sk);
+				sendWithNonce(CANCEL);
 				return;
 			}
 			
@@ -355,11 +372,10 @@ public class ServerInputProcessor {
 		}
 		
 		// create password
-		CommManager.send("createPassword", os, c, sk);
-		String pwdStore = CommManager.receive(is, c, sk);
+		sendWithNonce("createPassword");
+		String pwdStore = recvWithNonce();
 		
-		CommManager.send(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore), 
-				os, c, sk);
+		sendWithNonce(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore));
 		DBManager.closeConnection(conn);
 	}
 
@@ -369,19 +385,19 @@ public class ServerInputProcessor {
 		// makes sure user is an admin
 		if (currentUser[3].equals("admin") || currentUser[3].equals("sa")) {
 			String command = SocialNetworkAdmin.regRequests(conn, user);
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 			if (command.endsWith("askForInput;")) {
-				regApproval(conn, CommManager.receive(is, c, sk));
+				regApproval(conn, recvWithNonce());
 			}
 		} else {
-			CommManager.send(INVALID+HELP, os, c, sk);
+			sendWithNonce(INVALID+HELP);
 		}
 		DBManager.closeConnection(conn);
 	}
 
 	private void regApproval(Connection conn, String input) {
 		if (input.equals("cancel")) {
-			CommManager.send(CANCEL, os, c, sk);
+			sendWithNonce(CANCEL);
 			return;
 		}
 		String[] currentUser = DatabaseAdmin.getUserInfo(conn, user);
@@ -395,7 +411,7 @@ public class ServerInputProcessor {
 				for (String u: approvedUsers) {
 					command += SocialNetworkAdmin.regApprove(conn, u);
 				}
-				CommManager.send(command, os, c, sk);
+				sendWithNonce(command);
 				return;
 			}
 			if (input.matches("^remove.+")) {
@@ -405,11 +421,11 @@ public class ServerInputProcessor {
 				for (String u: deletingUsers) {
 					command += SocialNetworkAdmin.regRemove(conn, u);
 				}
-				CommManager.send(command, os, c, sk);
+				sendWithNonce(command);
 				return;
 			}
 		} else {
-			CommManager.send(INVALID+HELP, os, c, sk);
+			sendWithNonce(INVALID+HELP);
 		}
 	}
 
@@ -432,11 +448,11 @@ public class ServerInputProcessor {
 			}
 			command += SocialNetworkAdmin.displayFriendableUsers(
 					conn, prefix, friendableUsers);
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 
-			toFriend = CommManager.receive(is, c, sk);
+			toFriend = recvWithNonce();
 			if (toFriend.equals("cancel")) {
-				CommManager.send(CANCEL, os, c, sk);
+				sendWithNonce(CANCEL);
 				return;
 			}
 			for (String[] userInfo : friendableUsers) {
@@ -457,9 +473,9 @@ public class ServerInputProcessor {
 
 	private void addFriend(Connection conn, String username) {
 		// username exists in the system.
-		CommManager.send("print Are you sure you want to add " + username
-				+ " as a friend? (y/n);askForInput", os, c, sk);
-		String input = CommManager.receive(is, c, sk);
+		sendWithNonce("print Are you sure you want to add " + username
+				+ " as a friend? (y/n);askForInput");
+		String input = recvWithNonce();
 		String command = "";
 		if (input.equals("y")) {
 			command = SocialNetworkAdmin.insertFriendRequest(conn, username, user);
@@ -468,15 +484,15 @@ public class ServerInputProcessor {
 		} else {
 			command = INVALID + CANCEL;
 		}
-		CommManager.send(command, os, c, sk);
+		sendWithNonce(command);
 	}
 
 	private void processFriendRequests() {
 		Connection conn = DBManager.getConnection();
 		String command = SocialNetworkAdmin.friendRequests(conn, user);
-		CommManager.send(command, os, c, sk);
+		sendWithNonce(command);
 		if (command.endsWith("askForInput;")) {
-			friendApproval(conn, CommManager.receive(is, c, sk));
+			friendApproval(conn, recvWithNonce());
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -502,7 +518,7 @@ public class ServerInputProcessor {
 		} else {
 			command = INVALID + CANCEL;
 		}
-		CommManager.send(command, os, c, sk);
+		sendWithNonce(command);
 	}
 
 	private void processDeleteUser() {
@@ -520,11 +536,11 @@ public class ServerInputProcessor {
 			
 			while (!userDeletable) {
 				command += SocialNetworkAdmin.displayDeletableUsers(deletableUsers);
-				CommManager.send(command, os, c, sk);
+				sendWithNonce(command);
 
-				toDelete = CommManager.receive(is, c, sk);
+				toDelete = recvWithNonce();
 				if (toDelete.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				for (String[] user: deletableUsers) {
@@ -541,17 +557,16 @@ public class ServerInputProcessor {
 			// toDelete is deletable
 			deleteUser(conn, toDelete);
 		} else {
-			CommManager.send(INVALID + HELP, os, c, sk);
+			sendWithNonce(INVALID + HELP);
 		}
 		DBManager.closeConnection(conn);
 	}
 
 	private void deleteUser(Connection conn, String username) {
 		// username is a deletable user
-		CommManager.send("print User deletions cannot be undone.;"
-				+ "print Are you sure you want to delete this user? (y/n);askForInput", 
-				os, c, sk);
-		String input = CommManager.receive(is, c, sk);
+		sendWithNonce("print User deletions cannot be undone.;"
+				+ "print Are you sure you want to delete this user? (y/n);askForInput");
+		String input = recvWithNonce();
 		String command;
 		if (input.equals("y")) {
 			command = SocialNetworkAdmin.deleteUser(conn, username);
@@ -560,13 +575,13 @@ public class ServerInputProcessor {
 		} else {
 			command = INVALID+CANCEL;
 		}
-		CommManager.send(command, os, c, sk);
+		sendWithNonce(command);
 	}
 
 	private void processShowFriends() {
 		Connection conn = DBManager.getConnection();
 		String command = SocialNetworkAdmin.showFriends(conn, user);
-		CommManager.send(command, os, c, sk);
+		sendWithNonce(command);
 		DBManager.closeConnection(conn);
 	}
 
@@ -585,11 +600,11 @@ public class ServerInputProcessor {
 	
 			while (!userChangeable) {
 				command += SocialNetworkAdmin.displayRoleChange(changeableUsers);
-				CommManager.send(command, os, c, sk);
+				sendWithNonce(command);
 	
-				toChange = CommManager.receive(is, c, sk);
+				toChange = recvWithNonce();
 				if (toChange.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				for (String[] u : changeableUsers) {
@@ -610,9 +625,9 @@ public class ServerInputProcessor {
 	
 			// toChange is changeable
 			command = SocialNetworkAdmin.changeRole(conn, toChange, role);
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		} else {
-			CommManager.send(INVALID + HELP, os, c, sk);
+			sendWithNonce(INVALID + HELP);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -631,11 +646,11 @@ public class ServerInputProcessor {
 
 			while (!transferableUser) {
 				command += SocialNetworkAdmin.displaySATransferableUsers(groupAdmins);
-				CommManager.send(command, os, c, sk);
+				sendWithNonce(command);
 
-				toChange = CommManager.receive(is, c, sk);
+				toChange = recvWithNonce();
 				if (toChange.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				if (groupAdmins.contains(toChange)) {
@@ -648,9 +663,9 @@ public class ServerInputProcessor {
 
 			// toChange is an admin that can have SA transferred to
 			command = SocialNetworkAdmin.transferSA(conn, user, toChange);
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		} else {
-			CommManager.send(INVALID + HELP, os, c, sk);
+			sendWithNonce(INVALID + HELP);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -660,7 +675,7 @@ public class ServerInputProcessor {
 		for (int i = 0; i < currentPath.length; i++) {
 			currentPath[i] = null;
 		}
-		CommManager.send("print Logged out.;setLoggedIn false", os, c, sk);
+		sendWithNonce("print Logged out.;setLoggedIn false");
 	}
 
 	private void processParticipants() {
@@ -681,7 +696,7 @@ public class ServerInputProcessor {
 			}
 		}
 		
-		CommManager.send(command, os, c, sk);
+		sendWithNonce(command);
 		DBManager.closeConnection(conn);
 	}
 
@@ -689,7 +704,7 @@ public class ServerInputProcessor {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		} else {
 			String board = currentPath[0];
 			String region = currentPath[1];
@@ -704,11 +719,11 @@ public class ServerInputProcessor {
 			boolean validParticip = false;
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayAddableParticip(addables, board);
-				CommManager.send(command, os, c, sk);
-				String input = CommManager.receive(is, c, sk);
+				sendWithNonce(command);
+				String input = recvWithNonce();
 
 				if (input.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				
@@ -741,7 +756,7 @@ public class ServerInputProcessor {
 				command += SocialNetworkRegions.addParticipant(conn, board, region, 
 						u, priv, user);
 			}
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -784,7 +799,7 @@ public class ServerInputProcessor {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		} else {
 			String board = currentPath[0];
 			String region = currentPath[1];
@@ -798,11 +813,11 @@ public class ServerInputProcessor {
 			boolean validParticip = false;
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayRemoveParticip(conn, board, region);
-				CommManager.send(command, os, c, sk);
-				String input = CommManager.receive(is, c, sk);
+				sendWithNonce(command);
+				String input = recvWithNonce();
 
 				if (input.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				
@@ -819,7 +834,7 @@ public class ServerInputProcessor {
 			for (String u: usersToRemove) {
 				command += SocialNetworkAdmin.removeParticipant(conn, board, region, u);
 			}
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -828,7 +843,7 @@ public class ServerInputProcessor {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		} else {
 			String board = currentPath[0];
 			String region = currentPath[1];
@@ -843,11 +858,11 @@ public class ServerInputProcessor {
 			boolean validParticip = false;
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayEditableParticip(editables);
-				CommManager.send(command, os, c, sk);
-				toEdit = CommManager.receive(is, c, sk);
+				sendWithNonce(command);
+				toEdit = recvWithNonce();
 
 				if (toEdit.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				
@@ -871,7 +886,7 @@ public class ServerInputProcessor {
 			// Participant to edit is valid
 			command = SocialNetworkAdmin.editParticipant(
 					conn, board, region, toEdit, priv);
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -880,7 +895,7 @@ public class ServerInputProcessor {
 		Connection conn = DBManager.getConnection();
 		String error = adminEditError(conn);
 		if (!error.equals("")) {
-			CommManager.send(error, os, c, sk);
+			sendWithNonce(error);
 		} else {
 			String board = currentPath[0];
 			List<String> addables = DatabaseAdmin.getAddableAdmins(conn, board, user);
@@ -889,11 +904,11 @@ public class ServerInputProcessor {
 			List<String> usersToAdd = null;
 			while (!valid) {
 				command += SocialNetworkAdmin.displayAddableAdmins(addables);
-				CommManager.send(command, os, c, sk);
-				String input = CommManager.receive(is, c, sk);
+				sendWithNonce(command);
+				String input = recvWithNonce();
 				
 				if (input.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				
@@ -909,7 +924,7 @@ public class ServerInputProcessor {
 			for (String u: usersToAdd) {
 				command += SocialNetworkAdmin.addAdmin(conn, board, u);
 			}
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -918,7 +933,7 @@ public class ServerInputProcessor {
 		Connection conn = DBManager.getConnection();
 		String error = adminEditError(conn);
 		if (!error.equals("")) {
-			CommManager.send(error, os, c, sk);
+			sendWithNonce(error);
 		} else {
 			String board = currentPath[0];
 			List<String> removables = DatabaseAdmin.getAdminsOfBoard(conn, board);
@@ -927,11 +942,11 @@ public class ServerInputProcessor {
 			List<String> usersToRemove = null;
 			while (!valid) {
 				command += SocialNetworkAdmin.displayRemovableAdmins(removables, user);
-				CommManager.send(command, os, c, sk);
-				String input = CommManager.receive(is, c, sk);
+				sendWithNonce(command);
+				String input = recvWithNonce();
 				
 				if (input.equals("cancel")) {
-					CommManager.send(CANCEL, os, c, sk);
+					sendWithNonce(CANCEL);
 					return;
 				}
 				
@@ -947,7 +962,7 @@ public class ServerInputProcessor {
 			for (String u: usersToRemove) {
 				command += SocialNetworkAdmin.removeAdmin(conn, board, u);
 			}
-			CommManager.send(command, os, c, sk);
+			sendWithNonce(command);
 		}
 		DBManager.closeConnection(conn);
 	}
@@ -979,10 +994,10 @@ public class ServerInputProcessor {
 		 * homepage)
 		 */
 		if (currentPath[0] != null) {
-			CommManager.send("print Must be at Home to create a board", os, c, sk);
+			sendWithNonce("print Must be at Home to create a board");
 		} else {
 			String boardname = input.substring(("createBoard ").length());
-			CommManager.send(SocialNetworkBoards.createBoard(user, boardname), os, c, sk);
+			sendWithNonce(SocialNetworkBoards.createBoard(user, boardname));
 		}
 	}
 
@@ -994,40 +1009,40 @@ public class ServerInputProcessor {
 	private void processRefresh() {
 		String boardName = currentPath[0];
 		if (boardName == null) {
-			CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
-					+ "print ;" + SocialNetworkBoards.viewBoards(user), os, c, sk);
+			sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
+					+ "print ;" + SocialNetworkBoards.viewBoards(user));
 		} else if (boardName.equals("freeforall")) {
 			/* No regions */
 			String postNum = currentPath[1];
 			if (postNum == null) { // Merely in the board
-				CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
+				sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts
-								.viewPostList(user, boardName, null, false), os, c, sk);
+								.viewPostList(user, boardName, null, false));
 			} else { // Inside the post
-				CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
+				sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
 						+ SocialNetworkPosts.viewPost(user, boardName, null,
-								Integer.parseInt(postNum), false), os, c, sk);
+								Integer.parseInt(postNum), false));
 			}
 		} else { // a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) { // Merely in the board
-				CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
+				sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 						+ "print ;"
-						+ SocialNetworkRegions.viewRegions(user, boardName, false), os, c, sk);
+						+ SocialNetworkRegions.viewRegions(user, boardName, false));
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // Merely in the region
-					CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
+					sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPostList(user, boardName,
-									regionName, false), os, c, sk);
+									regionName, false));
 				} else { // Inside the post
-					CommManager.send(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
+					sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
 							+ "print ;"
 							+ SocialNetworkPosts.viewPost(user, boardName,
-									regionName, Integer.parseInt(postNum), false), os, c, sk);
+									regionName, Integer.parseInt(postNum), false));
 				}
 			}
 		}
@@ -1054,19 +1069,19 @@ public class ServerInputProcessor {
 		case 1: /* Go forward in the hierarchy to destination */
 			/* Have different cases depending on the current path */
 			if (currentPath[0] == null) {
-				CommManager.send(SocialNetworkNavigation.goToBoard(user,
-						currentPath, destination), os, c, sk);
+				sendWithNonce(SocialNetworkNavigation.goToBoard(user,
+						currentPath, destination));
 			} else if (currentPath[0].equals("freeforall")) {
 				Integer postNum = null;
 				try {
 					postNum = Integer.parseInt(destination);
 				} catch (NumberFormatException e) {
-					CommManager.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
-							+ "go backwards", os, c, sk);
+					sendWithNonce("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+							+ "go backwards");
 				}
 				if (postNum != null) {
-					CommManager.send(SocialNetworkNavigation.goToPost(user,
-							currentPath, postNum.intValue()), os, c, sk);
+					sendWithNonce(SocialNetworkNavigation.goToPost(user,
+							currentPath, postNum.intValue()));
 				}
 			} else {
 				if (currentPath[1] != null) {
@@ -1074,23 +1089,23 @@ public class ServerInputProcessor {
 					try {
 						postNum = Integer.parseInt(destination);
 					} catch (NumberFormatException e) {
-						CommManager.send("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
-								+ "go backwards", os, c, sk);
+						sendWithNonce("print You entered an invalid post number. Type \"goto ###\", or \"goto ..\" to "
+								+ "go backwards");
 					}
 					if (postNum != null) {
-						CommManager.send(SocialNetworkNavigation.goToPost(user,
-								currentPath, postNum), os, c, sk);
+						sendWithNonce(SocialNetworkNavigation.goToPost(user,
+								currentPath, postNum));
 					}
 				} else {
-					CommManager.send(SocialNetworkNavigation.goToRegion(user,
-							currentPath, destination), os, c, sk);
+					sendWithNonce(SocialNetworkNavigation.goToRegion(user,
+							currentPath, destination));
 				}
 			}
 			break;
 		default:
-			CommManager.send("print Invalid destination given your current path: "
+			sendWithNonce("print Invalid destination given your current path: "
 					+ SocialNetworkNavigation.printPath(currentPath) + ".; "
-					+ "print You can go backwards by typing \"..\" ", os, c, sk);
+					+ "print You can go backwards by typing \"..\" ");
 
 		}
 	}
@@ -1103,15 +1118,15 @@ public class ServerInputProcessor {
 		String boardName = currentPath[0];
 		String regionName = inputLine.substring(("createRegion ").length());
 		if (boardName == null) {
-			CommManager.send("print Must be in the desired board in order to create the region.", os, c, sk);
+			sendWithNonce("print Must be in the desired board in order to create the region.");
 		} else if (boardName.equals("freeforall")) {
-			CommManager.send("print Cannot create regions in the freeforall board.", os, c, sk);
+			sendWithNonce("print Cannot create regions in the freeforall board.");
 		} else if (currentPath[1] != null) {
-			CommManager.send("print Must be exactly in the desired board (i.e., not inside a region in the board) "
-					+ "in order to create the region", os, c, sk);
+			sendWithNonce("print Must be exactly in the desired board (i.e., not inside a region in the board) "
+					+ "in order to create the region");
 		} else {
-			CommManager.send(SocialNetworkRegions.createRegion(user, currentPath[0],
-					regionName), os, c, sk);
+			sendWithNonce(SocialNetworkRegions.createRegion(user, currentPath[0],
+					regionName));
 		}
 	}
 
@@ -1120,24 +1135,24 @@ public class ServerInputProcessor {
 		String boardName = currentPath[0];
 		boolean canPost = false;
 		if (boardName == null) {
-			CommManager.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
+			sendWithNonce("print Must be within a board's region or in the freeforall board to create a post");
 		} else if (boardName.equals("freeforall")) {
 			String postNum = currentPath[1];
 			if (postNum == null) {
 				canPost = true;
 			} else {
-				CommManager.send("print Must go back to the board page to create a post (not inside a post)", os, c, sk);
+				sendWithNonce("print Must go back to the board page to create a post (not inside a post)");
 			}
 		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				CommManager.send("print Must be within a board's region or in the freeforall board to create a post", os, c, sk);
+				sendWithNonce("print Must be within a board's region or in the freeforall board to create a post");
 			} else {
 				String postNum = currentPath[2];
 				if (postNum == null) { // in a board, region, not in a post
 					canPost = true;
 				} else {
-					CommManager.send("print Must go back to the region page to create a post (not inside a post)", os, c, sk);
+					sendWithNonce("print Must go back to the region page to create a post (not inside a post)");
 				}
 			}
 		}
@@ -1145,21 +1160,21 @@ public class ServerInputProcessor {
 			//AUTHORIZATION FUNCTION and EXISTS CHECK
 			String authToPost = SocialNetworkPosts.authorizedToPost(user, currentPath[0], currentPath[1]);
 			if (!authToPost.equals("true")) {
-				CommManager.send(authToPost, os, c, sk);
+				sendWithNonce(authToPost);
 				return ;
 			}
-			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
-					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
-			String content = CommManager.receive(is, c, sk);
+			sendWithNonce("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
+			String content = recvWithNonce();
 			while (content.equals("")) {
-				CommManager.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
-				content = CommManager.receive(is, c, sk);
+				sendWithNonce("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
+				content = recvWithNonce();
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
-				CommManager.send("print ;askForInput ", os, c, sk);
-				additionalContent = CommManager.receive(is, c, sk);
+				sendWithNonce("print ;askForInput ");
+				additionalContent = recvWithNonce();
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -1169,10 +1184,10 @@ public class ServerInputProcessor {
 				}
 			}
 			if (cancelled) {
-				CommManager.send("print Post Creation cancelled", os, c, sk);
+				sendWithNonce("print Post Creation cancelled");
 			} else {
-				CommManager.send(SocialNetworkPosts.createPost(user, content,
-						currentPath[0], currentPath[1]), os, c, sk);
+				sendWithNonce(SocialNetworkPosts.createPost(user, content,
+						currentPath[0], currentPath[1]));
 			}
 		}
 	}
@@ -1188,22 +1203,22 @@ public class ServerInputProcessor {
 		String postNum = "";
 		boolean canReply = false;
 		if (boardName == null) {
-			CommManager.send("print Must be within a post to create a reply", os, c, sk);
+			sendWithNonce("print Must be within a post to create a reply");
 		} else if (boardName.equals("freeforall")) {
 			postNum = currentPath[1];
 			if (postNum == null) {
-				CommManager.send("print Must be within a post to create a reply", os, c, sk);
+				sendWithNonce("print Must be within a post to create a reply");
 			} else {
 				canReply = true;
 			}
 		} else { // in a regular board
 			String regionName = currentPath[1];
 			if (regionName == null) {
-				CommManager.send("print Must be within a post to create a reply", os, c, sk);
+				sendWithNonce("print Must be within a post to create a reply");
 			} else {
 				postNum = currentPath[2];
 				if (postNum == null) { // in a board, region, not in a post
-					CommManager.send("print Must be within a post to create a reply", os, c, sk);
+					sendWithNonce("print Must be within a post to create a reply");
 				} else {
 					canReply = true;
 				}
@@ -1213,21 +1228,21 @@ public class ServerInputProcessor {
 			//AUTHORIZATION FUNCTION and EXISTS CHECK
 			String authToReply = SocialNetworkPosts.authorizedToReply(user, currentPath[0], currentPath[1], Integer.parseInt(postNum));
 			if (!authToReply.equals("true")) {
-				CommManager.send(authToReply, os, c, sk);
+				sendWithNonce(authToReply);
 				return ;
 			}
-			CommManager.send("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
-					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ", os, c, sk);
-			String content = CommManager.receive(is, c, sk);
+			sendWithNonce("print Start typing your content. Type 'cancel' after any new line to cancel.;print "
+					+ "Press enter once to insert a new line.;print Press enter twice to submit.;askForInput ");
+			String content = recvWithNonce();
 			while (content.equals("")) {
-				CommManager.send("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ", os, c, sk);
-				content = CommManager.receive(is, c, sk);
+				sendWithNonce("print Content is empty. Please try again. Type 'cancel' to cancel.;askForInput ");
+				content = recvWithNonce();
 			}
 			boolean cancelled = content.trim().equals("cancel");
 			String additionalContent = "";
 			while (!cancelled) {
-				CommManager.send("print ;askForInput ", os, c, sk);
-				additionalContent = CommManager.receive(is, c, sk);
+				sendWithNonce("print ;askForInput ");
+				additionalContent = recvWithNonce();
 				if (additionalContent.equals("")) {
 					break;
 				} else if (additionalContent.trim().equals("cancel")) {
@@ -1237,12 +1252,12 @@ public class ServerInputProcessor {
 				}
 			}
 			if (cancelled) {
-				CommManager.send("print Reply Creation cancelled", os, c, sk);
+				sendWithNonce("print Reply Creation cancelled");
 
 			} else {
-				CommManager.send(SocialNetworkPosts.createReply(user, content,
+				sendWithNonce(SocialNetworkPosts.createReply(user, content,
 						currentPath[0], currentPath[1],
-						Integer.parseInt(postNum)), os, c, sk);
+						Integer.parseInt(postNum)));
 			}
 		}
 	}

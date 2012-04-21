@@ -112,7 +112,7 @@ public class PublicKeyCryptoServer {
 	 * is and os are the inputstream and outputstream of the Socket
 	 * used to connect to the client.
 	 */
-	public static SecretKey serverSideAuth(InputStream is, OutputStream os, PrivateKey serverPrivK) {
+	public static KeyNonceBundle serverSideAuth(InputStream is, OutputStream os, PrivateKey serverPrivK) {
 		/*Initialize a cipher to accept the incoming message first message*/
 		Cipher c = null;
 		try {
@@ -157,11 +157,10 @@ public class PublicKeyCryptoServer {
 		if (DEBUG) {
 			System.out.println("First nonce recv: " + firstNonceNum);
 		}
-		firstNonceNum = firstNonceNum.add(BigInteger.ONE);
+		byte[] firstNonceNumPlusOne = firstNonceNum.add(BigInteger.ONE).toByteArray();
 		if (DEBUG) {
-			System.out.println("First nonce recv + 1: " + firstNonceNum);
+			System.out.println("First nonce recv + 1: " + firstNonceNumPlusOne);
 		}
-		byte[] firstNonceNumPlusOne = firstNonceNum.toByteArray();
 		byte[] firstNonceNumPlusOneCorrectLen = new byte[8];
 		System.arraycopy(firstNonceNumPlusOne, 0, firstNonceNumPlusOneCorrectLen, 0, NONCE_LENGTH);
 		
@@ -256,15 +255,14 @@ public class PublicKeyCryptoServer {
 			
 		}
 		BigInteger secondNonceNum = new BigInteger(sendNonce);
-		secondNonceNum = secondNonceNum.shiftLeft(1);
-		byte[] secondNonceTimesTwo = secondNonceNum.toByteArray();
+		byte[] secondNonceTimesTwo = secondNonceNum.shiftLeft(1).toByteArray();
 		byte[] secondNonceTimesTwoCorrectLen = new byte[NONCE_LENGTH];
 		System.arraycopy(secondNonceTimesTwo, 0, secondNonceTimesTwoCorrectLen, 0, NONCE_LENGTH);
 		if (Arrays.equals(thirdmsg, secondNonceTimesTwoCorrectLen)) {
 			if (DEBUG) {
 				System.out.println("Success");
 			}
-			return key;
+			return new KeyNonceBundle(key, secondNonceNum, firstNonceNum);
 		}
 		else {
 			if (DEBUG) {
