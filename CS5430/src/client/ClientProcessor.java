@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
+import java.security.PrivateKey;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
@@ -28,14 +30,29 @@ public class ClientProcessor {
 	private Cipher c;
 	private SecretKey sk;
 	
+	public BigInteger sendNonce = null;
+	public BigInteger recvNonce = null;
+	
+	public void sendWithNonce(String msg) {
+		CommManager.send(msg, serverOut, c, sk, sendNonce);
+		this.sendNonce = this.sendNonce.add(BigInteger.ONE);
+	}
+	
+	public String recvWithNonce() {
+		String msg = CommManager.receive(serverIn, c, sk, recvNonce);
+		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
+		return msg;
+	}
 	
 	public ClientProcessor(OutputStream serverOut, InputStream serverIn, 
-			BufferedReader keyboard, Cipher c, SecretKey sk) {
+			BufferedReader keyboard, Cipher c, SecretKey sk, BigInteger sendNonce, BigInteger recvNonce) {
 		this.keyboard = keyboard;
 		this.serverOut = serverOut;
 		this.serverIn = serverIn;
 		this.c = c;
 		this.sk = sk;
+		this.sendNonce = sendNonce;
+		this.recvNonce = recvNonce;
 	}
 
 	private void processCommands(String response) {
@@ -50,10 +67,10 @@ public class ClientProcessor {
 				askForInput();
 			}
 			if (commands[i].equals("isLoggedIn")) {
-				CommManager.send("" + isLoggedIn(), serverOut, c, sk);
+				sendWithNonce("" + isLoggedIn());
 			}
 			if (commands[i].equals("isExit")) {
-				CommManager.send("" + isExit(), serverOut, c, sk);
+				sendWithNonce("" + isExit());
 			}
 			if (commands[i].matches("^setLoggedIn.+")) {
 				String value = Utils.getValue(commands[i]);
@@ -84,8 +101,8 @@ public class ClientProcessor {
 		System.out.print(">> ");
 		try {
 			String input = keyboard.readLine();
-			CommManager.send(input, serverOut, c, sk);
-			processCommands(CommManager.receive(serverIn, c, sk));
+			sendWithNonce(input);
+			processCommands(recvWithNonce());
 	
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -104,10 +121,10 @@ public class ClientProcessor {
 				salt = null;
 			}
 			
-			CommManager.send(hashedPwd, serverOut, c, sk);
+			sendWithNonce(hashedPwd);
 			Arrays.fill(charBuff, ' ');
 			Arrays.fill(pwd, ' ');
-			processCommands(CommManager.receive(serverIn, c, sk));
+			processCommands(recvWithNonce());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -145,8 +162,8 @@ public class ClientProcessor {
 		}
 		
 		String pwdHash = Hash.createPwdHashStore(pwdChar1);
-		CommManager.send(pwdHash, serverOut, c, sk);
-		processCommands(CommManager.receive(serverIn, c, sk));
+		sendWithNonce(pwdHash);
+		processCommands(recvWithNonce());
 	}
 		
 	public void processLogin() {
