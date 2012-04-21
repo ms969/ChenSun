@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class SocialNetworkDatabaseBoards {
 	
-	public static String createBoardSqlURL = "sql/createNewBoardDB.sql";
+	public static String createBoardSqlURL = "src/database/sql/createNewBoardDB.sql";
 	
 	/**
 	 * Checks whether the user is part of this board.

@@ -83,7 +83,7 @@ public class SocialNetworkDBAThread implements Runnable{
 					//Arrays.fill(charbuf, '');
 					
 					Connection conn = DBManager.getConnection();
-					DatabaseDBA.createACappellaGroup(conn, aname, username, pwhash);
+					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash);
 					DBManager.closeConnection(conn);
 				}
 				else {

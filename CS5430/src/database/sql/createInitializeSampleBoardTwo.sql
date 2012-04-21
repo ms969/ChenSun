@@ -24,9 +24,6 @@ CREATE TABLE fantasiaboard.replies (
     PRIMARY KEY(eid, rname, pid),
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
 );
-CREATE TABLE fantasiaboard.admins (
-    username VARCHAR(100) PRIMARY KEY
-);
 CREATE TABLE fantasiaboard.regionprivileges (
     rname VARCHAR(500) NOT NULL,
     username VARCHAR(100),
@@ -38,8 +35,6 @@ CREATE TABLE fantasiaboard.regionprivileges (
 /* Inserting Admins!*/
 INSERT INTO main.boards
 VALUES ("fantasiaboard", "MJ");
-INSERT INTO fantasiaboard.admins
-VALUES ("MJ"),("April"); /*deprecate?*/
 INSERT INTO main.boardadmins
 VALUES ("fantasiaboard", "MJ"), ("fantasiaboard", "April"); /*new*/
 INSERT INTO fantasiaboard.regions

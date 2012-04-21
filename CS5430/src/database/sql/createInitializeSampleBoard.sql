@@ -24,9 +24,6 @@ CREATE TABLE helloworldboard.replies (
     PRIMARY KEY(eid, rname, pid),
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
 );
-CREATE TABLE helloworldboard.admins (
-    username VARCHAR(100) PRIMARY KEY
-);
 CREATE TABLE helloworldboard.regionprivileges (
     rname VARCHAR(500) NOT NULL,
     username VARCHAR(100),
@@ -38,8 +35,6 @@ CREATE TABLE helloworldboard.regionprivileges (
 /* Inserting Admins!*/
 INSERT INTO main.boards
 VALUES ("helloworldboard", "Kevin");
-INSERT INTO helloworldboard.admins
-VALUES ("Kevin"),("MJ"); /*deprecate?*/
 INSERT INTO main.boardadmins
 VALUES ("helloworldboard", "Kevin"), ("helloworldboard", "MJ"); /*new*/
 INSERT INTO helloworldboard.regions
@@ -58,5 +53,3 @@ INSERT INTO helloworldboard.replies
 VALUES ("postswithreplies", 2, null, "MJ", NOW(), "79zfBNMaHuM=/KJWGEHlpfdIvQ5H5MHraw==");
 INSERT INTO helloworldboard.posts
 VALUES ("postswithreplies", null, "Kevin", NOW(), "66SOxcRFM3Q=Wh7Dvh+TdF4=", NOW());
-INSERT INTO main.pendingadmins
-VALUES ("helloworldboard", "Adam");

@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -909,37 +908,161 @@ public class DatabaseAdmin {
 		return boards;
 	}
 	
-	// XXX working here
-	public static int replaceRegionManager(Connection conn, String username) {
-		int status = 1;
+	/**
+	 * Precondition: user is an admin
+	 * @param conn
+	 * @param username
+	 * @return
+	 */
+	public static int deletionBoardDBEffects(Connection conn, String username) {
+		int status = 1; // initially set to 1 cuz statuses loop toggles to -1
 		List<String[]> boards = getBoardList(conn);
 		if (boards == null) {
+			if (DEBUG) System.err.println("failing cuz board list is null");
 			return -1;
+		}
+		if (DEBUG) {
+			System.err.println("boards:");
+			for (String[] b: boards) {
+				System.err.println(b[0] + " " + b[1]);
+			}
 		}
 		Statement stmt = null;
 		try {
 			stmt = conn.createStatement();
-			// board[0]: bname, board[1]: managedby
-			for (String[] board: boards) {
-				String query = "UPDATE " + board[0] + ".region SET managedby = '" + 
-						board[1] + "' WHERE managedby = '" + username + "'";
-				stmt.addBatch(query);
+			boolean regionSuccess = addReplRegionManQueries(conn, stmt, boards, username);
+			boolean postsSuccess = addMaskPostsQueries(conn, stmt, boards, username);
+			boolean replySuccess = addMaskRepliesQueies(conn, stmt, boards, username);
+			if (!regionSuccess || !postsSuccess || !replySuccess) {
+				if (DEBUG) System.err.println("failing cuz addBatch is returning false");
+				DBManager.closeStatement(stmt);
+				return -1;
 			}
 			int[] statuses = stmt.executeBatch();
 			for (int s: statuses) {
 				if (s == Statement.EXECUTE_FAILED) {
+					if (DEBUG) System.err.println("failing cuz execute_failed flag");
 					status = -1;
 					break;
 				}
 			}
-			
 		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			if (DEBUG) System.err.println("failing cuz SQLException");
 			status = -1;
+		} finally {
+			DBManager.closeStatement(stmt);
 		}
-
 		return status;
 	}
 	
+	private static boolean addMaskRepliesQueies(Connection conn, Statement stmt, 
+			List<String[]> boards, String username) {
+		boolean success = true;
+		try {
+			for (String[] board: boards) {
+				String query = "UPDATE " + board[0] + ".replies SET repliedBy = " +
+						"'deletedUser' WHERE repliedBy = '" + username + "'";
+				stmt.addBatch(query);
+			}
+		} catch (SQLException e) {
+			success = false;
+		}
+		return success;
+	}
+	
+	private static boolean addMaskPostsQueries(Connection conn, Statement stmt, 
+			List<String[]> boards, String username) {
+		boolean success = true;
+		try {
+			for (String[] board: boards) {
+				String query = "UPDATE " + board[0] + ".posts SET postedBy = " +
+						"'deletedUser' WHERE postedBy = '" + username + "'";
+				stmt.addBatch(query);
+			}
+		} catch (SQLException e) {
+			success = false;
+		}
+		return success;
+	}
+	
+	private static boolean addReplRegionManQueries(Connection conn, Statement stmt, 
+			List<String[]> boards, String username) {
+		boolean success = true;
+		try {
+			for (String[] board: boards) {
+				String query = "UPDATE " + board[0] + ".regions SET managedby = '" + 
+						board[1] + "' WHERE managedby = '" + username + "'";
+				stmt.addBatch(query);
+			}
+		} catch (SQLException e) {
+			success = false;
+		}
+		return success;
+	}
+
+	public static String saOfUsersGroup(Connection conn, String username) {
+		String sa = null;
+		if (DEBUG) System.err.println("username here: " + username);
+		String query = "SELECT username FROM main.users " +
+				"WHERE role = 'sa' AND aid = " +
+				"(SELECT aid FROM main.users WHERE username = ?)";
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			result = pstmt.executeQuery();
+			if (result.next()) {
+				sa = result.getString("username");
+				if (DEBUG) System.err.println("look here for sa: "+sa);
+			}
+		} catch (SQLException e) {
+			if (DEBUG) e.printStackTrace();
+			sa = null;
+		} finally {
+			DBManager.closeResultSet(result);
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return sa;
+	}
+	
+	/**
+	 * Precondition: user is an admin. If user is an SA, nothing is done and returns -1.
+	 * @param conn
+	 * @param username
+	 * @return
+	 */
+	public static int replaceBoardManager(Connection conn, String username) {
+		int status = -1;
+		Connection tempConn = DBManager.getConnection();
+		String sa = saOfUsersGroup(tempConn, username);
+		DBManager.closeConnection(tempConn);
+		if (sa == null || sa.equals(username)) {
+			if (DEBUG) {
+				System.err.printf("sa = %s, username = %s\n", sa, username);
+			}
+			return status;
+		}
+		String query = "UPDATE main.boards SET managedby = ? WHERE managedby = ?";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, sa);
+			pstmt.setString(2, username);
+			status = pstmt.executeUpdate();
+			if (DEBUG) System.err.printf("status = %d\n", status);
+		} catch (SQLException e) {
+			if (DEBUG) {
+				System.err.println("failing cuz SQLException");
+				e.printStackTrace();
+			}
+			status = -1;
+		}
+		return status;
+	}
+	
+
 }
 
 

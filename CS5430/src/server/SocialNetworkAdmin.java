@@ -16,6 +16,7 @@ import database.DatabaseAdmin;
 
 public class SocialNetworkAdmin {
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
+	private static final String EMPTY_LIST = ProjectConfig.COMMAND_EMPTY_LIST;
 	
 	public static String friendReqNotification(Connection conn, String username) {
 		String command = "";
@@ -112,7 +113,7 @@ public class SocialNetworkAdmin {
 		
 		int deleteStatus = DatabaseAdmin.deleteRegRequest(conn, username);
 		int addStatus = DatabaseAdmin.addUser(conn, username, pwhash, aid);
-		System.out.println("Going into addFriendsFromGroup");
+		if (DEBUG) System.out.println("Going into addFriendsFromGroup");
 		int addFriendStatus = DatabaseAdmin.addFriendsFromGroup(conn, username, aid);
 		
 		if (deleteStatus != 1 || addStatus != 1 || addFriendStatus <= 0) {
@@ -198,11 +199,15 @@ public class SocialNetworkAdmin {
 		} else {
 			command = "print Usernames starting with '" + prefix + "';";
 		}
-		for (String[] userInfo : friendableUsers) {
-			prefix = prefix.toLowerCase();
-			if (userInfo[0].toLowerCase().startsWith(prefix)) {
-				command += "print " + userInfo[0] + " (" + userInfo[1]
-						+ ");";
+		if (friendableUsers == null || friendableUsers.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String[] userInfo : friendableUsers) {
+				prefix = prefix.toLowerCase();
+				if (userInfo[0].toLowerCase().startsWith(prefix)) {
+					command += "print " + userInfo[0] + " (" + userInfo[1]
+							+ ");";
+				}
 			}
 		}
 		command += "print ;print Type the name of the user you wish to friend:;"
@@ -211,12 +216,16 @@ public class SocialNetworkAdmin {
 	}
 	
 	public static String displayGroupList(Connection conn, Map<Integer, String> groupList, String newUser) {
-		Iterator<Entry<Integer, String>> it = groupList.entrySet().iterator();
 		String list = "";
-		while (it.hasNext()) {
-	        Map.Entry<Integer, String> pairs = (Map.Entry<Integer, String>)it.next();
-	        list += "print " + pairs.getKey() + " " + pairs.getValue() + ";";
-	    }
+		if (groupList == null || groupList.size() == 0) {
+			list = EMPTY_LIST;
+		} else {
+			Iterator<Entry<Integer, String>> it = groupList.entrySet().iterator();
+			while (it.hasNext()) {
+		        Map.Entry<Integer, String> pairs = (Map.Entry<Integer, String>)it.next();
+		        list += "print " + pairs.getKey() + " " + pairs.getValue() + ";";
+		    }
+		}
 		return "print Choose a cappella group for " + newUser
 				+ " by entering the group number:;" + list + "askForInput;";
 	}
@@ -224,7 +233,7 @@ public class SocialNetworkAdmin {
 	public static String insertFriendRequest(Connection conn, String requestee, String requester) {
 		String command = "";
 		int status = DatabaseAdmin.insertFriendRequest(conn, requestee, requester);
-		if (status == 1) {
+		if (status >= 0) {
 			command = "print Friend request sent to " + requestee + ".;";
 		} else {
 			command = "print Database Error while sending friend request. Please try again or contact the System Admin.;";
@@ -234,8 +243,12 @@ public class SocialNetworkAdmin {
 	
 	public static String displayDeletableUsers(List<String[]> users) {
 		String command = "print Users in your A Cappella group that you can delete:;";
-		for (String[] u: users) {
-			command += "print " + u[0] + ";";
+		if (users == null || users.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String[] u: users) {
+				command += "print " + u[0] + ";";
+			}
 		}
 		command += "print ;print Type the name of the user you wish to delete:;askForInput;";
 		return command;
@@ -244,10 +257,27 @@ public class SocialNetworkAdmin {
 	public static String deleteUser(Connection conn, String username) {
 		String success = "print " + username + " has been deleted from the system.;";
 		String error = "print Database Error while deleting " + username + ". Please try again or contact the System Admin.;";
-		int status = DatabaseAdmin.deleteUser(conn, username);
-		if (status == 1) {
-			return success;
-		} else {
+		try {
+			conn.setAutoCommit(false);
+		} catch (SQLException e) {
+			return error;
+		}
+		int deleteStatus = DatabaseAdmin.deleteUser(conn, username);
+		int sideEffectStatus1 = DatabaseAdmin.replaceBoardManager(conn, username);
+		int sideEffectStatus2 = DatabaseAdmin.deletionBoardDBEffects(conn, username);
+		if (DEBUG) System.err.printf("Deleting user:\ndeleteStatus = %d, sideES1 = %d, sideES2 = %d\n", 
+				deleteStatus, sideEffectStatus1, sideEffectStatus2);
+		try {
+			if (deleteStatus == 1 && sideEffectStatus1 >= 0 && sideEffectStatus2 >= 0) {
+				conn.commit();
+				conn.setAutoCommit(true);
+				return success;
+			} else {
+				conn.rollback();
+				conn.setAutoCommit(true);
+				return error;
+			}
+		} catch (SQLException e) {
 			return error;
 		}
 	}
@@ -272,8 +302,12 @@ public class SocialNetworkAdmin {
 	
 	public static String displayRoleChange(List<String[]> users) {
 		String command = "print Users in your A Cappella group that you can change roles for:;";
-		for (String[] u: users) {
-			command += "print " + u[0] + " (" + u[1].toUpperCase() + ");";
+		if (users == null || users.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String[] u: users) {
+				command += "print " + u[0] + " (" + u[1].toUpperCase() + ");";
+			}
 		}
 		command += "print ;print Type the name of the user you wish to change role for:;askForInput;";
 		return command;
@@ -298,8 +332,12 @@ public class SocialNetworkAdmin {
 	
 	public static String displaySATransferableUsers(List<String> admins) {
 		String command = "print Users in your A Cappella group that you can transfer SA role to:;";
-		for (String a: admins) {
-			command += "print " + a + " (ADMIN);";
+		if (admins == null || admins.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String a: admins) {
+				command += "print " + a + " (ADMIN);";
+			}
 		}
 		command += "print ;print Type the name of the user you wish to transfer SA role to:;"
 				+ "askForInput;";
@@ -348,7 +386,12 @@ public class SocialNetworkAdmin {
 	
 	public static String printUserInfo(Connection conn, String username) {
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
-		String command = printUserInfo(userInfo[0], userInfo[3], userInfo[2]);
+		String command = "";
+		if (userInfo == null) {
+			command = "print Error while getting user info.";
+		} else {
+			command = printUserInfo(userInfo[0], userInfo[3], userInfo[2]);
+		}
 		command += friendReqNotification(conn, username);
 		if (userInfo[3].equals("sa") || userInfo[3].equals("admin")) {
 			command += regReqNotification(conn, username);
@@ -374,16 +417,21 @@ public class SocialNetworkAdmin {
 	public static String displayParticipAndAdmins(Connection conn, String board, String region) {
 		String command = "print Displaying participants in "+board+"/"+region+":;";
 		List<String> admins = DatabaseAdmin.getAdminsOfBoard(conn, board);
-		for (String a: admins) {
-			command += "print " + a + " (Admin);";
-		}
 		List<String[]> part = DatabaseAdmin.getParticipants(conn, board, region);
-		for (String[] p: part) {
-			command += "print " + p[0];
-			if (p[1].equals("view")) {
-				command += " (view only)";
+		if ((admins == null || admins.size() == 0) && (part == null || part.size() == 0)) {
+			command += EMPTY_LIST;
+		} else {
+			for (String a: admins) {
+				command += "print " + a + " (Admin);";
 			}
-			command += ";";
+	
+			for (String[] p: part) {
+				command += "print " + p[0];
+				if (p[1].equals("view")) {
+					command += " (view only)";
+				}
+				command += ";";
+			}
 		}
 		//command += "print ;print Other Commands: addParticipants, removeParticipants, editParticipants;";
 		return command;
@@ -394,6 +442,9 @@ public class SocialNetworkAdmin {
 		// friends that are not already participants of the region and not admins
 		List<String> friends = DatabaseAdmin.getFriends(conn, username);
 		List<String[]> participants = DatabaseAdmin.getParticipants(conn, board, region);
+		if (friends == null || participants == null) {
+			return null;
+		}
 		for (String f: friends) {
 			if (board == "freeforall" || !DatabaseAdmin.isAdmin(conn, f)) {
 				boolean isPart = false;
@@ -412,15 +463,13 @@ public class SocialNetworkAdmin {
 	}
 	
 	public static String displayAddableParticip(List<String> addables, String board) {
-		String command = "";
-		if (!board.equals("freeforall")) {
-			command = "print To add an admin, use the 'addAdmin' command. Admins " +
-					"are added to the entire board and has to be approved by all other " +
-					"admins of the board.;print ;";
-		}
-		command += "print Friends you can add as a participant to this region/post.;";
-		for (String a: addables) {
-			command += "print " + a + ";";
+		String command = "print Friends you can add as a participant to this region/post:;";
+		if (addables == null || addables.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String a: addables) {
+				command += "print " + a + ";";
+			}
 		}
 		command += "print To add participants with view and post privilege, " +
 				"type 'viewpost <user1>, <user2>';" +
@@ -432,12 +481,16 @@ public class SocialNetworkAdmin {
 	public static String displayRemoveParticip(Connection conn, String board, String region) {
 		String command = "print Displaying participants in "+board+"/"+region+":;";
 		List<String[]> part = DatabaseAdmin.getParticipants(conn, board, region);
-		for (String[] p: part) {
-			command += "print " + p[0];
-			if (p[1].equals("view")) {
-				command += " (view only)";
+		if (part == null || part.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String[] p: part) {
+				command += "print " + p[0];
+				if (p[1].equals("view")) {
+					command += " (view only)";
+				}
+				command += ";";
 			}
-			command += ";";
 		}
 		command += "print To remove participants, type their usernames separated " +
 				"by comma: '<user1>, <user2>';askForInput;";
@@ -445,15 +498,19 @@ public class SocialNetworkAdmin {
 	}
 	
 	public static String displayEditableParticip(List<String[]> editables) {
-		String command = "print Participants you can edit in this region/post.;";
-		for (String[] e: editables) {
-			command += "print " + e[0];
-			if (e[1].equals("view")) {
-				command += " (view only)";
-			} else if (e[1].equals("viewpost")) {
-				command += " (view and post)";
+		String command = "print Participants you can edit in this region/post:;";
+		if (editables == null || editables.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String[] e: editables) {
+				command += "print " + e[0];
+				if (e[1].equals("view")) {
+					command += " (view only)";
+				} else if (e[1].equals("viewpost")) {
+					command += " (view and post)";
+				}
+				command += ";";
 			}
-			command += ";";
 		}
 		command += "print Type the name of the user you wish to change permission for:;" +
 				"askForInput;";
@@ -487,8 +544,12 @@ public class SocialNetworkAdmin {
 	
 	public static String displayAddableAdmins(List<String> addables) {
 		String command = "print Admins you are friends with:;";
-		for (String a: addables) {
-			command += "print " + a + ";";
+		if (addables == null || addables.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String a: addables) {
+				command += "print " + a + ";";
+			}
 		}
 		command += "print To add admins, type their usernames separated " +
 				"by comma: '<user1>, <user2>';askForInput;";
@@ -523,9 +584,13 @@ public class SocialNetworkAdmin {
 	public static String displayRemovableAdmins(List<String> removables,
 			String user) {
 		String command = "print Admins of this board:;";
-		for (String r: removables) {
-			if (!r.equals(user)) {
-				command += "print " + r + ";";
+		if (removables == null || removables.size() == 0) {
+			command += EMPTY_LIST;
+		} else {
+			for (String r: removables) {
+				if (!r.equals(user)) {
+					command += "print " + r + ";";
+				}
 			}
 		}
 		command += "print To remove admins, type their usernames separated by comma: " +

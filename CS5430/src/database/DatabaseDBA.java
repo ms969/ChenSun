@@ -18,7 +18,7 @@ public class DatabaseDBA {
 	 * Since this function is intended to be used server side, it does not
 	 * return anything. It prints things itself.
 	 */
-	private static void createAcappellaGroup(Connection conn, String aname, String username, String pwhash) {
+	public static void createAcappellaGroup(Connection conn, String aname, String username, String pwhash) {
 		String insertACappella = "INSERT INTO main.acappella VALUES (null, ?)";
 		String getACappellaID = "SELECT aid FROM main.acappella WHERE aname = ?";
 		String insertSA = "INSERT INTO main.users VALUES (?, ?, ?, 'sa')";

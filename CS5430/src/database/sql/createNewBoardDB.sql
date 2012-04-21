@@ -26,10 +26,6 @@ CREATE TABLE bname.replies (
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
     /*FOREIGN KEY(repliedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );
-CREATE TABLE bname.admins (
-    username VARCHAR(100) PRIMARY KEY
-    /*FOREIGN KEY(username) REFERENCES Main.Users(username) ON DELETE CASCADE*/
-); /* deprecate? */
 CREATE TABLE bname.regionprivileges (
     rname VARCHAR(500) NOT NULL,
     username VARCHAR(100),

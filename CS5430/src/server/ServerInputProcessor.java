@@ -34,9 +34,9 @@ public class ServerInputProcessor {
 	private BigInteger recvNonce;
 	
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
-	public static final String INVALID = "print Invalid command.;";
-	public static final String CANCEL = "print Cancelled.;";
-	public static final String HELP = "print To see a list of commands type 'help'.;";
+	private static final String INVALID = ProjectConfig.COMMAND_INVALID;
+	private static final String CANCEL = ProjectConfig.COMMAND_CANCEL;
+	private static final String HELP = ProjectConfig.COMMAND_HELP;
 
 	private String user = null;
 	private String[] currentPath; // 0 = board/"freeforall"; 1 = region/FFApost; 2 = post/null
@@ -248,7 +248,6 @@ public class ServerInputProcessor {
 			}
 			return;
 		}
-		 
 		sendWithNonce(INVALID+HELP);
 	}
 
@@ -268,7 +267,7 @@ public class ServerInputProcessor {
 
 	private void processLogin(String inputLine) {
 		Connection conn = DBManager.getConnection();
-		String username = Utils.getValue(inputLine);
+		String username = Utils.getValue(inputLine).toLowerCase();
 
 		boolean userExist = false;
 		boolean pwMatch = false;
@@ -311,14 +310,16 @@ public class ServerInputProcessor {
 
 	private void processRegistration(){
 		String newUser = "";
-		sendWithNonce("print Choose a username:;askForInput;");
+		sendWithNonce("print Choose a username that's between 2-50 characters long. " +
+				"Only use digits, letters, and underscore:;" +
+				"askForInput;");
 
 		boolean invalid = true;
 		Connection conn = DBManager.getConnection();
 
 		// check if username already exist
 		while (invalid) {
-			newUser = recvWithNonce();
+			newUser = recvWithNonce().toLowerCase();
 			if (newUser.equals("cancel")) {
 				sendWithNonce(CANCEL);
 				return;
@@ -332,12 +333,16 @@ public class ServerInputProcessor {
 			if (invalid) {
 				command = "print Username already exist. Choose a different one.;"
 						+ "askForInput;";
-			} else if (newUser.equals("cancel")/* TODO other checks? */) {
+				sendWithNonce(command);
+			} else if (newUser.equals("cancel") ||
+					newUser.equals("deleteduser") || 
+					!newUser.matches("^[0-9a-z_]{2,50}$")) {
 				invalid = true;
 				command = "print Invalid username format. Please choose another one.;" +
 						"askForInput;";
+				sendWithNonce(command);
 			}
-			sendWithNonce(command);
+			
 		}
 
 		// username isn't already in the DB
@@ -405,7 +410,7 @@ public class ServerInputProcessor {
 		if (currentUser[3].equals("admin") || currentUser[3].equals("sa")) {
 			String command = "";
 			if (input.matches("^approve.+")) {
-				String value = Utils.getValue(input);
+				String value = Utils.getValue(input).toLowerCase();
 				String delim = " *, *";
 				String[] approvedUsers = value.split(delim);
 				for (String u: approvedUsers) {
@@ -415,7 +420,7 @@ public class ServerInputProcessor {
 				return;
 			}
 			if (input.matches("^remove.+")) {
-				String value = Utils.getValue(input);
+				String value = Utils.getValue(input).toLowerCase();
 				String delim = " *, *";
 				String[] deletingUsers = value.split(delim);
 				for (String u: deletingUsers) {
@@ -450,7 +455,7 @@ public class ServerInputProcessor {
 					conn, prefix, friendableUsers);
 			sendWithNonce(command);
 
-			toFriend = recvWithNonce();
+			toFriend = recvWithNonce().toLowerCase();
 			if (toFriend.equals("cancel")) {
 				sendWithNonce(CANCEL);
 				return;
@@ -502,14 +507,14 @@ public class ServerInputProcessor {
 		if (input.equals("cancel")) {
 			command = CANCEL;
 		} else if (input.matches("^approve.+")) {
-			String value = Utils.getValue(input);
+			String value = Utils.getValue(input).toLowerCase();
 			String delim = " *, *";
 			String[] approvedFriends = value.split(delim);
 			for (String u: approvedFriends) {
 				command += SocialNetworkAdmin.friendApprove(conn, u, user);
 			}
 		} else if (input.matches("^remove.+")) {
-			String value = Utils.getValue(input);
+			String value = Utils.getValue(input).toLowerCase();
 			String delim = " *, *";
 			String[] usersToDelete = value.split(delim);
 			for (String u: usersToDelete) {
@@ -538,7 +543,7 @@ public class ServerInputProcessor {
 				command += SocialNetworkAdmin.displayDeletableUsers(deletableUsers);
 				sendWithNonce(command);
 
-				toDelete = recvWithNonce();
+				toDelete = recvWithNonce().toLowerCase();
 				if (toDelete.equals("cancel")) {
 					sendWithNonce(CANCEL);
 					return;
@@ -602,7 +607,7 @@ public class ServerInputProcessor {
 				command += SocialNetworkAdmin.displayRoleChange(changeableUsers);
 				sendWithNonce(command);
 	
-				toChange = recvWithNonce();
+				toChange = recvWithNonce().toLowerCase();
 				if (toChange.equals("cancel")) {
 					sendWithNonce(CANCEL);
 					return;
@@ -648,7 +653,7 @@ public class ServerInputProcessor {
 				command += SocialNetworkAdmin.displaySATransferableUsers(groupAdmins);
 				sendWithNonce(command);
 
-				toChange = recvWithNonce();
+				toChange = recvWithNonce().toLowerCase();
 				if (toChange.equals("cancel")) {
 					sendWithNonce(CANCEL);
 					return;
@@ -700,6 +705,40 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
+	/**
+	 * Returns the error command if user not able to add participant to the current 
+	 * directory. Returns the empty string if user does have permission.
+	 * @param conn
+	 * @return
+	 */
+	private String participantsError(Connection conn) {
+		String command = "";
+		String wrongLocation = "print Goto a region or freeforall post to view " +
+				"participants in that region/post.;";
+		String board = currentPath[0];
+		if (board == null) {
+			command = wrongLocation;
+		} else {
+			String region = currentPath[1];
+			if (region == null) {
+				command = wrongLocation;
+			} else {
+				boolean hasPerm;
+				if (board.equals("freeforall")) {
+					hasPerm = SocialNetworkDatabasePosts.isFFAPostCreator(
+							conn, user, Integer.parseInt(region));
+				} else {
+					hasPerm = SocialNetworkDatabaseRegions.isRegionManager(
+							conn, user, board, region);
+				}
+				if (!hasPerm) {
+					command = INVALID;
+				}
+			}
+		}
+		return command;
+	}
+
 	private void processAddParticipants() {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
@@ -720,7 +759,7 @@ public class ServerInputProcessor {
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayAddableParticip(addables, board);
 				sendWithNonce(command);
-				String input = recvWithNonce();
+				String input = recvWithNonce().toLowerCase();
 
 				if (input.equals("cancel")) {
 					sendWithNonce(CANCEL);
@@ -761,40 +800,6 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	/**
-	 * Returns the error command if user not able to add participant to the current 
-	 * directory. Returns the empty string if user does have permission.
-	 * @param conn
-	 * @return
-	 */
-	private String participantsError(Connection conn) {
-		String command = "";
-		String wrongLocation = "print Goto a region or freeforall post to view " +
-				"participants in that region/post.;";
-		String board = currentPath[0];
-		if (board == null) {
-			command = wrongLocation;
-		} else {
-			String region = currentPath[1];
-			if (region == null) {
-				command = wrongLocation;
-			} else {
-				boolean hasPerm;
-				if (board.equals("freeforall")) {
-					hasPerm = SocialNetworkDatabasePosts.isFFAPostCreator(
-							conn, user, Integer.parseInt(region));
-				} else {
-					hasPerm = SocialNetworkDatabaseRegions.isRegionManager(
-							conn, user, board, region);
-				}
-				if (!hasPerm) {
-					command = INVALID;
-				}
-			}
-		}
-		return command;
-	}
-	
 	private void processRemoveParticipants() {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
@@ -814,14 +819,14 @@ public class ServerInputProcessor {
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayRemoveParticip(conn, board, region);
 				sendWithNonce(command);
-				String input = recvWithNonce();
+				String input = recvWithNonce().toLowerCase();
 
 				if (input.equals("cancel")) {
 					sendWithNonce(CANCEL);
 					return;
 				}
 				
-				usersToRemove = Arrays.asList(input.split(" *, *"));
+				usersToRemove = Arrays.asList(Utils.getValue(input).split(" *, *"));
 				validParticip = removables.containsAll(usersToRemove);
 				if (!validParticip) {
 					command = "print You do not have permission to remove all the " +
@@ -859,7 +864,7 @@ public class ServerInputProcessor {
 			while (!validParticip) {
 				command += SocialNetworkAdmin.displayEditableParticip(editables);
 				sendWithNonce(command);
-				toEdit = recvWithNonce();
+				toEdit = recvWithNonce().toLowerCase();
 
 				if (toEdit.equals("cancel")) {
 					sendWithNonce(CANCEL);
@@ -891,6 +896,21 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
+	private String adminEditError(Connection conn) {
+		String wrongLocation = "print Goto a board (not freeforall) to add admin to it.;";
+		String board = currentPath[0];
+		if (board == null) {
+			return wrongLocation;
+		} else if (board.equals("freeforall")) {
+			return wrongLocation;
+		} else {
+			if (!SocialNetworkDatabaseBoards.isBoardManager(conn, user, board)) {
+				return INVALID;
+			}
+		}
+		return "";
+	}
+
 	private void processAddAdmins() {
 		Connection conn = DBManager.getConnection();
 		String error = adminEditError(conn);
@@ -905,7 +925,7 @@ public class ServerInputProcessor {
 			while (!valid) {
 				command += SocialNetworkAdmin.displayAddableAdmins(addables);
 				sendWithNonce(command);
-				String input = recvWithNonce();
+				String input = recvWithNonce().toLowerCase();
 				
 				if (input.equals("cancel")) {
 					sendWithNonce(CANCEL);
@@ -943,7 +963,7 @@ public class ServerInputProcessor {
 			while (!valid) {
 				command += SocialNetworkAdmin.displayRemovableAdmins(removables, user);
 				sendWithNonce(command);
-				String input = recvWithNonce();
+				String input = recvWithNonce().toLowerCase();
 				
 				if (input.equals("cancel")) {
 					sendWithNonce(CANCEL);
@@ -966,23 +986,6 @@ public class ServerInputProcessor {
 		}
 		DBManager.closeConnection(conn);
 	}
-	
-	private String adminEditError(Connection conn) {
-		String wrongLocation = "print Goto a board (not freeforall) to add admin to it.;";
-		String board = currentPath[0];
-		if (board == null) {
-			return wrongLocation;
-		} else if (board.equals("freeforall")) {
-			return wrongLocation;
-		} else {
-			if (!SocialNetworkDatabaseBoards.isBoardManager(conn, user, board)) {
-				return INVALID;
-			}
-		}
-		return "";
-	}
-	
-	
 	
 
 	/**

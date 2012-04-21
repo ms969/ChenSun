@@ -8,12 +8,6 @@ goto                    Command for moving between boards, regions,
 
 refresh                 Refreshes the current page.
 
-createBoard             Creates a posting board.
-
-createRegion            Creates a region within a board. Does not
-                        work in freeforall board because it doesn't
-                        contain regions.
-
 post                    Creates a post in the freeforall board or 
                         in a region in another board.
 
@@ -35,6 +29,12 @@ logout                  Signs out the current user.
 -------------------------------------------------------------------
 Admin only commands:
 -------------------------------------------------------------------
+createBoard <bname>     Creates a posting board.
+
+createRegion <rname>    Creates a region within a board. Does not
+                        work in freeforall board because it doesn't
+                        contain regions.
+
 regRequests             View registration requests for your group.
                         
 addParticipants         Adds participants to the current region,
