@@ -15,6 +15,8 @@ import javax.crypto.spec.IvParameterSpec;
  * Implements shared key communications between the server and the client
  * 
  * Sent message:
+ * TODO NONCE
+ * TODO we need to handle when the key nonce bundle is null (aka the protocol failed)
  * checksum(ivp + encmsglen + actualmsg) + ivp + encmsglen + encmsg
  *
  */
@@ -68,8 +70,7 @@ public class SharedKeyCryptoComm {
 		return c;
 	}
 	
-	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
-		//System.out.println(msg);
+	public static boolean send(byte[] msgbytes, OutputStream os, Cipher c, SecretKey sk) {
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
@@ -81,8 +82,7 @@ public class SharedKeyCryptoComm {
 				c.init(Cipher.ENCRYPT_MODE, sk, ivp);
 			}
 			catch (Exception e) {/*This cannot happen*/}
-
-			byte[] msgbytes = msg.getBytes("UTF8");
+			
 			byte[] encmsg = null;
 			try {
 				encmsg = c.doFinal(msgbytes);
@@ -99,6 +99,8 @@ public class SharedKeyCryptoComm {
 			
 			//get checksum
 			byte[] checksum = Hash.generateChecksum(totalmsg);
+			
+			//TODO zero out totalmsg.
 
 			os.write(checksum); //128 bits
 			os.write(iv);
@@ -107,16 +109,25 @@ public class SharedKeyCryptoComm {
 			os.flush();
 		}
 		catch (IOException e) {
-			System.out.println("Error/Timeout sending the message: " + msg);
+			System.out.println("Error/Timeout sending the message (msg in bytes so it is not printed) ");
 			return false;
 		}
 		return true;
 	}
 	
+	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk) {
+		try {
+			byte[] msgbytes = msg.getBytes("UTF8"); //the exception won't happen
+			return send(msgbytes, os, c , sk);
+		}
+		catch (Exception e) {/*Should not happen*/}
+		return false;
+	}
+	
 	/**
 	 * RETURNS NULL IF CHECKSUM CHECK FAILS!!!
 	 */
-	public static String receive(InputStream is, Cipher c, SecretKey sk) {
+	public static byte[] receiveBytes(InputStream is, Cipher c, SecretKey sk) {
 		int blockSize = c.getBlockSize();
 		byte[] checksum = new byte[MD5CHECKSUMLEN]; //MD5
 		byte[] iv = new byte[blockSize];
@@ -160,7 +171,7 @@ public class SharedKeyCryptoComm {
 		String msg = null;
 		try {
 			msgbytes = c.doFinal(encmsg);
-			msg = new String(msgbytes, "UTF8");
+			//msg = new String(msgbytes, "UTF8");
 		} catch (Exception e) {
 			e.printStackTrace(); //this should not happen
 		} 
@@ -173,9 +184,17 @@ public class SharedKeyCryptoComm {
 		
 		//compare the checksum received to the generated checksum.
 		if (Arrays.equals(checksum, Hash.generateChecksum(wholeMessage))) {
+			//TODO zero out the wholeMessage array
 			System.out.println("Generated checksum for message does not equal the received checksum!");
-			return msg;
+			return msgbytes;
 		}
 		return null; //returns null on checksum mismatch
+	}
+	
+	public static String receiveString(InputStream is, Cipher c, SecretKey sk) {
+		try {
+			return new String(receiveBytes(is, c, sk), "UTF8");
+		} catch (Exception e) {/*Should not happen*/}
+		return null;
 	}
 }

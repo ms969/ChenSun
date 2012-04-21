@@ -37,7 +37,7 @@ public class CommManager {
 	
 	public static String receive(InputStream is, Cipher c, SecretKey sk) {
 		if (ProjectConfig.SENDING_METHOD == SendingType.SHARED_KEY) {
-			String msg = SharedKeyCryptoComm.receive(is, c, sk);
+			String msg = SharedKeyCryptoComm.receiveString(is, c, sk);
 			if (ProjectConfig.DEBUG) {
 				System.out.println("Recv msg: " + msg);
 			}
