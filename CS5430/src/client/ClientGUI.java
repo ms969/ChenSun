@@ -8,6 +8,7 @@ import javax.crypto.*;
 
 import shared.ProjectConfig;
 
+import crypto.KeyNonceBundle;
 import crypto.PublicKeyCryptoClient;
 import crypto.SharedKeyCryptoComm;
 
@@ -32,7 +33,8 @@ public class ClientGUI {
 			if (pubk == null) {
 				System.exit( 1 );
 			}
-			sk = PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
+			KeyNonceBundle knb = PublicKeyCryptoClient.clientSideAuth(kkSocket.getInputStream(), kkSocket.getOutputStream(), pubk);
+			sk = knb.getSk();
 			c = SharedKeyCryptoComm.createCipher(SharedKeyCryptoComm.ALG);
 			
 			serverOut = kkSocket.getOutputStream();
