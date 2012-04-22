@@ -3,6 +3,7 @@ package server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import shared.Utils;
 import comm.CommManager;
 
 import crypto.Hash;
+import crypto.SharedKeyCryptoComm;
 import database.DBManager;
 import database.DatabaseAdmin;
 import database.SocialNetworkDatabaseBoards;
@@ -50,6 +52,12 @@ public class ServerInputProcessor {
 		String msg = CommManager.receive(is, c, sk, recvNonce);
 		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
 		return msg;
+	}
+	
+	public byte[] recvBytesWithNonce() {
+		byte[] buffer = SharedKeyCryptoComm.receiveBytes(is, c, sk, recvNonce);
+		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
+		return buffer;
 	}
 	
 	public void processCommand(String inputLine) throws IOException {
@@ -274,20 +282,40 @@ public class ServerInputProcessor {
 		
 		String pwhash = "";
 		String command = "";
+		String salt = "";
 		
 		// check username existence
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
 		if (userInfo != null) {
 			userExist = true;
 			pwhash = userInfo[1];
+			salt = pwhash.substring(0, Hash.SALT_STRING_LENGTH);
 		}
-		if (userExist) {
-			command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
-		}
+//		if (userExist) {
+//			command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
+//		}
 		// ask for password
 		command += "print Input password:;getPassword";
 		sendWithNonce(command);
-		String enteredPwdHash = recvWithNonce();
+//		String enteredPwdHash = recvWithNonce();
+		if (DEBUG) {
+			char[] testChars = "testing".toCharArray();
+			byte[] testBytes = Utils.charToByteArray(testChars);
+			try {
+				System.err.println("testBytes: " + new String(testBytes, "UTF-16"));
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+			char[] testChar2 = Utils.byteToCharArray(testBytes);
+			System.err.print("char array: ");
+			for (char c: testChar2) {
+				System.err.printf("%s", c);
+			}
+			System.err.println();
+		}
+		char[] pwdChars = Utils.byteToCharArray(recvBytesWithNonce());
+		String enteredPwdHash = Hash.hashExistingPwd(salt, pwdChars);
+		
 		
 		// check password
 		if (userExist) {
@@ -330,13 +358,13 @@ public class ServerInputProcessor {
 
 			String command = "";
 			
-			if (invalid) {
+			if (invalid || newUser.equals("cancel") || newUser.equals("deleteduser")) {
+				// if the last 2 conds lead to this block, set invalid to true again
+				invalid = true;
 				command = "print Username already exist. Choose a different one.;"
 						+ "askForInput;";
 				sendWithNonce(command);
-			} else if (newUser.equals("cancel") ||
-					newUser.equals("deleteduser") || 
-					!newUser.matches("^[0-9a-z_]{2,50}$")) {
+			} else if (!newUser.matches("^[0-9a-z_]{2,50}$")) {
 				invalid = true;
 				command = "print Invalid username format. Please choose another one.;" +
 						"askForInput;";

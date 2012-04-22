@@ -23,9 +23,9 @@ import javax.crypto.spec.IvParameterSpec;
  */
 public class SharedKeyCryptoComm {
 	
-	public static String ALG = "Blowfish/CBC/PKCS5Padding";
+	public static final String ALG = "Blowfish/CBC/PKCS5Padding";
 	
-	public static int MD5CHECKSUMLEN = (128/8); //in bytes
+	public static final int MD5CHECKSUMLEN = (128/8); //in bytes
 	
 	private static SecureRandom createSecureRandom() {
 		SecureRandom sr = null;
@@ -102,7 +102,8 @@ public class SharedKeyCryptoComm {
 			//get checksum
 			byte[] checksum = Hash.generateChecksum(totalmsg);
 			
-			//TODO zero out totalmsg.
+			// zero out totalmsg.
+			Arrays.fill(totalmsg, (byte)0x00);
 
 			os.write(checksum); //128 bits
 			os.write(iv);
@@ -183,15 +184,16 @@ public class SharedKeyCryptoComm {
 		//generate checksum of received msg.
 		byte[] wholeMessage = new byte[iv.length + size.length + msgbytes.length];
 		System.arraycopy(iv, 0, wholeMessage, 0, iv.length);
-		System.arraycopy(encmsglen, 0, wholeMessage, iv.length, size.length);
+		System.arraycopy(size, 0, wholeMessage, iv.length, size.length);
 		System.arraycopy(msgbytes, 0, wholeMessage, iv.length + size.length, msgbytes.length);
 		
 		//compare the checksum received to the generated checksum.
 		if (Arrays.equals(checksum, Hash.generateChecksum(wholeMessage))) {
-			//TODO zero out the wholeMessage array
-			System.out.println("Generated checksum for message does not equal the received checksum!");
+			// zero out the wholeMessage array
+			Arrays.fill(wholeMessage, (byte)0x00);
 			return msgbytes;
 		}
+		System.out.println("Generated checksum for message does not equal the received checksum!");
 		return null; //returns null on checksum mismatch
 	}
 	

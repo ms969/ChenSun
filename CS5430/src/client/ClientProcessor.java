@@ -18,6 +18,7 @@ import shared.Utils;
 import comm.CommManager;
 
 import crypto.Hash;
+import crypto.SharedKeyCryptoComm;
 
 public class ClientProcessor {
 	private boolean loggedIn = false;
@@ -42,6 +43,11 @@ public class ClientProcessor {
 		String msg = CommManager.receive(serverIn, c, sk, recvNonce);
 		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
 		return msg;
+	}
+	
+	public void sendWithNonce(byte[] msg) {
+		SharedKeyCryptoComm.send(msg, serverOut, c, sk, sendNonce);
+		this.sendNonce = this.sendNonce.add(BigInteger.ONE);
 	}
 	
 	public ClientProcessor(OutputStream serverOut, InputStream serverIn, 
@@ -113,17 +119,19 @@ public class ClientProcessor {
 		char[] charBuff = new char[24];
 		System.out.print(">> ");
 		try {
-			String hashedPwd = "";
+//			String hashedPwd = "";
 			int i = keyboard.read(charBuff);
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
-			if (salt != null) {
-				hashedPwd = Hash.hashExistingPwd(salt, pwd);
-				salt = null;
-			}
+			byte[] pwdBytes = Utils.charToByteArray(pwd);
+//			if (salt != null) {
+//				hashedPwd = Hash.hashExistingPwd(salt, pwd);
+//				salt = null;
+//			}
 			
-			sendWithNonce(hashedPwd);
+			sendWithNonce(pwdBytes);
 			Arrays.fill(charBuff, ' ');
 			Arrays.fill(pwd, ' ');
+			Arrays.fill(pwdBytes, (byte)0x00);
 			processCommands(recvWithNonce());
 		} catch (IOException e) {
 			e.printStackTrace();
