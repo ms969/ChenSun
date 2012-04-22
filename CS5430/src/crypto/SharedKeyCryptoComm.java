@@ -120,7 +120,8 @@ public class SharedKeyCryptoComm {
 		}
 		catch (IOException e) {
 			System.out.println("Error/Timeout sending the message (msg in bytes so it is not printed) ");
-			return false;
+			System.out.println("Closing the connection");
+			System.exit(1);
 		}
 		return true;
 	}
@@ -150,24 +151,28 @@ public class SharedKeyCryptoComm {
 		//first fetch the checksum
 		if (!readIntoBuffer(is, checksum)) {
 			System.out.println("Error/Timeout receiving the message. (checksum)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 		
 		if (!readIntoBuffer(is, recvnonce)) {
 			System.out.println("Error/Timeout receiving the message. (recvnonce)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 
 		//fetch iv
 		if (!readIntoBuffer(is, iv)) {
 			System.out.println("Error/Timeout receiving the message. (iv)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 
 		//fetch size of enc msg
 		if (!readIntoBuffer(is, size)) {
 			System.out.println("Error/Timeout receiving the message. (encmsglen)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 
 		int encmsglen = ByteBuffer.wrap(size).getInt();
@@ -177,7 +182,8 @@ public class SharedKeyCryptoComm {
 		//read the actual message in
 		if (!readIntoBuffer(is, encmsg)) {
 			System.out.println("Error/Timeout receiving the message. (encmsg)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 		
 		IvParameterSpec ivp = new IvParameterSpec(iv);
@@ -215,7 +221,9 @@ public class SharedKeyCryptoComm {
 		else {
 			System.out.println("Received nonce for the message does not equal the expected nonce!");
 		}
-		return null; //returns null on checksum mismatch
+		System.out.println("Closing the connection...");
+		System.exit(1);
+		return null;
 	}
 	
 	public static String receiveString(InputStream is, Cipher c, SecretKey sk, BigInteger recvNonce) {
