@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.net.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
+import java.sql.Connection;
+import java.util.Arrays;
 import java.io.*;
 
 import javax.crypto.KeyGenerator;
@@ -12,6 +14,8 @@ import shared.ProjectConfig;
 
 import crypto.PublicKeyCryptoServer;
 import crypto.SharedKeyCrypto;
+import database.DBManager;
+import database.DatabaseDBA;
 
 /* Setup code and Connection code courtesy of 
  * tutorials in docs.oracle.com
@@ -58,6 +62,45 @@ public class SocialNetworkServer {
 		}
 		
 		
+	}
+	
+	private static void getPassword() throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		char[] input = new char[21]; //password is at most 20 characters.
+		boolean valid = false;
+		int numRetries = 5;
+		
+		Connection conn = DBManager.getConnection();
+		String keystring = DatabaseDBA.fetchKeys(conn);
+		
+		if (keystring == null) {
+			System.err.println("Could not fetch initialization string from Database");
+			System.err.println("Make sure the database is configured correctly.");
+			System.exit(1);
+		}
+		String[] keys = keystring.split(";");
+		
+		System.out.println("Input passphrase");
+		
+		while(!valid && numRetries > 0) {
+			System.out.print(">> ");
+			int length = br.read(input);
+
+			if (br.ready()) { //there is leftover data.
+				//TODO leftover \n triggers ready to be true?
+				System.out.println("Invalid passphrase. Try again");
+				numRetries--;
+				continue;
+			}
+			
+			char[] pwd = Arrays.copyOf(input, length - 1); //get rid of the \n
+			
+			//get the salt and iteration count from the first key.
+			String[] firstKey = keys[0].split(" ");
+			
+			
+			/*Create the PBEKey from this pwd*/
+		}
 	}
 
 	private static void getSecrets() throws IOException {
@@ -132,7 +175,7 @@ public class SocialNetworkServer {
 		} catch (IOException e) {
 			System.err.println("Error: Client connection failed.");
 		}
-		
+
 	}
 
 }

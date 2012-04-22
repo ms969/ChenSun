@@ -5,11 +5,45 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import shared.ProjectConfig;
 
 public class DatabaseDBA {
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
+	
+	private static final int NUMCOLUMNSKEYS = 5;
+	
+	/**Function fetches the record in the database
+	 * that corresponds to keys
+	 */
+	public static String fetchKeys(Connection conn) {
+		String query = "SELECT * FROM main.keys";
+		
+		Statement stmt = null;
+		ResultSet rs = null;
+		
+		String keys = null;
+		try {
+			stmt = conn.createStatement();
+			rs = stmt.executeQuery(query);
+			while (rs.next()) {
+				for (int i = 0; i < NUMCOLUMNSKEYS; i++) {
+					keys += rs.getString(0) + " ";
+				}
+				//remove the last space; replace it with a semicolon.
+				keys = keys.substring(0, keys.length() - 1) + ";";
+			}
+		}
+		catch (SQLException e) {
+			System.out.println("Error fetching the keys from the database");
+		}
+		finally {
+			DBManager.closeStatement(stmt);
+			DBManager.closeResultSet(rs);
+		}
+		return keys.substring(0, keys.length() - 1);
+	}
 	
 	/**ATOMIC DATABASE UPDATE
 	 * Inserts Acappella Group, and the new user as an SA for this group.

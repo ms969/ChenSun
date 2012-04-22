@@ -18,7 +18,7 @@ import javax.crypto.spec.IvParameterSpec;
  * Sent message:
  * TODO NONCE
  * TODO we need to handle when the key nonce bundle is null (aka the protocol failed)
- * checksum(ivp + encmsglen + actualmsg) + ivp + encmsglen + encmsg
+ * checksum(nonce + ivp + encmsglen + actualmsg) + nonce + ivp + encryptedmsg's len + encmsg
  *
  */
 public class SharedKeyCryptoComm {
@@ -26,6 +26,8 @@ public class SharedKeyCryptoComm {
 	public static final String ALG = "Blowfish/CBC/PKCS5Padding";
 	
 	public static final int MD5CHECKSUMLEN = (128/8); //in bytes
+	
+	private final static int NONCE_LENGTH = (64/8);
 	
 	private static SecureRandom createSecureRandom() {
 		SecureRandom sr = null;
@@ -93,11 +95,15 @@ public class SharedKeyCryptoComm {
 			}
 			byte[] encmsglen = ByteBuffer.allocate(4).putInt(encmsg.length).array();
 			
-			byte[] totalmsg = new byte[iv.length + encmsglen.length + msgbytes.length];
-			//iv, msglen, and msgbytes.
-			System.arraycopy(iv, 0, totalmsg, 0, iv.length);
-			System.arraycopy(encmsglen, 0, totalmsg, iv.length, encmsglen.length);
-			System.arraycopy(msgbytes, 0, totalmsg, iv.length + encmsglen.length, msgbytes.length);
+			byte[] sendNonceArray = sendNonce.toByteArray();
+			byte[] sendNonceArrayMsg = Arrays.copyOf(sendNonceArray, NONCE_LENGTH);
+			
+			byte[] totalmsg = new byte[NONCE_LENGTH + iv.length + encmsglen.length + msgbytes.length];
+			//nonce, iv, msglen, and msgbytes.
+			System.arraycopy(sendNonceArrayMsg, 0, totalmsg, 0, NONCE_LENGTH);
+			System.arraycopy(iv, 0, totalmsg, NONCE_LENGTH, iv.length);
+			System.arraycopy(encmsglen, 0, totalmsg, NONCE_LENGTH + iv.length, encmsglen.length);
+			System.arraycopy(msgbytes, 0, totalmsg, NONCE_LENGTH + iv.length + encmsglen.length, msgbytes.length);
 			
 			//get checksum
 			byte[] checksum = Hash.generateChecksum(totalmsg);
@@ -106,6 +112,7 @@ public class SharedKeyCryptoComm {
 			Arrays.fill(totalmsg, (byte)0x00);
 
 			os.write(checksum); //128 bits
+			os.write(sendNonceArrayMsg);
 			os.write(iv);
 			os.write(encmsglen);
 			os.write(encmsg);
@@ -113,7 +120,8 @@ public class SharedKeyCryptoComm {
 		}
 		catch (IOException e) {
 			System.out.println("Error/Timeout sending the message (msg in bytes so it is not printed) ");
-			return false;
+			System.out.println("Closing the connection");
+			System.exit(1);
 		}
 		return true;
 	}
@@ -135,25 +143,36 @@ public class SharedKeyCryptoComm {
 			BigInteger recvNonce) {
 		int blockSize = c.getBlockSize();
 		byte[] checksum = new byte[MD5CHECKSUMLEN]; //MD5
+		byte[] recvnonce = new byte [NONCE_LENGTH];
+		byte[] expctnonce = Arrays.copyOf(recvNonce.toByteArray(), NONCE_LENGTH);
 		byte[] iv = new byte[blockSize];
 		byte[] size = new byte[4]; //int
 
 		//first fetch the checksum
 		if (!readIntoBuffer(is, checksum)) {
 			System.out.println("Error/Timeout receiving the message. (checksum)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
+		}
+		
+		if (!readIntoBuffer(is, recvnonce)) {
+			System.out.println("Error/Timeout receiving the message. (recvnonce)");
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 
 		//fetch iv
 		if (!readIntoBuffer(is, iv)) {
 			System.out.println("Error/Timeout receiving the message. (iv)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 
 		//fetch size of enc msg
 		if (!readIntoBuffer(is, size)) {
 			System.out.println("Error/Timeout receiving the message. (encmsglen)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 
 		int encmsglen = ByteBuffer.wrap(size).getInt();
@@ -163,7 +182,8 @@ public class SharedKeyCryptoComm {
 		//read the actual message in
 		if (!readIntoBuffer(is, encmsg)) {
 			System.out.println("Error/Timeout receiving the message. (encmsg)");
-			return null;
+			System.out.println("Closing the connection...");
+			System.exit(1);
 		}
 		
 		IvParameterSpec ivp = new IvParameterSpec(iv);
@@ -182,19 +202,28 @@ public class SharedKeyCryptoComm {
 		} 
 		
 		//generate checksum of received msg.
-		byte[] wholeMessage = new byte[iv.length + size.length + msgbytes.length];
-		System.arraycopy(iv, 0, wholeMessage, 0, iv.length);
-		System.arraycopy(size, 0, wholeMessage, iv.length, size.length);
-		System.arraycopy(msgbytes, 0, wholeMessage, iv.length + size.length, msgbytes.length);
+		byte[] wholeMessage = new byte[NONCE_LENGTH + iv.length + size.length + msgbytes.length];
+		System.arraycopy(recvnonce, 0, wholeMessage, 0, NONCE_LENGTH);
+		System.arraycopy(iv, 0, wholeMessage, NONCE_LENGTH, iv.length);
+		System.arraycopy(size, 0, wholeMessage, NONCE_LENGTH + iv.length, size.length);
+		System.arraycopy(msgbytes, 0, wholeMessage, NONCE_LENGTH + iv.length + size.length, msgbytes.length);
 		
 		//compare the checksum received to the generated checksum.
-		if (Arrays.equals(checksum, Hash.generateChecksum(wholeMessage))) {
+		if (Arrays.equals(checksum, Hash.generateChecksum(wholeMessage)) && 
+				Arrays.equals(recvnonce, expctnonce)) {
 			// zero out the wholeMessage array
 			Arrays.fill(wholeMessage, (byte)0x00);
 			return msgbytes;
 		}
-		System.out.println("Generated checksum for message does not equal the received checksum!");
-		return null; //returns null on checksum mismatch
+		if (!Arrays.equals(checksum, Hash.generateChecksum(wholeMessage))) {
+				System.out.println("Generated checksum for message does not equal the received checksum!");
+		}
+		else {
+			System.out.println("Received nonce for the message does not equal the expected nonce!");
+		}
+		System.out.println("Closing the connection...");
+		System.exit(1);
+		return null;
 	}
 	
 	public static String receiveString(InputStream is, Cipher c, SecretKey sk, BigInteger recvNonce) {

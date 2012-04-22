@@ -68,12 +68,12 @@ public class SocialNetworkDBAThread implements Runnable{
 					return ;
 				}
 				System.out.println("Please input the password for this System Admin (no cancelling)");
-				System.out.println(">> ");
+				System.out.print(">> ");
 				//TODO password creation restrictions... we should make that function
 				keyboard.read(charbuf);
 				
 				System.out.println("Confirm the password");
-				System.out.println(">> ");
+				System.out.print(">> ");
 				keyboard.read(charbuf2);
 				
 				if (Arrays.equals(charbuf, charbuf2)) {
