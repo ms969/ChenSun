@@ -6,7 +6,7 @@ public class CryptoUtil {
 //	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	
 	public static String encode(byte[] bytes) {
-		return Base64.encodeBase64URLSafeString(bytes);
+		return Base64.encodeBase64String(bytes);
 		
 //		BASE64Encoder encoder = new BASE64Encoder();
 //		return encoder.encode(bytes);
