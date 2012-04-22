@@ -1,5 +1,6 @@
 package shared;
 
+
 public class Utils {
 
 	// return a command for printing a horizontal rule numChar long
@@ -39,8 +40,8 @@ public class Utils {
 	
 	public static char[] byteToCharArray(byte[] bytes) {
 		char[] chars = new char[bytes.length/2];
-		for(int i=0; i<chars.length; i+=2) {
-		   chars[i] = (char) (bytes[i*2] << 8 + bytes[i*2+1] & 0xFF);//why & 11111111?? it's just identity
+		for(int i=0; i<chars.length; i+=1) {
+		   chars[i] = (char) (bytes[i*2] << 8 + bytes[i*2+1]);//why & 11111111?? it's just identity
 		}
 		return chars;
 	}

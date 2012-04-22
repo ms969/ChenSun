@@ -309,7 +309,7 @@ public class ServerInputProcessor {
 			char[] testChar2 = Utils.byteToCharArray(testBytes);
 			System.err.print("char array: ");
 			for (char c: testChar2) {
-				System.err.printf("%s", c);
+				System.err.printf("%c", c);
 			}
 			System.err.println();
 		}

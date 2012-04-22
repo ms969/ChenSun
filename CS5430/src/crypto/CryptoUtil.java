@@ -1,30 +1,29 @@
 package crypto;
 
-import java.io.IOException;
-
-import server.SocialNetworkServer;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
-
-import shared.ProjectConfig;
+import org.apache.commons.codec.binary.Base64;
 
 public class CryptoUtil {
-	private static final boolean DEBUG = ProjectConfig.DEBUG;
+//	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	
 	public static String encode(byte[] bytes) {
-		BASE64Encoder encoder = new BASE64Encoder();
-		return encoder.encode(bytes);
+		return Base64.encodeBase64URLSafeString(bytes);
+		
+//		BASE64Encoder encoder = new BASE64Encoder();
+//		return encoder.encode(bytes);
 	}
 	
 	public static byte[] decode(String str) {
-		BASE64Decoder decoder = new BASE64Decoder();
-		try {
-			return decoder.decodeBuffer(str);
-		} catch (IOException e) {
-			if (DEBUG) e.printStackTrace();
-			return null;
-		}
+		return Base64.decodeBase64(str);
+//		BASE64Decoder decoder = new BASE64Decoder();
+//		try {
+//			return decoder.decodeBuffer(str);
+//		} catch (IOException e) {
+//			if (DEBUG) e.printStackTrace();
+//			return null;
+//		}
 	}
+	
+	
 	
 //	private static byte[] generateZeroArray(int length) {
 //		byte[] array = new byte[length];
