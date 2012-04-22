@@ -7,6 +7,8 @@ import java.io.*;
 import java.security.*;
 import javax.crypto.*;
 
+import shared.ConnectionException;
+
 import comm.CommManager;
 
 import crypto.KeyNonceBundle;
@@ -28,7 +30,7 @@ public class SocialNetworkProtocol implements Runnable {
 		this.pk = pk;
 	}
 
-	public void main() throws IOException {
+	public void main() throws IOException, ConnectionException {
 		KeyNonceBundle knb = PublicKeyCryptoServer.serverSideAuth(clientSocket.getInputStream(), clientSocket.getOutputStream(), pk);
 		if (knb == null) {
 			System.out.println("Authentication Protocol Failed - Some client was unresponsive / malicious");
@@ -64,6 +66,11 @@ public class SocialNetworkProtocol implements Runnable {
 			} else {
 				System.err.println("Error: Cannot find CreateDB SQL file.");
 			}
+			try {
+				clientSocket.close();
+			} catch (IOException e1) {	}
+		} catch (ConnectionException e) {
+			System.err.println("Error: closing connection.");
 			try {
 				clientSocket.close();
 			} catch (IOException e1) {	}

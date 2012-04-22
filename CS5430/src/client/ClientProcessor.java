@@ -13,6 +13,7 @@ import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
+import shared.ConnectionException;
 import shared.Utils;
 
 import comm.CommManager;
@@ -44,7 +45,7 @@ public class ClientProcessor {
 		return msg;
 	}
 	
-	public void sendWithNonce(byte[] msg) {
+	public void sendWithNonce(byte[] msg) throws ConnectionException {
 		SharedKeyCryptoComm.send(msg, serverOut, c, sk, sendNonce);
 		this.sendNonce = this.sendNonce.add(BigInteger.ONE);
 	}
@@ -60,7 +61,7 @@ public class ClientProcessor {
 		this.recvNonce = recvNonce;
 	}
 
-	private void processCommands(String response) {
+	private void processCommands(String response) throws ConnectionException {
 		String delims = ";";
 		String[] commands = response.split(delims);
 		for (int i = 0; i < commands.length; i++) {
@@ -98,7 +99,7 @@ public class ClientProcessor {
 		}
 	}
 
-	public void askForInput() {
+	public void askForInput() throws ConnectionException {
 		System.out.print(">> ");
 		try {
 			String input = keyboard.readLine();
@@ -110,12 +111,21 @@ public class ClientProcessor {
 		}
 	}
 
-	private void getPassword() {
-		char[] charBuff = new char[24];
+	private void getPassword() throws ConnectionException {
+		char[] charBuff = new char[22];
 		System.out.print(">> ");
 		try {
+			boolean overflow = false;
 			int i = keyboard.read(charBuff);
+			if (keyboard.ready()) {
+				keyboard.readLine();
+				overflow = true;
+			}
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
+			if (overflow) {
+				// if longer than 20 char, blank the array to avoid partially correct pwd
+				Arrays.fill(charBuff, ' ');
+			}
 			byte[] pwdBytes = Utils.charToByteArray(pwd);
 			
 			sendWithNonce(pwdBytes);
@@ -129,24 +139,25 @@ public class ClientProcessor {
 		
 	}
 	
-	private void createPassword() {
+	private void createPassword() throws ConnectionException {
 		boolean pwdValid = false;
 		char[] pwdChar1 = null;
 		char[] pwdChar2 = null;
 		while (!pwdValid) {
+			boolean pwdOverflow = false;
 			System.out.println("Create a password for your account (6-20 char long):");
 			System.out.println("Password should contain at least 1 lower case letter, " +
-					"one upper case letter, and 1 number.");
+					"1 upper case letter, and 1 number.");
 			System.out.print(">> ");
-			char[] charBuff = new char[20];
+			char[] charBuff = new char[22]; // 20 for data, last 2 for \r\n
 			try {
 				int length = keyboard.read(charBuff);
 				if (keyboard.ready()) {
 					keyboard.readLine();
-					pwdValid = false;
+					pwdOverflow = true;
 				}
+				// length-2 because \r\n
 				pwdChar1 = Arrays.copyOfRange(charBuff, 0, length - 2);
-				// XXX setting pwdValid for overflow
 			} catch (IOException e1) {
 				System.err.println("Input error: closing connection...");
 				System.exit(1);
@@ -154,37 +165,59 @@ public class ClientProcessor {
 
 			System.out.println("Confirm new password:");
 			System.out.print(">> ");
-			charBuff = new char[20];
+			charBuff = new char[22];
 			try {
 				int i = keyboard.read(charBuff);
 				if (keyboard.ready()) {
-					String line = keyboard.readLine();
-					System.out.println("extra: " + line);
+					keyboard.readLine();
+					pwdOverflow = true;
 				}
 				pwdChar2 = Arrays.copyOfRange(charBuff, 0, i - 2);
+				Arrays.fill(charBuff, ' ');
 			} catch (IOException e) {
 				System.err.println("Input error: closing connection...");
 				System.exit(1);
 			}
-			pwdValid = pwdsMatch(pwdChar1, pwdChar2) && validPassword(pwdChar1);
+			pwdValid = Arrays.equals(pwdChar1, pwdChar2) && 
+					validPassword(pwdChar1) && !pwdOverflow;
 			if (!pwdValid) {
 				System.out.println("Invalid passwords. Please re-enter.");
 				System.out.println();
 			}
 		}
 		
-		String pwdHash = Hash.createPwdHashStore(pwdChar1);
-		sendWithNonce(pwdHash);
+		sendWithNonce(Utils.charToByteArray(pwdChar1));
+		Arrays.fill(pwdChar1, ' ');
+		Arrays.fill(pwdChar2, ' ');
 		processCommands(recvWithNonce());
 	}
 	
 	private boolean validPassword(char[] pwd) {
 		// between 6 and 20 character
+		if (pwd.length < 6 || pwd.length > 20) {
+			return false;
+		}
 		
-		return true;
+		boolean lowerCase = false, upperCase = false, number = false;
+		for (char c: pwd) {
+			String s = c + "";
+			if (s.matches("[a-z]")) { // contains 1 lower case
+				lowerCase = true;
+			} else if (s.matches("[A-Z]")) { // contains 1 upper case
+				upperCase = true;
+			} else if (s.matches("[0-9]")) { // contains a number
+				number = true;
+			} else if (s.matches("[!@#$%^&*?:.,~`+=\\-_|]")) {
+				// contains other allowed chars:
+				// ! @ # $ % ^ & * ? : . , ~ ` + = - _ |
+			} else {
+				return false;
+			}
+		}
+		return lowerCase && upperCase && number;
 	}
 		
-	public void processLogin() {
+	public void processLogin() throws ConnectionException {
 		System.out.println();
 		System.out.println("To log in, type 'login <username>'");
 		System.out.println("To register, type 'register'");
@@ -220,17 +253,6 @@ public class ClientProcessor {
 
 	private void setExit(boolean exit) {
 		this.exit = exit;
-	}
-
-	private boolean pwdsMatch(char[] pwdChar1, char[] pwdChar2) {
-		if (pwdChar1.length != pwdChar2.length) {
-			return false;
-		}
-		for (int i = 0; i < pwdChar1.length; i++) {
-			if (pwdChar1[i] != pwdChar2[i])
-				return false;
-		}
-		return true;
 	}
 
 }

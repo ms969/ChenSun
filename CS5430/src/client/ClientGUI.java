@@ -6,6 +6,7 @@ import java.net.*;
 import java.security.*;
 import javax.crypto.*;
 
+import shared.ConnectionException;
 import shared.ProjectConfig;
 
 import crypto.KeyNonceBundle;
@@ -65,16 +66,21 @@ public class ClientGUI {
 		// System welcome message
 		System.out.println("Welcome to the system.");
 		
-		while (true) {
-			
-			while (!processor.isLoggedIn() && !processor.isExit()) {
-				processor.processLogin();
-			}
-			
-			while(processor.isLoggedIn() && !processor.isExit()) {
-				processor.askForInput();
-			}
+		try {
+			while (true) {
+				
+				while (!processor.isLoggedIn() && !processor.isExit()) {
+					processor.processLogin();
+				}
+				
+				while(processor.isLoggedIn() && !processor.isExit()) {
+					processor.askForInput();
+				}
 
+			}
+		} catch (ConnectionException e) {
+			System.out.println("System error: closing connection.");
+			System.exit(1);
 		}
 
 	}

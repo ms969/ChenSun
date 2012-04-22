@@ -3,7 +3,6 @@ package server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.util.Arrays;
@@ -13,6 +12,7 @@ import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
+import shared.ConnectionException;
 import shared.ProjectConfig;
 import shared.Utils;
 
@@ -54,13 +54,13 @@ public class ServerInputProcessor {
 		return msg;
 	}
 	
-	public byte[] recvBytesWithNonce() {
+	public byte[] recvBytesWithNonce() throws ConnectionException {
 		byte[] buffer = SharedKeyCryptoComm.receiveBytes(is, c, sk, recvNonce);
 		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
 		return buffer;
 	}
 	
-	public void processCommand(String inputLine) throws IOException {
+	public void processCommand(String inputLine) throws IOException, ConnectionException {
 		if (inputLine.matches("^login .+")) {
 			if (user == null) {
 				processLogin(inputLine);
@@ -273,7 +273,7 @@ public class ServerInputProcessor {
 		this.recvNonce = recvNonce;
 	}
 
-	private void processLogin(String inputLine) {
+	private void processLogin(String inputLine) throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String username = Utils.getValue(inputLine).toLowerCase();
 
@@ -320,7 +320,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processRegistration(){
+	private void processRegistration() throws ConnectionException{
 		String newUser = "";
 		sendWithNonce("print Choose a username that's between 2-50 characters long. " +
 				"Only use digits, letters, and underscore:;" +
@@ -390,7 +390,12 @@ public class ServerInputProcessor {
 		
 		// create password
 		sendWithNonce("createPassword");
-		String pwdStore = recvWithNonce();
+		byte[] pwdBytes = recvBytesWithNonce();
+		char[] pwdChars = Utils.byteToCharArray(pwdBytes);
+		String pwdStore = Hash.createPwdHashStore(pwdChars);
+		
+		// ask security question
+		
 		
 		sendWithNonce(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore));
 		DBManager.closeConnection(conn);

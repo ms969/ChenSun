@@ -10,6 +10,8 @@ import java.util.Arrays;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 
+import shared.ConnectionException;
+
 /**
  * @author kchen
  * 
@@ -74,7 +76,7 @@ public class SharedKeyCryptoComm {
 	}
 	
 	public static boolean send(byte[] msgbytes, OutputStream os, Cipher c, SecretKey sk, 
-			BigInteger sendNonce) {
+			BigInteger sendNonce) throws ConnectionException {
 		int blockSize = c.getBlockSize();
 		
 		SecureRandom sr = createSecureRandom();
@@ -121,7 +123,7 @@ public class SharedKeyCryptoComm {
 		catch (IOException e) {
 			System.out.println("Error/Timeout sending the message (msg in bytes so it is not printed) ");
 			System.out.println("Closing the connection");
-			System.exit(1);
+			throw new ConnectionException();
 		}
 		return true;
 	}
@@ -138,9 +140,10 @@ public class SharedKeyCryptoComm {
 	
 	/**
 	 * RETURNS NULL IF CHECKSUM CHECK FAILS!!!
+	 * @throws ConnectionException 
 	 */
 	public static byte[] receiveBytes(InputStream is, Cipher c, SecretKey sk, 
-			BigInteger recvNonce) {
+			BigInteger recvNonce) throws ConnectionException {
 		int blockSize = c.getBlockSize();
 		byte[] checksum = new byte[MD5CHECKSUMLEN]; //MD5
 		byte[] recvnonce = new byte [NONCE_LENGTH];
@@ -152,27 +155,27 @@ public class SharedKeyCryptoComm {
 		if (!readIntoBuffer(is, checksum)) {
 			System.out.println("Error/Timeout receiving the message. (checksum)");
 			System.out.println("Closing the connection...");
-			System.exit(1);
+			throw new ConnectionException();
 		}
 		
 		if (!readIntoBuffer(is, recvnonce)) {
 			System.out.println("Error/Timeout receiving the message. (recvnonce)");
 			System.out.println("Closing the connection...");
-			System.exit(1);
+			throw new ConnectionException();
 		}
 
 		//fetch iv
 		if (!readIntoBuffer(is, iv)) {
 			System.out.println("Error/Timeout receiving the message. (iv)");
 			System.out.println("Closing the connection...");
-			System.exit(1);
+			throw new ConnectionException();
 		}
 
 		//fetch size of enc msg
 		if (!readIntoBuffer(is, size)) {
 			System.out.println("Error/Timeout receiving the message. (encmsglen)");
 			System.out.println("Closing the connection...");
-			System.exit(1);
+			throw new ConnectionException();
 		}
 
 		int encmsglen = ByteBuffer.wrap(size).getInt();
@@ -183,7 +186,7 @@ public class SharedKeyCryptoComm {
 		if (!readIntoBuffer(is, encmsg)) {
 			System.out.println("Error/Timeout receiving the message. (encmsg)");
 			System.out.println("Closing the connection...");
-			System.exit(1);
+			throw new ConnectionException();
 		}
 		
 		IvParameterSpec ivp = new IvParameterSpec(iv);
@@ -222,8 +225,7 @@ public class SharedKeyCryptoComm {
 			System.out.println("Received nonce for the message does not equal the expected nonce!");
 		}
 		System.out.println("Closing the connection...");
-		System.exit(1);
-		return null;
+		throw new ConnectionException();
 	}
 	
 	public static String receiveString(InputStream is, Cipher c, SecretKey sk, BigInteger recvNonce) {
