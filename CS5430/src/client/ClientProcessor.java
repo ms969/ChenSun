@@ -23,7 +23,6 @@ import crypto.SharedKeyCryptoComm;
 public class ClientProcessor {
 	private boolean loggedIn = false;
 	private boolean exit = false;
-	private String salt;
 
 	private BufferedReader keyboard;
 	private OutputStream serverOut;
@@ -92,10 +91,6 @@ public class ClientProcessor {
 			if (commands[i].equals("getPassword")) {
 				getPassword();
 			}
-			if (commands[i].matches("^setSalt.+")) {
-				String value = Utils.getValue(commands[i]);
-				setSalt(value);
-			}
 			if (commands[i].equals("createPassword")) {
 				createPassword();
 			}
@@ -119,14 +114,9 @@ public class ClientProcessor {
 		char[] charBuff = new char[24];
 		System.out.print(">> ");
 		try {
-//			String hashedPwd = "";
 			int i = keyboard.read(charBuff);
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
 			byte[] pwdBytes = Utils.charToByteArray(pwd);
-//			if (salt != null) {
-//				hashedPwd = Hash.hashExistingPwd(salt, pwd);
-//				salt = null;
-//			}
 			
 			sendWithNonce(pwdBytes);
 			Arrays.fill(charBuff, ' ');
@@ -144,34 +134,54 @@ public class ClientProcessor {
 		char[] pwdChar1 = null;
 		char[] pwdChar2 = null;
 		while (!pwdValid) {
-			System.out.println("Create a password for your account:");
+			System.out.println("Create a password for your account (6-20 char long):");
+			System.out.println("Password should contain at least 1 lower case letter, " +
+					"one upper case letter, and 1 number.");
 			System.out.print(">> ");
-			char[] charBuff = new char[24];
+			char[] charBuff = new char[20];
 			try {
-				int i = keyboard.read(charBuff);
-				pwdChar1 = Arrays.copyOfRange(charBuff, 0, i - 2);
+				int length = keyboard.read(charBuff);
+				if (keyboard.ready()) {
+					keyboard.readLine();
+					pwdValid = false;
+				}
+				pwdChar1 = Arrays.copyOfRange(charBuff, 0, length - 2);
+				// XXX setting pwdValid for overflow
 			} catch (IOException e1) {
-				e1.printStackTrace();
+				System.err.println("Input error: closing connection...");
+				System.exit(1);
 			}
 
 			System.out.println("Confirm new password:");
 			System.out.print(">> ");
-			charBuff = new char[24];
+			charBuff = new char[20];
 			try {
 				int i = keyboard.read(charBuff);
+				if (keyboard.ready()) {
+					String line = keyboard.readLine();
+					System.out.println("extra: " + line);
+				}
 				pwdChar2 = Arrays.copyOfRange(charBuff, 0, i - 2);
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.err.println("Input error: closing connection...");
+				System.exit(1);
 			}
-			pwdValid = pwdsMatch(pwdChar1, pwdChar2);
+			pwdValid = pwdsMatch(pwdChar1, pwdChar2) && validPassword(pwdChar1);
 			if (!pwdValid) {
 				System.out.println("Invalid passwords. Please re-enter.");
+				System.out.println();
 			}
 		}
 		
 		String pwdHash = Hash.createPwdHashStore(pwdChar1);
 		sendWithNonce(pwdHash);
 		processCommands(recvWithNonce());
+	}
+	
+	private boolean validPassword(char[] pwd) {
+		// between 6 and 20 character
+		
+		return true;
 	}
 		
 	public void processLogin() {
@@ -189,16 +199,11 @@ public class ClientProcessor {
 				System.out.println(line);
 			}
 		} catch (FileNotFoundException e) {
-			// TODO: do this?
 			System.out.println("Help file not found. Contact system admin.");
 		} catch (IOException e) {
 			System.out
 					.println("Help file may be corrupted. Contact system admin.");
 		}
-	}
-	
-	private void setSalt(String salt) {
-		this.salt = salt;
 	}
 
 	public boolean isLoggedIn() {

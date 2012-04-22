@@ -291,41 +291,15 @@ public class ServerInputProcessor {
 			pwhash = userInfo[1];
 			salt = pwhash.substring(0, Hash.SALT_STRING_LENGTH);
 		}
-//		if (userExist) {
-//			command = "setSalt "+pwhash.substring(0, Hash.SALT_STRING_LENGTH) + ";";
-//		}
+
 		// ask for password
 		command += "print Input password:;getPassword";
 		sendWithNonce(command);
-//		String enteredPwdHash = recvWithNonce();
-//		if (DEBUG) {
-//			char[] testChars = "testing".toCharArray();
-//			System.err.print("char array1: ");
-//			for (char c: testChars) {
-//				System.err.printf("%c", c);
-//			}
-//			System.err.println();
-//			byte[] testBytes = Utils.charToByteArray(testChars);
-//			try {
-//				System.err.println("testBytes: " + new String(testBytes, "UTF-16"));
-//			} catch (UnsupportedEncodingException e) {
-//				e.printStackTrace();
-//			}
-//			char[] testChar2 = Utils.byteToCharArray(testBytes);
-//			System.err.print("char array: ");
-//			for (char c: testChar2) {
-//				System.err.printf("%c", c);
-//			}
-//			System.err.println();
-//		}
-		char[] pwdChars = Utils.byteToCharArray(recvBytesWithNonce());
-		if (DEBUG) System.err.print("pwdChars: ");
-		for (char c: pwdChars) {
-			System.err.printf("%c", c);
-		}
-		System.err.println();
-		String enteredPwdHash = Hash.hashExistingPwd(salt, pwdChars);
 		
+		char[] pwdChars = Utils.byteToCharArray(recvBytesWithNonce());
+
+		String enteredPwdHash = Hash.hashExistingPwd(salt, pwdChars);
+		Arrays.fill(pwdChars, ' ');
 		
 		// check password
 		if (userExist) {

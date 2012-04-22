@@ -17,7 +17,7 @@ public class ClientGUI {
 	private static final String SERVER_HOST_NAME = "localhost";
 
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		// Connecting to server
 		Socket kkSocket = null;
 		OutputStream serverOut = null;
@@ -28,6 +28,7 @@ public class ClientGUI {
 		try {
 			kkSocket = new Socket(InetAddress.getByName(SERVER_HOST_NAME),
 					SERVER_PORT);
+			kkSocket.setSoTimeout(ProjectConfig.TIMEOUT);
 			
 			PublicKey pubk = PublicKeyCryptoClient.serverPublicKeyRSA();
 			if (pubk == null) {
@@ -42,8 +43,12 @@ public class ClientGUI {
 			System.err.println("Don't know about host: " + SERVER_HOST_NAME);
 			System.exit(1);
 		} catch (IOException e) {
-			System.err.println("Couldn't get I/O for the connection to: "
-					+ SERVER_HOST_NAME);
+			if (e instanceof SocketException) {
+				System.err.println("Socket timed out. Closing the connection...");
+			} else {
+				System.err.println("Couldn't get I/O for the connection to: "
+						+ SERVER_HOST_NAME);
+			}
 			System.exit(1);
 		}
 		if (knb == null) { //the protocol failed...
@@ -60,7 +65,6 @@ public class ClientGUI {
 		// System welcome message
 		System.out.println("Welcome to the system.");
 		
-		/** LOGGING IN **/
 		while (true) {
 			
 			while (!processor.isLoggedIn() && !processor.isExit()) {
@@ -70,8 +74,6 @@ public class ClientGUI {
 			while(processor.isLoggedIn() && !processor.isExit()) {
 				processor.askForInput();
 			}
-	
-			/* TODO Get Information from Server if successfully logged in */
 
 		}
 

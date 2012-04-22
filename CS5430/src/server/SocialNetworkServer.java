@@ -115,7 +115,6 @@ public class SocialNetworkServer {
 		} catch (IOException e) {
 			System.err.println("Could not listen on port: " + LISTEN_PORT_NUM
 					+ ".");
-			// TODO exit here?
 			System.exit(1);
 		}
 		return serverSocket;
@@ -126,13 +125,14 @@ public class SocialNetworkServer {
 		try {
 			// connecting to the client
 			clientSocket = serverSocket.accept();
+			clientSocket.setSoTimeout(ProjectConfig.TIMEOUT);
+			SocialNetworkProtocol snp = new SocialNetworkProtocol(clientSocket, privk);
+			Thread client = new Thread(snp);
+			client.start();
 		} catch (IOException e) {
-			// TODO exit here?
-			System.exit(1);
+			System.err.println("Error: Client connection failed.");
 		}
-		SocialNetworkProtocol snp = new SocialNetworkProtocol(clientSocket, privk);
-		Thread client = new Thread(snp);
-		client.start();
+		
 	}
 
 }

@@ -59,7 +59,11 @@ public class SocialNetworkProtocol implements Runnable {
 		try {
 			main();
 		} catch (IOException e) {
-			System.err.println("Error: Cannot find CreateDB SQL file.");
+			if (e instanceof SocketException) {
+				System.err.println("Network Error. Closing the socket connection.");
+			} else {
+				System.err.println("Error: Cannot find CreateDB SQL file.");
+			}
 			try {
 				clientSocket.close();
 			} catch (IOException e1) {	}
