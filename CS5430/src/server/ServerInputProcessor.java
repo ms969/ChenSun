@@ -1134,7 +1134,7 @@ public class ServerInputProcessor {
 			}
 			break;
 		default:
-			sendWithNonce("print Invalid destination given your current path: "
+			sendWithNonce("print Invalid destination given your current path: ;"
 					+ SocialNetworkNavigation.printPath(currentPath) + ".; "
 					+ "print You can go backwards by typing \"..\" ");
 
