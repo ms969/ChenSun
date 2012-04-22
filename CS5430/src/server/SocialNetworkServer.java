@@ -2,6 +2,7 @@ package server;
 
 import java.math.BigInteger;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
@@ -12,6 +13,9 @@ import javax.crypto.KeyGenerator;
 
 import shared.ProjectConfig;
 
+import crypto.CryptoUtil;
+import crypto.Hash;
+import crypto.PasswordBasedEncryption;
 import crypto.PublicKeyCryptoServer;
 import crypto.SharedKeyCrypto;
 import database.DBManager;
@@ -28,6 +32,11 @@ public class SocialNetworkServer {
 	private static PrivateKey privk = null;
 	private static PublicKey pubk = null;
 	private static final boolean DEBUG = ProjectConfig.DEBUG;
+	
+	public static final int INDEX_SALT = 1;
+	public static final int INDEX_ITERATIONS = 2;
+	public static final int INDEX_ENCKEY = 3;
+	public static final int INDEX_CHECKSUM = 4;
 
 	public static void main(String[] args) throws IOException {
 
@@ -35,19 +44,11 @@ public class SocialNetworkServer {
 		pubk = PublicKeyCryptoServer.serverPublicKeyRSA();
 		if (pubk == null) {
 			//public key is bad!
+			System.err.println("Error on creating the public key!");
 			System.exit( 1 );
 		}
 		
-		if (DEBUG && args.length == 2) {
-			try {
-				privk = PublicKeyCryptoServer.serverPrivateKeyRSA(new BigInteger(args[0]));
-			} catch (Exception e) { /* Can't happen */ }
-			SharedKeyCrypto.initSharedKeyCrypto(args[1]);
-		} else {
-			getSecrets();
-		}
-		
-		System.out.println("Server successfully started");
+		getPassword();
 		
 		ServerSocket serverSocket = initializeSocket();
 		
@@ -64,14 +65,18 @@ public class SocialNetworkServer {
 		
 	}
 	
+	/** Gets a user inputted password and tries to get the
+	 * keys from the db
+	 */
 	private static void getPassword() throws IOException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		char[] input = new char[21]; //password is at most 20 characters.
+		char[] input = new char[22]; //password is at most 20 characters.
 		boolean valid = false;
 		int numRetries = 5;
 		
 		Connection conn = DBManager.getConnection();
 		String keystring = DatabaseDBA.fetchKeys(conn);
+		DBManager.closeConnection(conn);
 		
 		if (keystring == null) {
 			System.err.println("Could not fetch initialization string from Database");
@@ -87,22 +92,79 @@ public class SocialNetworkServer {
 			int length = br.read(input);
 
 			if (br.ready()) { //there is leftover data.
-				//TODO leftover \n triggers ready to be true?
 				System.out.println("Invalid passphrase. Try again");
 				numRetries--;
 				continue;
 			}
 			
-			char[] pwd = Arrays.copyOf(input, length - 1); //get rid of the \n
+			char[] pwd = Arrays.copyOf(input, length - 2); //get rid of the carriage return
 			
-			//get the salt and iteration count from the first key.
-			String[] firstKey = keys[0].split(" ");
-			
-			
-			/*Create the PBEKey from this pwd*/
+			//There are two keys.
+			for (int i = 0; i < 2; i++) {
+				//get the salt and iteration count for the key
+				String[] key = keys[i].split(" ");
+				int index = Integer.parseInt(key[0]);
+				byte[] indexArr = ByteBuffer.allocate(4).putInt(index).array();
+				byte[] salt = CryptoUtil.decode(key[INDEX_SALT]);
+				int iterations = Integer.parseInt(key[INDEX_ITERATIONS]);
+				byte[] iterationsArr = ByteBuffer.allocate(4).putInt(iterations).array();
+				byte[] encKey = CryptoUtil.decode(key[INDEX_ENCKEY]);
+				byte[] checksum = CryptoUtil.decode(key[INDEX_CHECKSUM]);
+				
+				byte[] decryptedKey = PasswordBasedEncryption.decrypt(encKey, pwd, salt, iterations);
+				if (decryptedKey == null) {
+					continue;
+				}
+				
+				//checksum is made up of (index, salt, iterations, decryptedKey)
+				byte[] toBeChecksummed = new byte[indexArr.length + salt.length + iterationsArr.length + decryptedKey.length];
+				System.arraycopy(indexArr, 0, toBeChecksummed, 0, indexArr.length);
+				System.arraycopy(salt, 0, toBeChecksummed, indexArr.length, salt.length);
+				System.arraycopy(iterationsArr, 0, toBeChecksummed, indexArr.length + salt.length, iterationsArr.length);
+				System.arraycopy(decryptedKey, 0, toBeChecksummed, indexArr.length + salt.length + iterationsArr.length, decryptedKey.length);
+				
+				if (Arrays.equals(checksum, Hash.generateChecksum(toBeChecksummed))) { //it is the correct key
+					if (i == 0) { //first key is the private
+						privk = PublicKeyCryptoServer.serverPrivateKeyRSA(new BigInteger(decryptedKey));
+						if (privk == null) { /*THIS SHOULD NOT HAPPEN*/
+							//(checksum was correct, but the key was incorrect!)
+							System.out.println("Something really bad happened.");
+							Arrays.fill(decryptedKey, (byte)0x00);
+							Arrays.fill(toBeChecksummed, (byte)0x00);
+							break;
+						}
+					}
+					else {
+						if (!SharedKeyCrypto.initSharedKeyCrypto(decryptedKey)) {
+							/*THIS SHOULD NOT HAPPEN*/
+							System.out.println("Something really bad happened.");
+							Arrays.fill(decryptedKey, (byte)0x00);
+							Arrays.fill(toBeChecksummed, (byte)0x00);
+							break;
+						}
+						valid = true;
+					}
+					//these arrays contain the decrypted key.
+					Arrays.fill(decryptedKey, (byte)0x00);
+					Arrays.fill(toBeChecksummed, (byte)0x00);
+				}
+				else {
+					break;
+				}
+			}
+			numRetries--;
+		}
+		if (!valid) {
+			System.err.println("Too many retries");
+			System.err.println("Shutting down the server.");
+			System.exit(1);
+		}
+		else {
+			System.out.println("Server successfully started");
 		}
 	}
 
+	/*
 	private static void getSecrets() throws IOException {
 		//Get the private key from the operator
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -148,7 +210,7 @@ public class SocialNetworkServer {
 			System.out.println("Too many incorrect tries. Exiting.");
 			System.exit( 1 );
 		}
-	}
+	}*/
 
 	private static ServerSocket initializeSocket() {
 		ServerSocket serverSocket = null;
@@ -175,7 +237,6 @@ public class SocialNetworkServer {
 		} catch (IOException e) {
 			System.err.println("Error: Client connection failed.");
 		}
-
 	}
 
 }
