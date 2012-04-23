@@ -44,7 +44,10 @@ public class ClientProcessor {
 	}
 	
 	public String recvWithNonce() throws ConnectionException {
+		ClientResponseThread crt = new ClientResponseThread(keyboard);
+		crt.start();
 		String msg = CommManager.receive(serverIn, c, sk, recvNonce);
+		crt.setGotResponse(true);
 		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
 		return msg;
 	}
