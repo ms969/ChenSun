@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+import server.SocialNetworkServer;
 import shared.ProjectConfig;
 
 public class Hash {

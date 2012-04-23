@@ -197,6 +197,7 @@ public class SharedKeyCryptoComm {
 		catch (Exception e) {/*cannot happen*/}
 
 		byte[] msgbytes = null;
+		String msg = null;
 		try {
 			msgbytes = c.doFinal(encmsg);
 			//msg = new String(msgbytes, "UTF8");

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.security.PrivateKey;
 import java.util.Arrays;
 
 import javax.crypto.Cipher;
@@ -19,8 +20,9 @@ import shared.Utils;
 import comm.CommManager;
 
 import crypto.CryptoUtil;
-import crypto.EraserThread;
+import crypto.Hash;
 import crypto.SharedKeyCryptoComm;
+import crypto.EraserThread;
 
 public class ClientProcessor {
 	private boolean loggedIn = false;

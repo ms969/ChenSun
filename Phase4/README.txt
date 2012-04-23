@@ -6,18 +6,12 @@ Contents
 
 	TEAM.txt - required by phase description
 	README.txt - required by phase description. You're in it!
-	sql* (folder) - Contains sql scripts, one used by the program, and
-	others needed to initialize the database.
 	src (folder) - Contains our source code.
-	jars (folder) - Contains the JDBC pckg we used.
+	jars (folder) - Contains the JDBC pckg we used and the apache common codec.
 	SocialNetworkServer.jar* - Used to run the server.
 	ClientGUI.jar* - Used to run the client.
-	TESTPLAN.txt - required by phase description.
 	HELP.txt - Contains a list of commands. user can type
 	help after they have logged in to prompt the list
-	PROTOCOL.txt - Authentication protocols
-	ServerPrivExp.txt - Private Key for Client Interaction
-	ServerSharedRaw.txt - Shared Key for DB
 
 Installation
 1) Installing Mysql

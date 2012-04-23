@@ -35,6 +35,7 @@ public class ServerInputProcessor {
 	private BigInteger sendNonce;
 	private BigInteger recvNonce;
 	
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	private static final String INVALID = ProjectConfig.COMMAND_INVALID;
 	private static final String CANCEL = ProjectConfig.COMMAND_CANCEL;
 	private static final String HELP = ProjectConfig.COMMAND_HELP;
@@ -299,17 +300,7 @@ public class ServerInputProcessor {
 			userExist = true;
 			pwhash = userInfo[1];
 			salt = pwhash.substring(0, Hash.SALT_STRING_LENGTH);
-			
-			// user integrity check
-			Boolean userIntegrity = DatabaseAdmin.userIntegrityCheck(conn, username);
-			if (userIntegrity == null) {
-				
-			} else if (!userIntegrity.booleanValue()) {
-				System.out.println("DATABASE INTEGRITY ERROR: data for " + username + 
-						" has been compromised. Check the database.");
-			}
 		}
-
 
 		// ask for password
 		command += "print Input password:;getPassword;";
@@ -442,6 +433,7 @@ public class ServerInputProcessor {
 		String username = Utils.getValue(inputLine).toLowerCase();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
 		
+		// XXX
 		String command = null;
 		String secAnswer = null;
 		String salt = null;

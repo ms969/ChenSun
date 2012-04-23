@@ -1,20 +1,19 @@
 package server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.math.BigInteger;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.nio.ByteBuffer;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
 import java.util.Arrays;
+import java.io.*;
+
+import javax.crypto.KeyGenerator;
 
 import shared.ProjectConfig;
+
 import crypto.CryptoUtil;
-import crypto.EraserThread;
 import crypto.Hash;
 import crypto.PasswordBasedEncryption;
 import crypto.PublicKeyCryptoServer;
@@ -25,6 +24,8 @@ import database.DatabaseDBA;
 /* Setup code and Connection code courtesy of 
  * tutorials in docs.oracle.com
  */
+
+//TODO should we merely just exit if the server finds an error?
 
 public class SocialNetworkServer {
 	private static final int LISTEN_PORT_NUM = ProjectConfig.SERVER_CLIENT_CONN_PORT;
@@ -88,21 +89,12 @@ public class SocialNetworkServer {
 		
 		while(!valid && numRetries > 0) {
 			System.out.print(">> ");
-			EraserThread et = null;
-			if (!DEBUG) {
-				et = new EraserThread("");
-				Thread mask = new Thread(et);
-				mask.start();
-			}
 			int length = br.read(input);
 
 			if (br.ready()) { //there is leftover data.
 				System.out.println("Invalid passphrase. Try again");
 				numRetries--;
 				continue;
-			}
-			if (!DEBUG) {
-				et.stopMasking();
 			}
 			
 			char[] pwd = Arrays.copyOf(input, length - 2); //get rid of the carriage return
@@ -171,6 +163,54 @@ public class SocialNetworkServer {
 			System.out.println("Server successfully started");
 		}
 	}
+
+	/*
+	private static void getSecrets() throws IOException {
+		//Get the private key from the operator
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Input the first secret");
+		System.out.print(">> ");
+		BigInteger bi;
+		int numRetries = 5;
+		while (privk == null && numRetries > 0) {
+			try {
+				bi = new BigInteger(br.readLine());
+				privk = PublicKeyCryptoServer.serverPrivateKeyRSA(bi);
+				if (!PublicKeyCryptoServer.authenticatePrivateKeyRSA(pubk, privk)) {
+					privk = null;
+				}
+			}
+			catch (Exception e) {
+				
+			}
+			if (privk == null && numRetries != 1) {
+				System.out.println("Incorrect. Please try again");
+				System.out.print(">> ");
+			}
+			numRetries--;
+		}
+		if (numRetries == 0) {
+			System.out.println("Too many incorrect tries. Exiting.");
+			System.exit( 1 );
+		}
+		
+		System.out.println("Input the second secret");
+		System.out.print(">> ");
+		numRetries = 5;
+		boolean valid = false;
+		while (!valid && numRetries > 0) {
+			valid = SharedKeyCrypto.initSharedKeyCrypto(br.readLine());
+			if (!valid && numRetries != 1) {
+				System.out.println("Incorrect. Please try again");
+				System.out.print(">> ");
+			}
+			numRetries--;
+		}
+		if (numRetries == 0) {
+			System.out.println("Too many incorrect tries. Exiting.");
+			System.exit( 1 );
+		}
+	}*/
 
 	private static ServerSocket initializeSocket() {
 		ServerSocket serverSocket = null;

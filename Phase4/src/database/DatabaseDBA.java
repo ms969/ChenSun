@@ -1,12 +1,16 @@
 package database;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import shared.ProjectConfig;
+
 public class DatabaseDBA {
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
 	
 	private static final int NUMCOLUMNSKEYS = 5;
 	
@@ -64,6 +68,8 @@ public class DatabaseDBA {
 		int success;
 		ResultSet rs = null;
 		
+		boolean sqlex = false;
+		//String sqlexmsg = null;
 		try {
 			conn.setAutoCommit(false);
 			pstmtInsertAC = conn.prepareStatement(insertACappella);
@@ -111,6 +117,7 @@ public class DatabaseDBA {
 				e.printStackTrace();
 				System.out.println("Error: Database error during creation of group / user (stack trace above)");
 			}
+			sqlex = true;
 		}
 		finally {
 			DBManager.closeResultSet(rs);

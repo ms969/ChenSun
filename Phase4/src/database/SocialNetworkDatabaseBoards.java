@@ -276,6 +276,7 @@ public class SocialNetworkDatabaseBoards {
 		PreparedStatement pstmt = null;
 		ResultSet boards = null;
 		ResultSet privResult = null;
+		boolean sqlex = false;
 		Boolean authorized = null;
 		try {
 			String getRegionPrivs, getRegionAdmins;
@@ -308,12 +309,12 @@ public class SocialNetworkDatabaseBoards {
 				pstmt = null;
 			}
 			else { //there was an sql exception when getting the role.
-				
+				sqlex = true;
 			}
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
-			
+			sqlex = true;
 		}
 		finally {
 			DBManager.closeStatement(stmt);
