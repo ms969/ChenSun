@@ -11,6 +11,7 @@ import shared.Utils;
 //import java.util.Arrays;
 
 import crypto.CryptoUtil;
+import crypto.EraserThread;
 import crypto.Hash;
 import database.DBManager;
 import database.DatabaseDBA;
@@ -80,10 +81,20 @@ public class SocialNetworkDBAThread implements Runnable{
 				int pwlen = 0;
 				while (!valid) {
 					pwlen = keyboard.read(charbuf);
+					
+					EraserThread et = null;
+					if (!ProjectConfig.DEBUG) {
+						et = new EraserThread("");
+						Thread mask = new Thread(et);
+					    mask.start();
+					}
 					if (keyboard.ready()) {
 						//their password is longer than 20 characters
 						keyboard.readLine();
 						valid = false;
+					}
+					if (!ProjectConfig.DEBUG){
+						et.stopMasking();
 					}
 					else {
 						valid = CryptoUtil.validPassword(Arrays.copyOf(charbuf, pwlen-2));
@@ -106,9 +117,19 @@ public class SocialNetworkDBAThread implements Runnable{
 				System.out.println(ProjectConfig.SECURITY_QUESTION);
 				char[] charBuff = new char[42];
 				System.out.print(">> ");
+				
+				EraserThread et = null;
+				if (!ProjectConfig.DEBUG) {
+					et = new EraserThread("");
+					Thread mask = new Thread(et);
+				    mask.start();
+				}
 				int i = keyboard.read(charBuff);
 				if (keyboard.ready()) {
 					keyboard.readLine();
+				}
+				if (!ProjectConfig.DEBUG) {
+					et.stopMasking();
 				}
 				char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
 				String answerStore = Hash.createPwdHashStore(pwd);
