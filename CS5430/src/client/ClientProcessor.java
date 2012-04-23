@@ -22,6 +22,7 @@ import comm.CommManager;
 import crypto.CryptoUtil;
 import crypto.Hash;
 import crypto.SharedKeyCryptoComm;
+import crypto.EraserThread;
 
 public class ClientProcessor {
 	private boolean loggedIn = false;
@@ -116,20 +117,16 @@ public class ClientProcessor {
 	}
 	
 	private void getSecAnswer() throws ConnectionException {
-		char[] charBuff = new char[22];
+		char[] charBuff = new char[42];
 		System.out.print(">> ");
 		try {
-			boolean overflow = false;
 			int i = keyboard.read(charBuff);
 			if (keyboard.ready()) {
 				keyboard.readLine();
-				overflow = true;
 			}
+			
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
-			if (overflow) {
-				// if longer than 20 char, blank the array to avoid partially correct pwd
-				Arrays.fill(charBuff, ' ');
-			}
+
 			byte[] pwdBytes = Utils.charToByteArray(pwd);
 			
 			sendWithNonce(pwdBytes);
@@ -159,16 +156,30 @@ public class ClientProcessor {
 		System.out.print(">> ");
 		try {
 			boolean overflow = false;
+			
+			EraserThread et = null;
+			if (!DEBUG) {
+				et = new EraserThread("");
+			    Thread mask = new Thread(et);
+			    mask.start();
+			}
+			
 			int i = keyboard.read(charBuff);
 			if (keyboard.ready()) {
 				keyboard.readLine();
 				overflow = true;
 			}
+			
+			if (!DEBUG) {
+				et.stopMasking();
+			}
+			
 			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
 			if (overflow) {
 				// if longer than 20 char, blank the array to avoid partially correct pwd
 				Arrays.fill(charBuff, ' ');
 			}
+			
 			byte[] pwdBytes = Utils.charToByteArray(pwd);
 			
 			sendWithNonce(pwdBytes);
@@ -188,17 +199,28 @@ public class ClientProcessor {
 		char[] pwdChar2 = null;
 		while (!pwdValid) {
 			boolean pwdOverflow = false;
+			
 			System.out.println("Create password for your account (6-20 char long):");
 			System.out.println("Password should contain at least 1 lower case letter, " +
 					"1 upper case letter, and 1 number.");
 			System.out.print(">> ");
 			char[] charBuff = new char[22]; // 20 for data, last 2 for \r\n
+			
 			try {
+				EraserThread et = null;
+				if (!DEBUG) {
+					et = new EraserThread("");
+				    Thread mask = new Thread(et);
+				    mask.start();
+				}
+				
 				int length = keyboard.read(charBuff);
 				if (keyboard.ready()) {
 					keyboard.readLine();
 					pwdOverflow = true;
 				}
+				if (!DEBUG) et.stopMasking();
+				
 				// length-2 because \r\n
 				pwdChar1 = Arrays.copyOfRange(charBuff, 0, length - 2);
 			} catch (IOException e1) {
@@ -210,11 +232,17 @@ public class ClientProcessor {
 			System.out.print(">> ");
 			charBuff = new char[22];
 			try {
+				EraserThread et = new EraserThread("");
+			    Thread mask = new Thread(et);
+			    mask.start();
+			    
 				int i = keyboard.read(charBuff);
 				if (keyboard.ready()) {
 					keyboard.readLine();
 					pwdOverflow = true;
 				}
+				et.stopMasking();
+				
 				pwdChar2 = Arrays.copyOfRange(charBuff, 0, i - 2);
 				Arrays.fill(charBuff, ' ');
 			} catch (IOException e) {

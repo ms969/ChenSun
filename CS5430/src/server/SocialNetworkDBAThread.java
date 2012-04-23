@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.util.Arrays;
+
+import shared.ProjectConfig;
+import shared.Utils;
 //import java.util.Arrays;
 
 import crypto.CryptoUtil;
@@ -84,7 +87,7 @@ public class SocialNetworkDBAThread implements Runnable{
 						valid = false;
 					}
 					else {
-						valid = CryptoUtil.validPassword(charbuf);
+						valid = CryptoUtil.validPassword(Arrays.copyOf(charbuf, pwlen-2));
 					}
 					if (!valid) {
 						System.out.println("Password is not strong enough");
@@ -98,7 +101,19 @@ public class SocialNetworkDBAThread implements Runnable{
 				System.out.print(">> ");
 				keyboard.read(charbuf2);
 				
-				//TODO secQ secA
+				// secQ secA
+				System.out.println("Please answer the following security question for password retrieval.");
+				System.out.println("Type in lower case letters, and use less than 40 characters.");
+				System.out.println(ProjectConfig.SECURITY_QUESTION);
+				char[] charBuff = new char[42];
+				System.out.print(">> ");
+				int i = keyboard.read(charBuff);
+				if (keyboard.ready()) {
+					keyboard.readLine();
+				}
+				char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
+				String answerStore = Hash.createPwdHashStore(pwd);
+				
 				
 				if (Arrays.equals(charbuf, charbuf2)) {
 					//generates a pwhash for storage into the database.
@@ -109,7 +124,7 @@ public class SocialNetworkDBAThread implements Runnable{
 					Arrays.fill(charbuf2, ' ');
 					
 					Connection conn = DBManager.getConnection();
-					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash);
+					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash, answerStore);
 					DBManager.closeConnection(conn);
 					System.out.println("Feel free to create another group!");
 				}

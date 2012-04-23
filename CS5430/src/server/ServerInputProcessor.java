@@ -414,6 +414,7 @@ public class ServerInputProcessor {
 		Arrays.fill(pwdChars, ' ');
 		// ask security question
 		command = "print Please answer the following security question for password retrieval.;";
+		command += "print Type in lower case letters, and use less than 40 characters.;";
 		command += SECURITY_QUESTION + "getSecAnswer;";
 		sendWithNonce(command);
 		byte[] answerBytes = recvBytesWithNonce();
