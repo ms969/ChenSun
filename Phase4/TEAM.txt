@@ -1,0 +1,15 @@
+Kevin Chen - kfc35
+	Kevin completed the enforcing of authorization schemes for navigating through
+boards, regions, posts. He was in charge of creating the Password Based Encryption
+that was lacking since last phase. He also updated the communication between the
+client and the server to include checksums and nonces. He created the secondary
+thread in the client, which allows the user to cancel an action if he/she is impatient
+with the network delay. He created the DBA interface on the server side.
+
+Mengjuan Sun - ms969
+	MJ completed the adding/updating authorizations per region for regular boards
+and per posts for regular posts. She added security questions and answers for
+users. She created code that enforced policies regarding deleting a user and 
+adding/removing an admin from a board. She added the "blanking" feature when a user
+is entering in his/her password. She helped with adding integrity features to
+the user table. She compiled all of our sql files into one sql file, "everything"
