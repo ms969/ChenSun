@@ -1,11 +1,15 @@
 package database;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 
+import crypto.CryptoUtil;
+import crypto.Hash;
 import crypto.SharedKeyCrypto;
 
 public class SocialNetworkDatabasePosts {
@@ -278,7 +282,7 @@ public class SocialNetworkDatabasePosts {
 	 * Gets the post list for the given region.
 	 * The board is assumed not to be the free for all board.
 	 * Assumes all parameters are valid (boardName and regionName especially)
-	 * TODO (author) ensure that the user can view the posts for this region
+	 * 
 	 */
 	public static String getPostList(Connection conn, String username, String boardName, String regionName) {
 		PreparedStatement pstmt = null;
@@ -321,7 +325,7 @@ public class SocialNetworkDatabasePosts {
 		else return posts;
 	}
 	
-	//TODO need a way to add post privileges for the free for all board.
+	//
 	public static String createPostFreeForAll(Connection conn, String username, String content) {
 		return createPost(conn, username, content, "freeforall", null);
 	}
@@ -332,7 +336,7 @@ public class SocialNetworkDatabasePosts {
 	 * Assumes the board and region are correct (unless the board is freeforall)
 	 * Does NOT do "Post Privileges" processing.
 	 * 
-	 * TODO (author) For regular boards and regions, ensure the user can post under it
+	 *
 	 */
 	public static String createPost(Connection conn, String username, String contentRaw, 
 			String boardName, String regionName) {
@@ -351,7 +355,7 @@ public class SocialNetworkDatabasePosts {
 		
 		if (boardName.equals("freeforall")) {
 			createPost = "INSERT INTO freeforall.posts " +
-					"VALUES (null, ?, NOW(), ?, NOW())";
+					"VALUES (null, ?, NOW(), ?, NOW(), ?)";
 			getMaxDate = "SELECT MAX(datePosted) FROM freeforall.posts " +
 					"WHERE postedBy = ? AND content = ?";
 			getPost = "SELECT pid, datePosted FROM freeforall.posts " +
@@ -359,7 +363,7 @@ public class SocialNetworkDatabasePosts {
 		}
 		else {
 			createPost = "INSERT INTO " + boardName + ".posts " +
-					"VALUES (?, null, ?, NOW(), ?, NOW())";
+					"VALUES (?, null, ?, NOW(), ?, NOW(), ?)";
 			getMaxDate = "SELECT MAX(datePosted) FROM " + boardName + ".posts " +
 			"WHERE rname = ? AND postedBy = ? AND content = ?";
 			getPost = "SELECT pid, datePosted FROM " + boardName + ".posts " +
@@ -371,14 +375,25 @@ public class SocialNetworkDatabasePosts {
 		boolean success = false;
 		try {
 			createPstmt = conn.prepareStatement(createPost);
+			byte[] contentBytes = null;
+			try {
+				contentBytes = contentRaw.getBytes("UTF8");
+			} catch (UnsupportedEncodingException e) {
+				//this should not happen
+			}
+			String checksum = CryptoUtil.encode(Hash.generateChecksum(contentBytes));
+			Arrays.fill(contentBytes, (byte)0x00);
+			
 			if (boardName.equals("freeforall")) {
 				createPstmt.setString(1, username);
 				createPstmt.setString(2, content);
+				createPstmt.setString(3, checksum);
 			}
 			else {
 				createPstmt.setString(1, regionName);
 				createPstmt.setString(2, username);
 				createPstmt.setString(3, content);
+				createPstmt.setString(4, checksum);
 			}
 			success = (createPstmt.executeUpdate() == 1);
 			
@@ -475,7 +490,7 @@ public class SocialNetworkDatabasePosts {
 		
 		if (boardName.equals("freeforall")) {
 			createReply = "INSERT INTO freeforall.replies " +
-			"VALUES (?, null, ?, NOW(), ?)";
+			"VALUES (?, null, ?, NOW(), ?, ?)";
 			getDate = "SELECT MAX(dateReplied) FROM freeforall.replies " +
 			"WHERE pid = ?";
 			updateDate = "UPDATE freeforall.posts SET dateLastUpdated = ? " +
@@ -483,7 +498,7 @@ public class SocialNetworkDatabasePosts {
 		}
 		else {
 			createReply = "INSERT INTO " + boardName + ".replies " +
-			"VALUES (?, ?, null, ?, NOW(), ?)";
+			"VALUES (?, ?, null, ?, NOW(), ?, ?)";
 			getDate = "SELECT MAX(dateReplied) FROM " + boardName + ".replies " +
 			"WHERE pid = ? AND rname = ?";
 			updateDate = "UPDATE " + boardName + ".posts SET dateLastUpdated = ? " +
@@ -496,16 +511,29 @@ public class SocialNetworkDatabasePosts {
 		try {
 			conn.setAutoCommit(false);
 			createPstmt = conn.prepareStatement(createReply);
+			
+			//calculate a checksum for the content
+			byte[] contentBytes = null;
+			try {
+				contentBytes = contentRaw.getBytes("UTF8");
+			} catch (UnsupportedEncodingException e) {//should not happen
+			}
+			
+			String checksum = CryptoUtil.encode(Hash.generateChecksum(contentBytes));
+			Arrays.fill(contentBytes, (byte)0x00);
+			
 			if (boardName.equals("freeforall")) {
 				createPstmt.setInt(1, postNum);
 				createPstmt.setString(2, username);
 				createPstmt.setString(3, content);
+				createPstmt.setString(4, checksum);
 			}
 			else {
 				createPstmt.setString(1 , regionName);
 				createPstmt.setInt(2, postNum);
 				createPstmt.setString(3, username);
 				createPstmt.setString(4, content);
+				createPstmt.setString(5, checksum);
 			}
 			successInsert = (createPstmt.executeUpdate() == 1);
 			if (successInsert) {
@@ -568,7 +596,6 @@ public class SocialNetworkDatabasePosts {
 	 * by the post number.
 	 * postNum is assumed to be an accurate post number.
 	 */
-	//TODO (author) ensure that the user has access to this post.
 	public static String getPostFreeForAll(Connection conn, String username, int postNum) {
 		return getPost(conn, username, "freeforall", "", postNum);
 	}
@@ -577,7 +604,6 @@ public class SocialNetworkDatabasePosts {
 	 *  with the given post number.
 	 *  ASSUMES that the board, region, and post are all valid.
 	 */
-	//TODO (author) ensure that the user has access to the encapsulating region.
 	public static String getPost(Connection conn, String username, String boardName, 
 			String regionName, int postNum) {
 		String getOriginalPost = "";
@@ -617,16 +643,37 @@ public class SocialNetworkDatabasePosts {
 			
 			postResult = originalPost.executeQuery();
 			if (postResult.next()) { /*Only expect one post result*/
-				postAndReplies += 
-					"print ----- Post# " + postNum + "[" + postResult.getString("postedBy") + "]----- " +
-					postResult.getTimestamp("datePosted").toString() + ";print \t" +
-					SharedKeyCrypto.decrypt(postResult.getString("content")) + ";";
+				//Make sure the checksum is correct
+				if (!Arrays.equals(
+						Hash.generateChecksum((SharedKeyCrypto.decrypt(postResult.getString("content"))).getBytes("UTF8")),
+						CryptoUtil.decode(postResult.getString("checksum")))) {
+					postAndReplies +=
+							"print ----- Post# " + postNum + "[" + postResult.getString("postedBy") + "]----- " +
+									postResult.getTimestamp("datePosted").toString() + ";print \t" +
+									"Content could not be fetched -- Integrity Failure!" + ";";
+				}
+				else {
+					postAndReplies += 
+						"print ----- Post# " + postNum + "[" + postResult.getString("postedBy") + "]----- " +
+						postResult.getTimestamp("datePosted").toString() + ";print \t" +
+						SharedKeyCrypto.decrypt(postResult.getString("content")) + ";";
+				}
 				
 				repliesResult = replies.executeQuery();
 				while (repliesResult.next()) { //Print out all replies
-					postAndReplies += "print ----- Reply[" + repliesResult.getString("repliedBy") + "] ----- " +
-					repliesResult.getTimestamp("dateReplied").toString() + ";print \t" +
-					SharedKeyCrypto.decrypt(repliesResult.getString("content")) + ";";
+					//for each reply, make sure the checksum is correct.
+					if(!Arrays.equals(
+							Hash.generateChecksum((SharedKeyCrypto.decrypt(repliesResult.getString("content"))).getBytes("UTF8")),
+							CryptoUtil.decode(repliesResult.getString("checksum")))) {
+						postAndReplies += "print ----- Reply[" + repliesResult.getString("repliedBy") + "] ----- " +
+						repliesResult.getTimestamp("dateReplied").toString() + ";print \t" +
+						"Content could not be fetched -- Integrity Failure!" + ";";
+					}
+					else {
+						postAndReplies += "print ----- Reply[" + repliesResult.getString("repliedBy") + "] ----- " +
+						repliesResult.getTimestamp("dateReplied").toString() + ";print \t" +
+						SharedKeyCrypto.decrypt(repliesResult.getString("content")) + ";";
+					}
 				}
 			}
 			// if there's no postResult, the post DNE.
@@ -634,6 +681,8 @@ public class SocialNetworkDatabasePosts {
 		catch (SQLException e) {
 			e.printStackTrace();
 			sqlex = true;
+		} catch (UnsupportedEncodingException e) {
+			// This should not happen.
 		}
 		if (postAndReplies.equals("") && !sqlex) {
 			return "print Error: Post does not exist. Refresh. If the problem persists, contact an admin.";
