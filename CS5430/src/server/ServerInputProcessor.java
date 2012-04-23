@@ -39,6 +39,7 @@ public class ServerInputProcessor {
 	private static final String INVALID = ProjectConfig.COMMAND_INVALID;
 	private static final String CANCEL = ProjectConfig.COMMAND_CANCEL;
 	private static final String HELP = ProjectConfig.COMMAND_HELP;
+	private static final String SECURITY_QUESTION = ProjectConfig.COMMAND_SECURITY_QUESTION;
 
 	private String user = null;
 	private String[] currentPath; // 0 = board/"freeforall"; 1 = region/FFApost; 2 = post/null
@@ -74,6 +75,15 @@ public class ServerInputProcessor {
 				processRegistration();
 			} else {
 				sendWithNonce("print Cannot register while logged in.;" );
+			}
+			return;
+		}
+		if (inputLine.matches("^pwdRecovery .+") ||
+				inputLine.matches("^passwordRecovery .+")) {
+			if (user == null) {
+				processPwdRecovery(inputLine);
+			} else {
+				sendWithNonce("print Already logged in.;");
 			}
 			return;
 		}
@@ -293,7 +303,7 @@ public class ServerInputProcessor {
 		}
 
 		// ask for password
-		command += "print Input password:;getPassword";
+		command += "print Input password:;getPassword;";
 		sendWithNonce(command);
 		
 		char[] pwdChars = Utils.byteToCharArray(recvBytesWithNonce());
@@ -393,12 +403,67 @@ public class ServerInputProcessor {
 		byte[] pwdBytes = recvBytesWithNonce();
 		char[] pwdChars = Utils.byteToCharArray(pwdBytes);
 		String pwdStore = Hash.createPwdHashStore(pwdChars);
-		
+		Arrays.fill(pwdBytes, (byte)0x00);
+		Arrays.fill(pwdChars, ' ');
 		// ask security question
+		command = "print Please answer the following security question for password retrieval.;";
+		command += SECURITY_QUESTION + "getPassword;";
+		byte[] answerBytes = recvBytesWithNonce();
+		char[] answerChars = Utils.byteToCharArray(answerBytes);
+		String answerStore = Hash.createPwdHashStore(answerChars);
+		Arrays.fill(answerChars, ' ');
+		Arrays.fill(answerBytes, (byte)0x00);
 		
-		
-		sendWithNonce(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore));
+		sendWithNonce(SocialNetworkAdmin.insertRegRequest(conn, newUser, aid, pwdStore, 
+				answerStore));
 		DBManager.closeConnection(conn);
+	}
+
+	private void processPwdRecovery(String inputLine) throws ConnectionException {
+		Connection conn = DBManager.getConnection();
+		String username = Utils.getValue(inputLine).toLowerCase();
+		String[] userInfo = DatabaseAdmin.getUserInfo(conn, username);
+		
+		// XXX
+		String command = null;
+		String secAnswer = null;
+		String salt = null;
+		boolean userExist = false;
+		boolean validAnswer = false;
+		if (userInfo != null) {
+			userExist = true;
+			secAnswer = userInfo[4];
+			salt = secAnswer.substring(0, Hash.SALT_STRING_LENGTH);
+		}
+		command = "print Answer the following security question in lower case:;";
+		command += SECURITY_QUESTION + "getPassword;";
+		sendWithNonce(command);
+		char[] pwdChars = Utils.byteToCharArray(recvBytesWithNonce());
+		
+		if (userExist) {
+			String enteredPwdHash = Hash.hashExistingPwd(salt, pwdChars);
+			validAnswer = Hash.comparePwd(secAnswer, enteredPwdHash);
+		}
+		Arrays.fill(pwdChars, ' ');
+		
+		if (userExist && validAnswer) {
+			changePassword(conn, username);
+		} else {
+			sendWithNonce("print Username or security question does not match database.;" + CANCEL);
+		}
+		
+		DBManager.closeConnection(conn);
+	}
+
+	private void changePassword(Connection conn, String username) throws ConnectionException {
+		String command = "createPassword";
+		byte[] pwdBytes = recvBytesWithNonce();
+		char[] pwdChars = Utils.byteToCharArray(pwdBytes);
+		String pwdStore = Hash.createPwdHashStore(pwdChars);
+		Arrays.fill(pwdBytes, (byte)0x00);
+		Arrays.fill(pwdChars, ' ');
+		command = SocialNetworkAdmin.changePassword(conn, username, pwdStore);
+		sendWithNonce(command);
 	}
 
 	private void processRegRequests() throws ConnectionException {

@@ -15,5 +15,6 @@ public class ProjectConfig {
 	public static final String COMMAND_CANCEL = "print Cancelled.;";
 	public static final String COMMAND_HELP = "print To see a list of commands type 'help'.;";
 	public static final String COMMAND_EMPTY_LIST = "print     (Empty);";
+	public static final String COMMAND_SECURITY_QUESTION = "print Where were you born?;";
 	public static final int TIMEOUT = 30*1000; // unit: milliseconds
 }

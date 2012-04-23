@@ -155,7 +155,7 @@ public class ClientProcessor {
 		char[] pwdChar2 = null;
 		while (!pwdValid) {
 			boolean pwdOverflow = false;
-			System.out.println("Create a password for your account (6-20 char long):");
+			System.out.println("Create password for your account (6-20 char long):");
 			System.out.println("Password should contain at least 1 lower case letter, " +
 					"1 upper case letter, and 1 number.");
 			System.out.print(">> ");
