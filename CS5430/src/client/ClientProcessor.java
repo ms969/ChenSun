@@ -18,6 +18,7 @@ import shared.Utils;
 
 import comm.CommManager;
 
+import crypto.CryptoUtil;
 import crypto.Hash;
 import crypto.SharedKeyCryptoComm;
 
@@ -179,7 +180,7 @@ public class ClientProcessor {
 				System.exit(1);
 			}
 			pwdValid = Arrays.equals(pwdChar1, pwdChar2) && 
-					validPassword(pwdChar1) && !pwdOverflow;
+					CryptoUtil.validPassword(pwdChar1) && !pwdOverflow;
 			if (!pwdValid) {
 				System.out.println("Invalid passwords. Please re-enter.");
 				System.out.println();
@@ -190,31 +191,6 @@ public class ClientProcessor {
 		Arrays.fill(pwdChar1, ' ');
 		Arrays.fill(pwdChar2, ' ');
 		processCommands(recvWithNonce());
-	}
-	
-	private boolean validPassword(char[] pwd) {
-		// between 6 and 20 character
-		if (pwd.length < 6 || pwd.length > 20) {
-			return false;
-		}
-		
-		boolean lowerCase = false, upperCase = false, number = false;
-		for (char c: pwd) {
-			String s = c + "";
-			if (s.matches("[a-z]")) { // contains 1 lower case
-				lowerCase = true;
-			} else if (s.matches("[A-Z]")) { // contains 1 upper case
-				upperCase = true;
-			} else if (s.matches("[0-9]")) { // contains a number
-				number = true;
-			} else if (s.matches("[!@#$%^&*?:.,~`+=\\-_|]")) {
-				// contains other allowed chars:
-				// ! @ # $ % ^ & * ? : . , ~ ` + = - _ |
-			} else {
-				return false;
-			}
-		}
-		return lowerCase && upperCase && number;
 	}
 		
 	public void processLogin() throws ConnectionException {
