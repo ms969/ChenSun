@@ -239,6 +239,8 @@ public class ClientProcessor {
 		System.out.println();
 		System.out.println("To log in, type 'login <username>'");
 		System.out.println("To register, type 'register'");
+		System.out.println("If you forgot your password, type 'pwdRecovery <username>' " +
+				"to reset password.");
 		askForInput();
 	}
 
