@@ -57,6 +57,7 @@ public class DatabaseDBA {
 	 * return anything. It prints things itself.
 	 */
 	public static void createAcappellaGroup(Connection conn, String aname, String username, String pwhash, String answerStore) {
+
 		String insertACappella = "INSERT INTO main.acappella VALUES (null, ?)";
 		String getACappellaID = "SELECT aid FROM main.acappella WHERE aname = ?";
 		String insertSA = "INSERT INTO main.users VALUES (?, ?, ?, 'sa', ?)";
@@ -86,6 +87,7 @@ public class DatabaseDBA {
 					pstmtInsertSA.setString(2, pwhash);
 					pstmtInsertSA.setInt(3, aid);
 					pstmtInsertSA.setString(4, answerStore);
+
 					success = pstmtInsertSA.executeUpdate();
 					if (success == 1) {
 						conn.commit();

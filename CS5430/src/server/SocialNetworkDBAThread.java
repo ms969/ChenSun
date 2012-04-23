@@ -76,7 +76,6 @@ public class SocialNetworkDBAThread implements Runnable{
 				System.out.println("Password should contain at least 1 lower case letter, " +
 						"1 upper case letter, and 1 number.");
 				System.out.print(">> ");
-				//TODO password creation restrictions... we should make that function
 				boolean valid = false;
 				int pwlen = 0;
 				while (!valid) {
@@ -100,7 +99,7 @@ public class SocialNetworkDBAThread implements Runnable{
 				System.out.println("Confirm the password");
 				System.out.print(">> ");
 				keyboard.read(charbuf2);
-				
+
 				// secQ secA
 				System.out.println("Please answer the following security question for password retrieval.");
 				System.out.println("Type in lower case letters, and use less than 40 characters.");
@@ -123,8 +122,10 @@ public class SocialNetworkDBAThread implements Runnable{
 					Arrays.fill(charbuf, ' ');
 					Arrays.fill(charbuf2, ' ');
 					
+					
 					Connection conn = DBManager.getConnection();
 					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash, answerStore);
+
 					DBManager.closeConnection(conn);
 					System.out.println("Feel free to create another group!");
 				}
