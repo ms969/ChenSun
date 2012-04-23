@@ -316,6 +316,13 @@ public class ServerInputProcessor {
 			pwMatch = Hash.comparePwd(pwhash, enteredPwdHash);
 		}
 
+		// 3 second delay
+		try {
+			Thread.sleep(1000L);
+		} catch (InterruptedException e) {
+			
+		}
+		
 		// Output for Client
 		if (userExist && pwMatch) {
 			user = username;
