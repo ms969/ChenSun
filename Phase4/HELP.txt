@@ -17,6 +17,24 @@ participant             Displays a list of the participants in the
                         current region. Must be in a region to 
                         invoke this command.
 
+addParticipants         Adds participants to the current region,
+                        or a freeforall post. You must be in a 
+                        region or freeforall post to invoke this 
+                        command, and you must be the manager of 
+                        the region or owner of the freeforall post.
+                        
+removeParticipants      Displays a list of participants that you 
+                        can remove. You must be in a region or a
+                        freeforall post to invoke this command, 
+                        and you must be the manager of the region 
+                        or owner of the freeforall post.
+                        
+editParticipant         Edits the privilege level of a participant 
+                        in the current region. You must be in a 
+                        region or a freeforall post to invoke this 
+                        command, and you must be the manager of 
+                        the region or owner of the freeforall post.
+                        
 showFriends             Displays your friend list.
 
 addFriend               Displays a list of users that you could 
@@ -36,24 +54,6 @@ createRegion <rname>    Creates a region within a board. Does not
                         contain regions.
 
 regRequests             View registration requests for your group.
-                        
-addParticipants         Adds participants to the current region,
-                        or a freeforall post. You must be in a 
-                        region or freeforall post to invoke this 
-                        command, and you must be the manager of 
-                        the region or owner of the freeforall post.
-                        
-removeParticipants      Displays a list of participants that you 
-                        can remove. You must be in a region or a
-                        freeforall post to invoke this command, 
-                        and you must be the manager of the region 
-                        or owner of the freeforall post.
-                        
-editParticipant         Edits the privilege level of a participant 
-                        in the current region. You must be in a 
-                        region or a freeforall post to invoke this 
-                        command, and you must be the manager of 
-                        the region or owner of the freeforall post.
                         
 addAdmins               Adds admin to the current board. You must 
                         be within a board to invoke this command,
