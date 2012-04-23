@@ -106,7 +106,20 @@ public class SocialNetworkDBAThread implements Runnable{
 				
 				System.out.println("Confirm the password");
 				System.out.print(">> ");
+				
+				EraserThread et = null;
+				if (!ProjectConfig.DEBUG) {
+					et = new EraserThread("");
+					Thread mask = new Thread(et);
+				    mask.start();
+				}
 				keyboard.read(charbuf2);
+				if (keyboard.ready()) {
+					keyboard.readLine();
+				}
+				if (!ProjectConfig.DEBUG) {
+					et.stopMasking();
+				}
 
 				// secQ secA
 				System.out.println("Please answer the following security question for password retrieval.");
@@ -115,19 +128,12 @@ public class SocialNetworkDBAThread implements Runnable{
 				char[] charBuff = new char[42];
 				System.out.print(">> ");
 				
-				EraserThread et = null;
-				if (!ProjectConfig.DEBUG) {
-					et = new EraserThread("");
-					Thread mask = new Thread(et);
-				    mask.start();
-				}
+
 				int i = keyboard.read(charBuff);
 				if (keyboard.ready()) {
 					keyboard.readLine();
 				}
-				if (!ProjectConfig.DEBUG) {
-					et.stopMasking();
-				}
+				
 				char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
 				String answerStore = Hash.createPwdHashStore(pwd);
 				
