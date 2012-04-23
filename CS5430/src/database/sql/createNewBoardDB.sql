@@ -11,6 +11,7 @@ CREATE TABLE bname.posts (
     datePosted DATETIME NOT NULL,
     content VARCHAR(4000) NOT NULL,
     dateLastUpdated DATETIME NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(pid, rname),
     FOREIGN KEY(rname) REFERENCES regions(rname) ON DELETE CASCADE
     /*FOREIGN KEY(postedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
@@ -22,6 +23,7 @@ CREATE TABLE bname.replies (
     repliedBy VARCHAR(100),
     dateReplied DATETIME NOT NULL,
     content VARCHAR(4000) NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(eid, rname, pid),
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
     /*FOREIGN KEY(repliedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
