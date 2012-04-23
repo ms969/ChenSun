@@ -18,7 +18,7 @@ public class DatabaseDBA {
 	 * that corresponds to keys
 	 */
 	public static String fetchKeys(Connection conn) {
-		String query = "SELECT * FROM main.keys";
+		String query = "SELECT * FROM main.keys ORDER BY keyid ASC";
 		
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -27,22 +27,26 @@ public class DatabaseDBA {
 		try {
 			stmt = conn.createStatement();
 			rs = stmt.executeQuery(query);
+			keys = "";
 			while (rs.next()) {
-				for (int i = 0; i < NUMCOLUMNSKEYS; i++) {
-					keys += rs.getString(0) + " ";
+				for (int i = 1; i <= NUMCOLUMNSKEYS; i++) {
+					keys += rs.getString(i) + " ";
 				}
 				//remove the last space; replace it with a semicolon.
 				keys = keys.substring(0, keys.length() - 1) + ";";
 			}
+			keys = keys.substring(0, keys.length() - 1);
 		}
 		catch (SQLException e) {
 			System.out.println("Error fetching the keys from the database");
+			e.printStackTrace();
+			System.exit(1);
 		}
 		finally {
 			DBManager.closeStatement(stmt);
 			DBManager.closeResultSet(rs);
 		}
-		return keys.substring(0, keys.length() - 1);
+		return keys;
 	}
 	
 	/**ATOMIC DATABASE UPDATE
