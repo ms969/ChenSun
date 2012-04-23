@@ -2,10 +2,10 @@ package client;
 
 import java.io.BufferedReader;
 
-public class ClientResponseThread implements Runnable{
+public class ClientResponseThread extends Thread{
 
-	private static BufferedReader keyboard;
-	public static boolean gotResponse;
+	private BufferedReader keyboard;
+	private boolean gotResponse;
 	protected static Object lock_gotResponse = new Object();
 	
 	public ClientResponseThread(BufferedReader kb) {
@@ -13,7 +13,7 @@ public class ClientResponseThread implements Runnable{
 		gotResponse = false;
 	}
 	
-	public static void setGotResponse(boolean newResponse) {
+	public void setGotResponse(boolean newResponse) {
 		synchronized(lock_gotResponse) {
 			gotResponse = newResponse;
 		}
@@ -33,8 +33,8 @@ public class ClientResponseThread implements Runnable{
 			if (!canDie) {
 				String response = keyboard.readLine();
 				if (response.trim().toLowerCase().equals("cancel")) {
-					//have to somehow cancel the outer command.
-					//COULD just close the socket...
+					System.out.println("Closing the connection at the request of the user.");
+					System.exit(1);
 				}
 			}
 		} catch (Exception e) {
