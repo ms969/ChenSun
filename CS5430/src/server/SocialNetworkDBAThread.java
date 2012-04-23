@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 //import java.util.Arrays;
 
+import crypto.CryptoUtil;
 import crypto.Hash;
 import database.DBManager;
 import database.DatabaseDBA;
@@ -52,8 +53,8 @@ public class SocialNetworkDBAThread implements Runnable{
 	/**Runs protocol to create a new a cappella group **/
 	public void createGroup() {
 		String aname, username, pwhash;
-		char[] charbuf = new char[24];
-		char[] charbuf2 = new char[24];
+		char[] charbuf = new char[22];
+		char[] charbuf2 = new char[22];
 		System.out.println("Please type the name of the new A Cappella group (or 'cancel' to cancel)");
 		try {
 			aname = keyboard.readLine().trim();
@@ -68,26 +69,54 @@ public class SocialNetworkDBAThread implements Runnable{
 					return ;
 				}
 				System.out.println("Please input the password for this System Admin (no cancelling)");
+				System.out.println("Requirements: 6-20 char long");
+				System.out.println("Password should contain at least 1 lower case letter, " +
+						"1 upper case letter, and 1 number.");
 				System.out.print(">> ");
 				//TODO password creation restrictions... we should make that function
-				keyboard.read(charbuf);
+				boolean valid = false;
+				int pwlen = 0;
+				while (!valid) {
+					pwlen = keyboard.read(charbuf);
+					if (keyboard.ready()) {
+						//their password is longer than 20 characters
+						keyboard.readLine();
+						valid = false;
+					}
+					else {
+						valid = CryptoUtil.validPassword(charbuf);
+					}
+					if (!valid) {
+						System.out.println("Password is not strong enough");
+						System.out.println("Requirements: 6-20 char long");
+						System.out.println("Password should contain at least 1 lower case letter, " +
+								"1 upper case letter, and 1 number.");
+					}
+				}
 				
 				System.out.println("Confirm the password");
 				System.out.print(">> ");
 				keyboard.read(charbuf2);
 				
+				//TODO secQ secA
+				
 				if (Arrays.equals(charbuf, charbuf2)) {
 					//generates a pwhash for storage into the database.
-					pwhash = Hash.createPwdHashStore(charbuf);
-					//TODO clear both buffers
-					//Arrays.fill(charbuf, '');
+					//have to remove the last two characters.
+					pwhash = Hash.createPwdHashStore(Arrays.copyOf(charbuf, pwlen-2));
+
+					Arrays.fill(charbuf, ' ');
+					Arrays.fill(charbuf2, ' ');
 					
 					Connection conn = DBManager.getConnection();
 					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash);
 					DBManager.closeConnection(conn);
+					System.out.println("Feel free to create another group!");
 				}
 				else {
 					System.out.println("Passwords don't match. Exiting command...");
+					Arrays.fill(charbuf, ' ');
+					Arrays.fill(charbuf2, ' ');
 				}
 			}
 			catch (IOException e) {
