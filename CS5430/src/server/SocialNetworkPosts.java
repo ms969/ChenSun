@@ -42,15 +42,14 @@ public class SocialNetworkPosts {
 				}
 				else if (!authReply.booleanValue()) {
 					DBManager.closeConnection(dbconn);
-					return "print Error: Not authorized to reply to this post.";
+					return "print Error: Cannot view this post.";
 				}
 				DBManager.closeConnection(dbconn);
 				return "true";
 			}
 			else {
 				DBManager.closeConnection(dbconn);
-				return "print Error: Post does not exist. Refresh. " +
-						"If the problem persists, contact an admin.";
+				return "print Error: Cannot view this post.";
 			}
 		}
 		//regionname not null
@@ -84,15 +83,14 @@ public class SocialNetworkPosts {
 					}
 					else if (!authReply.booleanValue()) {
 						DBManager.closeConnection(dbconn);
-						return "print Error: Not authorized to reply to this post.";
+						return "print Error: Cannot reply to post.";
 					}
 					DBManager.closeConnection(dbconn);
 					return "true";
 				}
 				else {
 					DBManager.closeConnection(dbconn);
-					return "print Error: Post does not exist. Refresh. " +
-					"If the problem persists, contact an admin.";
+					return "print Error: Cannot reply to post.";
 				}
 			}
 			else {
@@ -149,7 +147,7 @@ public class SocialNetworkPosts {
 					}
 					else if (!canView.booleanValue()) {
 						DBManager.closeConnection(dbconn);
-						return "print Error: Not authorized to view this post.";
+						return "print Error: Cannot view this post.";
 					}
 				}
 				
@@ -159,8 +157,7 @@ public class SocialNetworkPosts {
 			}
 			else {
 				DBManager.closeConnection(dbconn);
-				return "print Error: Post does not exist. Refresh. " +
-				"If the problem persists, contact an admin.";
+				return "print Error: Cannot view this post.";
 			}
 		}
 		String rname = regionName.trim().toLowerCase();
@@ -308,7 +305,7 @@ public class SocialNetworkPosts {
 						return "print Error: Database error while checking authorization. If the problem persists, contact an admin.";
 					}
 					else if (!authorized.booleanValue()) {
-						return "print Error: Not authorized to view this region.";
+						return "print Error: Cannot view this region.";
 					}
 				}
 				String msg = SocialNetworkDatabasePosts.getPostList(dbconn, username,
@@ -317,8 +314,7 @@ public class SocialNetworkPosts {
 				return msg;
 			}
 			else {
-				return "print Error: Region does not exist. Refresh. " +
-				"If the problem persists, contact an admin.";
+				return "print Error: Cannot view this region.";
 			}
 		}
 		else {
