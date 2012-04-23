@@ -77,7 +77,6 @@ public class SocialNetworkDBAThread implements Runnable{
 				boolean valid = false;
 				int pwlen = 0;
 				while (!valid) {
-					pwlen = keyboard.read(charbuf);
 					
 					EraserThread et = null;
 					if (!ProjectConfig.DEBUG) {
@@ -85,6 +84,7 @@ public class SocialNetworkDBAThread implements Runnable{
 						Thread mask = new Thread(et);
 					    mask.start();
 					}
+					pwlen = keyboard.read(charbuf);
 					if (keyboard.ready()) {
 						//their password is longer than 20 characters
 						keyboard.readLine();
@@ -93,9 +93,9 @@ public class SocialNetworkDBAThread implements Runnable{
 					if (!ProjectConfig.DEBUG){
 						et.stopMasking();
 					}
-					else {
-						valid = CryptoUtil.validPassword(Arrays.copyOf(charbuf, pwlen-2));
-					}
+					
+					valid = CryptoUtil.validPassword(Arrays.copyOf(charbuf, pwlen-2));
+					
 					if (!valid) {
 						System.out.println("Password is not strong enough");
 						System.out.println("Requirements: 6-20 char long");
