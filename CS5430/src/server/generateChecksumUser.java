@@ -11,9 +11,11 @@ import crypto.Hash;
 
 public class generateChecksumUser {
 
-	public static String username = "adam";
-	public static String hashPw = "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ==";
-	public static String hashSecA = "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ==";
+	public static String username = "fbs";
+	public static String number = "5";
+	public static String role = "";
+	public static String hashPw = null;
+	public static String hashSecA = null;
 	
 	public static String encrypt(String txt, SecretKey key) throws Exception{
 		Cipher cipher = null;
@@ -34,6 +36,14 @@ public class generateChecksumUser {
 		SecretKeyFactory factory = SecretKeyFactory.getInstance("DES");
 		SecretKey key = factory.generateSecret(keySpec);
 		
+		char[] pwd = "Spring1234".toCharArray();
+		hashPw = Hash.createPwdHashStore(pwd);
+		System.out.println("new password hash: " + hashPw);
+		
+		char[] sec = "ithaca".toCharArray();
+		hashSecA = Hash.createPwdHashStore(sec);
+		System.out.println("new sec hash: " + hashSecA);
+		
 		String encHashPw = encrypt(hashPw, key);
 		String encHashSecA = encrypt(hashSecA, key);
 		
@@ -48,7 +58,9 @@ public class generateChecksumUser {
 		
 		String checksum = CryptoUtil.encode(Hash.generateChecksum(toChecksum));
 		
-		System.out.println("\"" + encHashPw + "\" \"" + encHashSecA + "\" \"" + checksum + "\"");
+		System.out.println();
+		System.out.printf("\"%s\", %s, '%s', \"%s\", \"%s\"", encHashPw, number, role, encHashSecA, checksum);
+		
 	}
 	
 	
