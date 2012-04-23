@@ -129,13 +129,14 @@ public class SharedKeyCryptoComm {
 	}
 	
 	public static boolean send(String msg, OutputStream os, Cipher c, SecretKey sk, 
-			BigInteger sendNonce) {
+			BigInteger sendNonce) throws ConnectionException {
+
+		byte[] msgbytes = null;
 		try {
-			byte[] msgbytes = msg.getBytes("UTF8"); //the exception won't happen
-			return send(msgbytes, os, c , sk, sendNonce);
-		}
-		catch (Exception e) {/*Should not happen*/}
-		return false;
+			msgbytes = msg.getBytes("UTF8");
+		} catch (UnsupportedEncodingException e) {
+		} //the exception won't happen
+		return send(msgbytes, os, c , sk, sendNonce);
 	}
 	
 	/**
@@ -228,10 +229,13 @@ public class SharedKeyCryptoComm {
 		throw new ConnectionException();
 	}
 	
-	public static String receiveString(InputStream is, Cipher c, SecretKey sk, BigInteger recvNonce) {
+	public static String receiveString(InputStream is, Cipher c, SecretKey sk, BigInteger recvNonce) throws ConnectionException {
+
 		try {
 			return new String(receiveBytes(is, c, sk, recvNonce), "UTF8");
-		} catch (Exception e) {/*Should not happen*/}
-		return null;
+		} catch (UnsupportedEncodingException e) {
+			return null; // won't happen
+		}
+
 	}
 }

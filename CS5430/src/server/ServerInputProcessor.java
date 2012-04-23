@@ -43,12 +43,12 @@ public class ServerInputProcessor {
 	private String user = null;
 	private String[] currentPath; // 0 = board/"freeforall"; 1 = region/FFApost; 2 = post/null
 
-	public void sendWithNonce(String msg) {
+	public void sendWithNonce(String msg) throws ConnectionException {
 		CommManager.send(msg, os, c, sk, sendNonce);
 		this.sendNonce = this.sendNonce.add(BigInteger.ONE);
 	}
 	
-	public String recvWithNonce() {
+	public String recvWithNonce() throws ConnectionException {
 		String msg = CommManager.receive(is, c, sk, recvNonce);
 		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
 		return msg;
@@ -401,7 +401,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processRegRequests() {
+	private void processRegRequests() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String[] currentUser = DatabaseAdmin.getUserInfo(conn, user);
 		// makes sure user is an admin
@@ -417,7 +417,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void regApproval(Connection conn, String input) {
+	private void regApproval(Connection conn, String input) throws ConnectionException {
 		if (input.equals("cancel")) {
 			sendWithNonce(CANCEL);
 			return;
@@ -451,7 +451,7 @@ public class ServerInputProcessor {
 		}
 	}
 
-	private void processAddFriend(String input) {
+	private void processAddFriend(String input) throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		// Stores a list of users that is not the current user, who is not a
 		// friend of the
@@ -493,7 +493,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void addFriend(Connection conn, String username) {
+	private void addFriend(Connection conn, String username) throws ConnectionException {
 		// username exists in the system.
 		sendWithNonce("print Are you sure you want to add " + username
 				+ " as a friend? (y/n);askForInput");
@@ -509,7 +509,7 @@ public class ServerInputProcessor {
 		sendWithNonce(command);
 	}
 
-	private void processFriendRequests() {
+	private void processFriendRequests() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String command = SocialNetworkAdmin.friendRequests(conn, user);
 		sendWithNonce(command);
@@ -519,7 +519,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void friendApproval(Connection conn, String input) {
+	private void friendApproval(Connection conn, String input) throws ConnectionException {
 		String command = "";
 		if (input.equals("cancel")) {
 			command = CANCEL;
@@ -543,7 +543,7 @@ public class ServerInputProcessor {
 		sendWithNonce(command);
 	}
 
-	private void processDeleteUser() {
+	private void processDeleteUser() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, user);
 
@@ -584,7 +584,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void deleteUser(Connection conn, String username) {
+	private void deleteUser(Connection conn, String username) throws ConnectionException {
 		// username is a deletable user
 		sendWithNonce("print User deletions cannot be undone.;"
 				+ "print Are you sure you want to delete this user? (y/n);askForInput");
@@ -600,14 +600,14 @@ public class ServerInputProcessor {
 		sendWithNonce(command);
 	}
 
-	private void processShowFriends() {
+	private void processShowFriends() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String command = SocialNetworkAdmin.showFriends(conn, user);
 		sendWithNonce(command);
 		DBManager.closeConnection(conn);
 	}
 
-	private void processChangeUserRole() {
+	private void processChangeUserRole() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, user);
 		
@@ -654,7 +654,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processTransferSA() {
+	private void processTransferSA() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String[] userInfo = DatabaseAdmin.getUserInfo(conn, user);
 		
@@ -692,15 +692,15 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processLogout() {
+	private void processLogout() throws ConnectionException {
 		user = null;
 		for (int i = 0; i < currentPath.length; i++) {
 			currentPath[i] = null;
 		}
-		sendWithNonce("print Logged out.;setLoggedIn false");
+		sendWithNonce("print Logged out.;setLoggedIn false;quit");
 	}
 
-	private void processParticipants() {
+	private void processParticipants() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String board = currentPath[0];
 		String command = "";
@@ -756,7 +756,7 @@ public class ServerInputProcessor {
 		return command;
 	}
 
-	private void processAddParticipants() {
+	private void processAddParticipants() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
@@ -817,7 +817,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 
-	private void processRemoveParticipants() {
+	private void processRemoveParticipants() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
@@ -861,7 +861,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 	
-	private void processEditParticipants() {
+	private void processEditParticipants() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String command = participantsError(conn);
 		if (!command.equals("")) {
@@ -928,7 +928,7 @@ public class ServerInputProcessor {
 		return "";
 	}
 
-	private void processAddAdmins() {
+	private void processAddAdmins() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String error = adminEditError(conn);
 		if (!error.equals("")) {
@@ -966,7 +966,7 @@ public class ServerInputProcessor {
 		DBManager.closeConnection(conn);
 	}
 	
-	private void processRemoveAdmins() {
+	private void processRemoveAdmins() throws ConnectionException {
 		Connection conn = DBManager.getConnection();
 		String error = adminEditError(conn);
 		if (!error.equals("")) {
@@ -1007,8 +1007,9 @@ public class ServerInputProcessor {
 
 	/**
 	 * Creates a board. MUST be in the home directory.
+	 * @throws ConnectionException 
 	 */
-	private void processCreateBoard(String input) throws IOException {
+	private void processCreateBoard(String input) throws IOException, ConnectionException {
 		/*
 		 * Ensure the person is in the right place to create a board (on the
 		 * homepage)
@@ -1025,8 +1026,9 @@ public class ServerInputProcessor {
 	 * Depending on where the user is, fetches the correct view of information.
 	 * The user prints their current path and the information associated with
 	 * it.
+	 * @throws ConnectionException 
 	 */
-	private void processRefresh() {
+	private void processRefresh() throws ConnectionException {
 		String boardName = currentPath[0];
 		if (boardName == null) {
 			sendWithNonce(SocialNetworkAdmin.printUserInfo(user) + SocialNetworkNavigation.printPath(currentPath)
@@ -1070,8 +1072,9 @@ public class ServerInputProcessor {
 
 	/**
 	 * Depending on where the user is, processes where the user should go.
+	 * @throws ConnectionException 
 	 */
-	private void processGoto(String inputLine) {
+	private void processGoto(String inputLine) throws ConnectionException {
 		String destination = inputLine.substring(("goto ").length());
 		int validDest = SocialNetworkNavigation.validDestination(currentPath,
 				destination);
@@ -1133,8 +1136,9 @@ public class ServerInputProcessor {
 	/**
 	 * Creates a region for the user. The user must be in a board (except
 	 * freeforall) to execute the command.
+	 * @throws ConnectionException 
 	 */
-	private void processCreateRegion(String inputLine) {
+	private void processCreateRegion(String inputLine) throws ConnectionException {
 		String boardName = currentPath[0];
 		String regionName = inputLine.substring(("createRegion ").length());
 		if (boardName == null) {
@@ -1150,7 +1154,7 @@ public class ServerInputProcessor {
 		}
 	}
 
-	private void processPost() {
+	private void processPost() throws ConnectionException {
 		/* Verify the user is in the right place to create a post */
 		String boardName = currentPath[0];
 		boolean canPost = false;
@@ -1214,10 +1218,11 @@ public class ServerInputProcessor {
 
 	/**
 	 * Similar to processPost basically... except that you must be in a post
+	 * @throws ConnectionException 
 	 * 
 	 * @throws IOException
 	 */
-	private void processReply() {
+	private void processReply() throws ConnectionException {
 		/* Verify the user is in the right place to create a post */
 		String boardName = currentPath[0];
 		String postNum = "";

@@ -14,6 +14,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 
 import shared.ConnectionException;
+import shared.ProjectConfig;
 import shared.Utils;
 
 import comm.CommManager;
@@ -35,12 +36,14 @@ public class ClientProcessor {
 	public BigInteger sendNonce = null;
 	public BigInteger recvNonce = null;
 	
-	public void sendWithNonce(String msg) {
+	private static final boolean DEBUG = ProjectConfig.DEBUG;
+	
+	public void sendWithNonce(String msg) throws ConnectionException {
 		CommManager.send(msg, serverOut, c, sk, sendNonce);
 		this.sendNonce = this.sendNonce.add(BigInteger.ONE);
 	}
 	
-	public String recvWithNonce() {
+	public String recvWithNonce() throws ConnectionException {
 		String msg = CommManager.receive(serverIn, c, sk, recvNonce);
 		this.recvNonce = this.recvNonce.add(BigInteger.ONE);
 		return msg;
@@ -95,6 +98,12 @@ public class ClientProcessor {
 			}
 			if (commands[i].equals("createPassword")) {
 				createPassword();
+			}
+			if (commands[i].equals("quit")) {
+				if (!DEBUG) {
+					System.out.println("Logged out. Exiting system.");
+					System.exit(1);
+				}
 			}
 			// *** Add commands here ***
 		}
