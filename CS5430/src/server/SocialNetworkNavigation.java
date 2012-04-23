@@ -84,7 +84,6 @@ public class SocialNetworkNavigation {
 	/**
 	 * Assuming the path is in the right position, 
 	 * navigate to this board.
-	 * TODO (author) ensure the user can go to this board.
 	 */
 	public static String goToBoard(String username, String[] currentPath, String boardName) {
 		String toReturn = "";
@@ -114,7 +113,6 @@ public class SocialNetworkNavigation {
 	/**
 	 * Assuming the path is in the right position, 
 	 * navigate to this region
-	 * TODO (author) ensure the user can go to this region.
 	 */
 	public static String goToRegion(String username, String[] currentPath, String regionName) {
 		if (currentPath[0] == null || ("freeforall").equals(currentPath[0])) {
@@ -137,7 +135,6 @@ public class SocialNetworkNavigation {
 	/**
 	 * Assuming the path is in the right position, 
 	 * navigate to this post
-	 * TODO (author) ensure the user can view this post
 	 */
 	public static String goToPost(String username, String[] currentPath, int postNum) {
 		if (("freeforall").equals(currentPath[0])) {
