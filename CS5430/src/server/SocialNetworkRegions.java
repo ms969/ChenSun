@@ -84,7 +84,7 @@ public class SocialNetworkRegions {
 				}
 				else if (!authorized.booleanValue()) {
 					DBManager.closeConnection(dbconn);
-					return "print Error: Not authorized to view this board.";
+					return "print Error: Cannot go to board.";
 				}
 			}
 			String msg = SocialNetworkDatabaseRegions.getRegionListRecentPosts(dbconn, username, bname);
@@ -93,8 +93,7 @@ public class SocialNetworkRegions {
 		}
 		else {
 			DBManager.closeConnection(dbconn);
-			return "print Error: Encapsulating Board does not exist. Refresh. " +
-					"If the problem persists, contact an admin.";
+			return "print Error: Cannot go to board.";
 		}
 	}
 	

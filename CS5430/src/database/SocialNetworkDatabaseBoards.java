@@ -182,7 +182,8 @@ public class SocialNetworkDatabaseBoards {
 		/**AUTHORIZATION CHECK **/
 		/**User must be an admin to create a board**/
 		if (!DatabaseAdmin.isAdmin(conn, createdBy)) {
-			return "print Error: Board could not be created (not authorized);";
+			return "print Error: Cannot create a board with the name \"" + boardName 
+					  + "\".";
 		}
 		
 		//PreparedStatement rolePstmt = null;
@@ -252,7 +253,7 @@ public class SocialNetworkDatabaseBoards {
 		}
 		else if (firstsuccess == 0 && !sqlex) {
 			return "print Error: Cannot create a board with the name \"" + boardName 
-			  + "\". Please use a different name.";
+			  + "\".";
 		}
 		else if (secondsuccess && !sqlex) {
 			return "print Error: Database error while creating/initializing a board database. Contact an admin.";
