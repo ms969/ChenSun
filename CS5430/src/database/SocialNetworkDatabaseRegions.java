@@ -94,7 +94,7 @@ public class SocialNetworkDatabaseRegions {
 			return "print Error: Database error while creating the region (Verifying Authorizations). Contact the admin.";
 		}
 		if (!isAd || !isBoardAd) {
-			return "print Error: User is not authorized to create this region (Make this msg more ambig l8r!)";
+			return "print Error: Region cannot be created.";
 		}
 		PreparedStatement regionPstmt = null;
 		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (?)";
@@ -107,7 +107,7 @@ public class SocialNetworkDatabaseRegions {
 		}
 		catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
-				sqlexmsg = "print A region in this board already exists with that name. Try a different name";
+				sqlexmsg = "print Error: Region cannot be created.";
 			}
 			else {
 				e.printStackTrace();
