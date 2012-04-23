@@ -1,14 +1,20 @@
 package database;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import crypto.CryptoUtil;
+import crypto.Hash;
+import crypto.SharedKeyCrypto;
 
 import shared.ProjectConfig;
 
@@ -58,13 +64,28 @@ public class DatabaseAdmin {
 		try {
 			pstmt = conn.prepareStatement(query);
 			pstmt.setString(1, username);
-			pstmt.setString(2, pwhash);
+			pstmt.setString(2, SharedKeyCrypto.encrypt(pwhash));
 			pstmt.setInt(3, aid);
-			pstmt.setString(4, secanswer);
+			pstmt.setString(4, SharedKeyCrypto.encrypt(secanswer));
+			
+			//create checksum to add as 5th element
+			byte[] userBytes = username.getBytes("UTF8");
+			byte[] pwBytes = pwhash.getBytes("UTF8");
+			byte[] ansBytes = secanswer.getBytes("UTF8");
+			
+			byte[] toChecksum = new byte[userBytes.length + pwBytes.length + ansBytes.length];
+			System.arraycopy(userBytes, 0, toChecksum, 0, userBytes.length);
+			System.arraycopy(pwBytes, 0, toChecksum, userBytes.length, pwBytes.length);
+			System.arraycopy(ansBytes, 0, toChecksum, pwBytes.length + userBytes.length, ansBytes.length);
+			
+			pstmt.setString(5, CryptoUtil.encode(Hash.generateChecksum(toChecksum)));
+			
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
 			status = -1;
+		} catch (UnsupportedEncodingException e) {
+			//shouldn't happen
 		} finally {
 			DBManager.closePreparedStatement(pstmt);
 		}
@@ -88,6 +109,42 @@ public class DatabaseAdmin {
 		return status;
 	}
 
+	public static Boolean userIntegrityCheck(Connection conn, String username) {
+		String query = "SELECT pwhash, secanswer, checksum FROM main.users username = ?";
+		ResultSet rs = null;
+		PreparedStatement pstmt = null;
+		Boolean hasIntegrity = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, username);
+			rs = pstmt.executeQuery();
+			if (rs.next()) {
+				//generate the checksum of the actual data
+				byte[] userBytes = username.getBytes("UTF8");
+				byte[] pwBytes = (SharedKeyCrypto.decrypt(rs.getString("pwhash"))).getBytes("UTF8");
+				byte[] ansBytes =(SharedKeyCrypto.decrypt(rs.getString("secanswer"))).getBytes("UTF8");
+				
+				byte[] toChecksum = new byte[userBytes.length + pwBytes.length + ansBytes.length];
+				System.arraycopy(userBytes, 0, toChecksum, 0, userBytes.length);
+				System.arraycopy(pwBytes, 0, toChecksum, userBytes.length, pwBytes.length);
+				System.arraycopy(ansBytes, 0, toChecksum, pwBytes.length + userBytes.length, ansBytes.length);
+				
+				//compare to what is in the database.
+				hasIntegrity = new Boolean(Arrays.equals(CryptoUtil.decode(rs.getString("checksum")), 
+						Hash.generateChecksum(toChecksum)));
+			}
+		}
+		catch (SQLException e) {
+			//hasIntegrity = null
+		} catch (UnsupportedEncodingException e) {
+			// cannot happen
+		}
+		finally {
+			DBManager.closePreparedStatement(pstmt);
+			DBManager.closeResultSet(rs);
+		}
+		return hasIntegrity;
+	}
 	/**
 	 * return an array with the user's info. 
 	 * userInfo[0] = username
@@ -110,10 +167,10 @@ public class DatabaseAdmin {
 			result = pstmt.executeQuery();
 			if (result.next()) {
 				userInfo[0] = result.getString("username");
-				userInfo[1] = result.getString("pwhash");
+				userInfo[1] = SharedKeyCrypto.decrypt(result.getString("pwhash"));
 				userInfo[2] = result.getString("aname");
 				userInfo[3] = result.getString("role");
-				userInfo[4] = result.getString("secanswer");
+				userInfo[4] = SharedKeyCrypto.decrypt(result.getString("secanswer"));
 			} else {
 				userInfo = null;
 			}
@@ -128,16 +185,45 @@ public class DatabaseAdmin {
 	
 	public static int changePassword(Connection conn, String username, String pwdStore) {
 		int status = -1;
-		String query = "UPDATE main.users SET pwhash = ? WHERE username = ?";
+		String fetchAnswer = "SELECT secanswer FROM main.users WHERE username = ?";
+		String query = "UPDATE main.users SET pwhash = ?, checksum = ? WHERE username = ?";
+		PreparedStatement answerStmt = null;
+		ResultSet rs = null;
 		PreparedStatement pstmt = null;
 		try {
-			pstmt = conn.prepareStatement(query);
-			pstmt.setString(1, pwdStore);
-			pstmt.setString(2, username);
-			status = pstmt.executeUpdate();
+			answerStmt = conn.prepareStatement(fetchAnswer);
+			answerStmt.setString(1, username);
+			rs = answerStmt.executeQuery();
+			if (rs.next()) {
+				String secA = SharedKeyCrypto.decrypt(rs.getString("secanswer"));
+				
+				//recalculate the new hash to update this user's entry
+				//create checksum to add as 5th element
+				byte[] userBytes = username.getBytes("UTF8");
+				byte[] pwBytes = pwdStore.getBytes("UTF8");
+				byte[] ansBytes = secA.getBytes("UTF8");
+				
+				byte[] toChecksum = new byte[userBytes.length + pwBytes.length + ansBytes.length];
+				System.arraycopy(userBytes, 0, toChecksum, 0, userBytes.length);
+				System.arraycopy(pwBytes, 0, toChecksum, userBytes.length, pwBytes.length);
+				System.arraycopy(ansBytes, 0, toChecksum, pwBytes.length + userBytes.length, ansBytes.length);
+				
+				pstmt = conn.prepareStatement(query);
+				pstmt.setString(1, SharedKeyCrypto.encrypt(pwdStore));
+				pstmt.setString(2, CryptoUtil.encode(Hash.generateChecksum(toChecksum)));
+				pstmt.setString(3, username);
+				status = pstmt.executeUpdate();
+			}
+			else {
+				//this cannot happen, checked before function is entered
+			}
 		} catch (SQLException e) {
 			status = -1;
+		} catch (UnsupportedEncodingException e) {
+			//cannot happen
 		} finally {
+			DBManager.closeResultSet(rs);
+			DBManager.closeStatement(answerStmt);
 			DBManager.closePreparedStatement(pstmt);
 		}
 		return status;

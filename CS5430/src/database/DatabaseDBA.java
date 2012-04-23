@@ -56,10 +56,10 @@ public class DatabaseDBA {
 	 * Since this function is intended to be used server side, it does not
 	 * return anything. It prints things itself.
 	 */
-	public static void createAcappellaGroup(Connection conn, String aname, String username, String pwhash) {
+	public static void createAcappellaGroup(Connection conn, String aname, String username, String pwhash, String secA) {
 		String insertACappella = "INSERT INTO main.acappella VALUES (null, ?)";
 		String getACappellaID = "SELECT aid FROM main.acappella WHERE aname = ?";
-		String insertSA = "INSERT INTO main.users VALUES (?, ?, ?, 'sa')";
+		String insertSA = "INSERT INTO main.users VALUES (?, ?, ?, 'sa', ?)";
 		
 		PreparedStatement pstmtInsertAC = null;
 		PreparedStatement pstmtGetID = null;
@@ -85,6 +85,7 @@ public class DatabaseDBA {
 					pstmtInsertSA.setString(1, username);
 					pstmtInsertSA.setString(2, pwhash);
 					pstmtInsertSA.setInt(3, aid);
+					pstmtInsertSA.setString(4, secA);
 					success = pstmtInsertSA.executeUpdate();
 					if (success == 1) {
 						conn.commit();
