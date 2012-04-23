@@ -15,6 +15,7 @@ CREATE TABLE main.users (
     pwhash VARCHAR(200) NOT NULL,
     aid INT NOT NULL,
     role ENUM('sa', 'admin', 'member') NOT NULL DEFAULT 'member',
+    secanswer VARCHAR(200) NOT NULL,
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
 );
 CREATE TABLE main.friends (
@@ -35,6 +36,7 @@ CREATE TABLE main.registrationrequests (
     username VARCHAR(100) NOT NULL PRIMARY KEY,
     pwhash VARCHAR(200) NOT NULL,
     aid INT NOT NULL,
+    secanswer VARCHAR(200) NOT NULL,
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
 );
 CREATE TABLE main.boards (
@@ -61,20 +63,20 @@ CREATE TABLE main.keys (
 INSERT INTO main.acappella
 VALUES (null, "Fantasia"), (null, "Hangovers"),(null, "CS Majors"),(null, "After Eight"), (null, "CS5430 TAs");
 INSERT INTO main.users
-VALUES ("mj", "w9f70HG6N+CzeLYzvMD60A==kjCoAX4qDSojahEETPXvxA==", 1, 'sa'),
-("adam", "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ==", 2, 'sa'),
-("kevin", "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q==", 3, 'sa'),
-("sam", "LToMSIiWqFrb0ymExXer4g==uxATu2X8J4cYUtkqA5ygew==", 4, 'sa'),
-("you", "0/9ksQuimGvltlhBS/j/xg==jz9j9Q5XHqgkaquOR7d62w==", 5, 'sa'),
-("april", "lVx8NGZ2u64OAkRhAHD5uA==B1K9To/NW/EUSs4CQhBDsQ==", 1, 'admin'),
-("brook", "WjxjWtPcm+vQXe52Itgj5w==xYflVVq3/dWOZCKrNPROPw==", 4, 'member'),
-("bryan", "+6VnR7LRMbJzuJuROnjK1w==Lbb4XlWxEl1wPp6BQUq5bA==", 2, 'admin'),
-("colin", "MlK9UHwcyhf+owfM5cvNJQ==Xdp1Rjd2dMOkeZMX307g0Q==", 1, 'admin'),
-("connie", "N27yqvAy+qMssAlGoLj8lw==oaTruuTf7Aku9eKZXrqI4w==", 1, 'member'),
-("jocelyn", "b/4VY62r8rXrFo5KBzUDXA==7miLyHYhKsqOMa8yUAJrog==", 1, 'admin'),
-("robert", "rmKA2h5gSPaECVyt7uc7hw==c2Mv762TEa8JmIiGVKoRcg==", 1, 'member'),
-("steve", "8gqHs3f4c2hCmNlsgWgw3A==PBCbLrGG4E+Sw7Lxo/7HeA==", 2, 'member'),
-("otherta", "SmUbMmVOG5mZzHp+9CvtVw==Ynpvfscj6QvuTuqP5ES+Xw==", 5, 'admin');
+VALUES ("mj", "w9f70HG6N+CzeLYzvMD60A==kjCoAX4qDSojahEETPXvxA==", 1, 'sa', "w9f70HG6N+CzeLYzvMD60A==kjCoAX4qDSojahEETPXvxA=="),
+("adam", "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ==", 2, 'sa', "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ=="),
+("kevin", "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q==", 3, 'sa', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("sam", "LToMSIiWqFrb0ymExXer4g==uxATu2X8J4cYUtkqA5ygew==", 4, 'sa', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("you", "0/9ksQuimGvltlhBS/j/xg==jz9j9Q5XHqgkaquOR7d62w==", 5, 'sa', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("april", "lVx8NGZ2u64OAkRhAHD5uA==B1K9To/NW/EUSs4CQhBDsQ==", 1, 'admin', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("brook", "WjxjWtPcm+vQXe52Itgj5w==xYflVVq3/dWOZCKrNPROPw==", 4, 'member', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("bryan", "+6VnR7LRMbJzuJuROnjK1w==Lbb4XlWxEl1wPp6BQUq5bA==", 2, 'admin', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("colin", "MlK9UHwcyhf+owfM5cvNJQ==Xdp1Rjd2dMOkeZMX307g0Q==", 1, 'admin', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("connie", "N27yqvAy+qMssAlGoLj8lw==oaTruuTf7Aku9eKZXrqI4w==", 1, 'member', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("jocelyn", "b/4VY62r8rXrFo5KBzUDXA==7miLyHYhKsqOMa8yUAJrog==", 1, 'admin', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("robert", "rmKA2h5gSPaECVyt7uc7hw==c2Mv762TEa8JmIiGVKoRcg==", 1, 'member', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("steve", "8gqHs3f4c2hCmNlsgWgw3A==PBCbLrGG4E+Sw7Lxo/7HeA==", 2, 'member', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
+("otherta", "SmUbMmVOG5mZzHp+9CvtVw==Ynpvfscj6QvuTuqP5ES+Xw==", 5, 'admin', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q==");
 INSERT INTO main.friends
 VALUES ("april", "mj"),("brook", "sam"),("adam", "bryan"),("april", "colin"),
 ("colin","mj"),("april","connie"),("colin","connie"),("connie","mj"),
@@ -84,7 +86,7 @@ VALUES ("april", "mj"),("brook", "sam"),("adam", "bryan"),("april", "colin"),
 INSERT INTO main.friendrequests
 VALUES ("you", "kevin"),("you", "mj");
 INSERT INTO main.registrationrequests
-VALUES ("fbs", "hwfJMWs9u7VDDKnfHlEbAg==bYb21OyGkXgMzeEj35CtlA==", 5);
+VALUES ("fbs", "hwfJMWs9u7VDDKnfHlEbAg==bYb21OyGkXgMzeEj35CtlA==", 5, "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q==");
 INSERT INTO main.keys
 VALUES (0, "c+qjqf5pTNk=", 1305, "mVxFQ2G+Fr2lDTGciYOozb9NbBco48kDkc9SH4rgVcB9pBYjKY10T9IIBkd30tKYoKdVZbFohX3ihS60gVn6YBgtBEPe64+UGOWq3gKQxCAGP+XTBOIYdaj0KdWb1su4EmhFUYmz/N4gYzBw+gMCIq7TUUtnlNfWOUA+uBnp3tkX1R/WNxfAog==", "OiFAqODR1TspUSA1oHWcMA=="),
 (1, "wFBF6XUc0wI=", 1530, "DNBaz9cZ2fWyXPYNIyJSSA==", "O+lAqmiDFJyEU12xp5GLqg==");

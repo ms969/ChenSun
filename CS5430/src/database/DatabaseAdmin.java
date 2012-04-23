@@ -101,7 +101,7 @@ public class DatabaseAdmin {
 	public static String[] getUserInfo(Connection conn, String user) {
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
-		String[] userInfo = new String[4];
+		String[] userInfo = new String[5];
 		String query = "SELECT username, pwhash, aname, role, secanswer FROM main.users NATURAL JOIN "
 				+ "main.acappella WHERE username = ?";
 		try {
@@ -609,7 +609,7 @@ public class DatabaseAdmin {
 	 * @return array of user info
 	 */
 	public static String[] getRegUserInfo(Connection conn, String username) {
-		String[] userInfo = new String[3];
+		String[] userInfo = new String[4];
 		String query = "SELECT * FROM main.registrationrequests WHERE username = ?";
 		PreparedStatement pstmt = null;
 		ResultSet result = null;

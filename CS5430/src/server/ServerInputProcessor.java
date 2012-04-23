@@ -408,6 +408,7 @@ public class ServerInputProcessor {
 		// ask security question
 		command = "print Please answer the following security question for password retrieval.;";
 		command += SECURITY_QUESTION + "getSecAnswer;";
+		sendWithNonce(command);
 		byte[] answerBytes = recvBytesWithNonce();
 		char[] answerChars = Utils.byteToCharArray(answerBytes);
 		String answerStore = Hash.createPwdHashStore(answerChars);
@@ -436,7 +437,7 @@ public class ServerInputProcessor {
 			salt = secAnswer.substring(0, Hash.SALT_STRING_LENGTH);
 		}
 		command = "print Answer the following security question in lower case:;";
-		command += SECURITY_QUESTION + "getPassword;";
+		command += SECURITY_QUESTION + "getSecAnswer;";
 		sendWithNonce(command);
 		char[] pwdChars = Utils.byteToCharArray(recvBytesWithNonce());
 		
@@ -457,6 +458,7 @@ public class ServerInputProcessor {
 
 	private void changePassword(Connection conn, String username) throws ConnectionException {
 		String command = "createPassword";
+		sendWithNonce(command);
 		byte[] pwdBytes = recvBytesWithNonce();
 		char[] pwdChars = Utils.byteToCharArray(pwdBytes);
 		String pwdStore = Hash.createPwdHashStore(pwdChars);

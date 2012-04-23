@@ -60,7 +60,7 @@ public class CommManager {
 				}
 				return msg;
 			} catch (IOException e) {
-				return null;
+				throw new ConnectionException();
 			}
 		}
 		return null;

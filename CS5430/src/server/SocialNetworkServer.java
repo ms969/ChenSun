@@ -230,7 +230,7 @@ public class SocialNetworkServer {
 		try {
 			// connecting to the client
 			clientSocket = serverSocket.accept();
-			clientSocket.setSoTimeout(ProjectConfig.TIMEOUT);
+			clientSocket.setSoTimeout(ProjectConfig.SERVER_TIMEOUT);
 			SocialNetworkProtocol snp = new SocialNetworkProtocol(clientSocket, privk);
 			Thread client = new Thread(snp);
 			client.start();
