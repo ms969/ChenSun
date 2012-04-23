@@ -1,10 +1,15 @@
 package database;
 
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import crypto.CryptoUtil;
+import crypto.Hash;
+import crypto.SharedKeyCrypto;
 
 public class DatabaseDBA {
 	
@@ -56,7 +61,7 @@ public class DatabaseDBA {
 
 		String insertACappella = "INSERT INTO main.acappella VALUES (null, ?)";
 		String getACappellaID = "SELECT aid FROM main.acappella WHERE aname = ?";
-		String insertSA = "INSERT INTO main.users VALUES (?, ?, ?, 'sa', ?)";
+		String insertSA = "INSERT INTO main.users VALUES (?, ?, ?, 'sa', ?, ?)";
 		
 		PreparedStatement pstmtInsertAC = null;
 		PreparedStatement pstmtGetID = null;
@@ -78,9 +83,21 @@ public class DatabaseDBA {
 					int aid = rs.getInt("aid");
 					pstmtInsertSA = conn.prepareStatement(insertSA);
 					pstmtInsertSA.setString(1, username);
-					pstmtInsertSA.setString(2, pwhash);
+					pstmtInsertSA.setString(2, SharedKeyCrypto.encrypt(pwhash));
 					pstmtInsertSA.setInt(3, aid);
-					pstmtInsertSA.setString(4, answerStore);
+					pstmtInsertSA.setString(4, SharedKeyCrypto.encrypt(answerStore));
+					
+					//create checksum to add as 5th element
+					byte[] userBytes = username.getBytes("UTF8");
+					byte[] pwBytes = pwhash.getBytes("UTF8");
+					byte[] ansBytes = answerStore.getBytes("UTF8");
+					
+					byte[] toChecksum = new byte[userBytes.length + pwBytes.length + ansBytes.length];
+					System.arraycopy(userBytes, 0, toChecksum, 0, userBytes.length);
+					System.arraycopy(pwBytes, 0, toChecksum, userBytes.length, pwBytes.length);
+					System.arraycopy(ansBytes, 0, toChecksum, pwBytes.length + userBytes.length, ansBytes.length);
+					
+					pstmtInsertSA.setString(5, CryptoUtil.encode(Hash.generateChecksum(toChecksum)));
 
 					success = pstmtInsertSA.executeUpdate();
 					if (success == 1) {
@@ -111,6 +128,8 @@ public class DatabaseDBA {
 				e.printStackTrace();
 				System.out.println("Error: Database error during creation of group / user (stack trace above)");
 			}
+		} catch (UnsupportedEncodingException e) {
+			//never should happen
 		}
 		finally {
 			DBManager.closeResultSet(rs);
