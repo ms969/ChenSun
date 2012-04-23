@@ -21,13 +21,14 @@ public class SocialNetworkDatabaseBoards {
 	 * Assumes the board is valid.
 	 */
 	public static Boolean isBoardAdmin(Connection conn, String username, String boardName) {
-		String isAdminQ = "SELECT * FROM " + boardName + ".admins WHERE username = ?";
+		String isAdminQ = "SELECT * FROM main.boardadmins WHERE username = ? AND bname = ?";
 		PreparedStatement pstmt = null;
 		ResultSet adminResult = null;
 		Boolean isAdmin = null;
 		try {
 			pstmt = conn.prepareStatement(isAdminQ);
 			pstmt.setString(1, username);
+			pstmt.setString(2, boardName);
 			adminResult = pstmt.executeQuery();
 			isAdmin = new Boolean(adminResult.next());
 		}
@@ -253,7 +254,6 @@ public class SocialNetworkDatabaseBoards {
 			return "print Error: Cannot create a board with the name \"" + boardName 
 			  + "\". Please use a different name.";
 		}
-		//TODO later on, we might want to make these errors more ambiguous
 		else if (secondsuccess && !sqlex) {
 			return "print Error: Database error while creating/initializing a board database. Contact an admin.";
 		}
@@ -408,7 +408,6 @@ public class SocialNetworkDatabaseBoards {
 	
 	public static ArrayList<String> getBoardAdmins(Connection conn, String board) {
 		if (board.equals("freeforall")) {
-			// TODO: what to return if board is freeforall?
 			return null;
 		}
 		ArrayList<String> admins = new ArrayList<String>();
