@@ -16,6 +16,7 @@ CREATE TABLE main.users (
     aid INT NOT NULL,
     role ENUM('sa', 'admin', 'member') NOT NULL DEFAULT 'member',
     secanswer VARCHAR(200) NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
 );
 CREATE TABLE main.friends (
@@ -63,8 +64,8 @@ CREATE TABLE main.keys (
 INSERT INTO main.acappella
 VALUES (null, "Fantasia"), (null, "Hangovers"),(null, "CS Majors"),(null, "After Eight"), (null, "CS5430 TAs");
 INSERT INTO main.users
-VALUES ("mj", "w9f70HG6N+CzeLYzvMD60A==kjCoAX4qDSojahEETPXvxA==", 1, 'sa', "w9f70HG6N+CzeLYzvMD60A==kjCoAX4qDSojahEETPXvxA=="),
-("adam", "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ==", 2, 'sa', "XLZdAqa/m3yo/kgkv08sCg==V8VaUX1a2uT9uDoOI4opaQ=="),
+VALUES ("mj", "QNsgTBqOjtg=XNd/+1KfD4lrVqC3cE06vF0a9T8Tmqq1VedD69I+QnG2EYREg9vItS2Yyg3j18wP4CuCZ31+5jk=", 1, 'sa', "vMOGlbF4u1g=X3S+Dr0bnenHsTo5+j/a2XbKyyVrV0bcZGRzhSH1DqwCGFf7BrccejVto9rbKSa4RpGVFCQrTYI=", "sOOhsECJ2YowQxNXJfm2Tg=="),
+("adam", "9e6XRvnxp4c=VJZg/ix1DulFZ9DdtGtVMuVwDPb8yW5G9cdY8L3S418iEO/qTvb7Mv9f7gHt2/LV0BYInLA8sdY=", 2, 'sa', "n5SRIxroYdY=04sJXbqug1Xp4Xtqf9668bfao0Ehn1+KriCnAo5cqdF6F8z/BsZuy7LMmXxyztlXJpF02A0RFB0=", "baI0JavHrChZC28BzQl9IA=="),
 ("kevin", "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q==", 3, 'sa', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
 ("sam", "LToMSIiWqFrb0ymExXer4g==uxATu2X8J4cYUtkqA5ygew==", 4, 'sa', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
 ("you", "0/9ksQuimGvltlhBS/j/xg==jz9j9Q5XHqgkaquOR7d62w==", 5, 'sa', "6EpyG1uU/4n5Np9o9zvoOQ==43VzSCDbRlMlCXlPVIu19Q=="),
