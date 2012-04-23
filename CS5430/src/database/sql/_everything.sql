@@ -97,6 +97,7 @@ CREATE TABLE freeforall.posts (
     datePosted DATETIME NOT NULL,
     content VARCHAR(4000) NOT NULL,
     dateLastUpdated DATETIME NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(pid)
     /*FOREIGN KEY(postedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
 );
@@ -106,6 +107,7 @@ CREATE TABLE freeforall.replies (
     repliedBy VARCHAR(100),
     dateReplied DATETIME NOT NULL,
     content VARCHAR(4000) NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(eid, pid),
     FOREIGN KEY(pid) REFERENCES posts(pid) ON DELETE CASCADE
     /*FOREIGN KEY(repliedBy) REFERENCES Main.Users(username) ON DELETE SET NULL*/
@@ -147,6 +149,7 @@ CREATE TABLE helloworldboard.posts (
     datePosted DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
     dateLastUpdated DATETIME NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(pid, rname),
     FOREIGN KEY(rname) REFERENCES regions(rname) ON DELETE CASCADE
 );
@@ -157,6 +160,7 @@ CREATE TABLE helloworldboard.replies (
     repliedBy VARCHAR(100),
     dateReplied DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(eid, rname, pid),
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
 );
@@ -204,6 +208,7 @@ CREATE TABLE fantasiaboard.posts (
     datePosted DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
     dateLastUpdated DATETIME NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(pid, rname),
     FOREIGN KEY(rname) REFERENCES regions(rname) ON DELETE CASCADE
 );
@@ -214,6 +219,7 @@ CREATE TABLE fantasiaboard.replies (
     repliedBy VARCHAR(100),
     dateReplied DATETIME NOT NULL,
     content VARCHAR(2500) NOT NULL,
+    checksum VARCHAR(200) NOT NULL,
     PRIMARY KEY(eid, rname, pid),
     FOREIGN KEY(rname, pid) REFERENCES posts(rname, pid) ON DELETE CASCADE
 );
