@@ -15,7 +15,6 @@ CREATE TABLE main.users (
     pwhash VARCHAR(200) NOT NULL,
     aid INT NOT NULL,
     role ENUM('sa', 'admin', 'member') NOT NULL DEFAULT 'member',
-    secanswer VARCHAR(200) NOT NULL,
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
 );
 CREATE TABLE main.friends (
@@ -36,7 +35,6 @@ CREATE TABLE main.registrationrequests (
     username VARCHAR(100) NOT NULL PRIMARY KEY,
     pwhash VARCHAR(200) NOT NULL,
     aid INT NOT NULL,
-    secanswer VARCHAR(200) NOT NULL,
     FOREIGN KEY (aid) REFERENCES acappella(aid) ON DELETE CASCADE
 );
 CREATE TABLE main.boards (
@@ -51,6 +49,14 @@ CREATE TABLE main.boardadmins (
     FOREIGN KEY (bname) REFERENCES boards(bname) ON DELETE CASCADE,
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );/* new */
+/*Stores the keys to be fetched by the admin*/
+CREATE TABLE main.keys (
+	keyid INT NOT NULL PRIMARY KEY,
+	salt VARCHAR(30) NOT NULL,
+	iterations INT NOT NULL,
+	enckey VARCHAR(200) NOT NULL,
+	checksum VARCHAR(200) NOT NULL
+);
 
 INSERT INTO main.acappella
 VALUES (null, "Fantasia"), (null, "Hangovers"),(null, "CS Majors"),(null, "After Eight"), (null, "CS5430 TAs");
@@ -79,6 +85,9 @@ INSERT INTO main.friendrequests
 VALUES ("you", "kevin"),("you", "mj");
 INSERT INTO main.registrationrequests
 VALUES ("fbs", "hwfJMWs9u7VDDKnfHlEbAg==bYb21OyGkXgMzeEj35CtlA==", 5);
+INSERT INTO main.keys
+VALUES (0, "c+qjqf5pTNk=", 1305, "mVxFQ2G+Fr2lDTGciYOozb9NbBco48kDkc9SH4rgVcB9pBYjKY10T9IIBkd30tKYoKdVZbFohX3ihS60gVn6YBgtBEPe64+UGOWq3gKQxCAGP+XTBOIYdaj0KdWb1su4EmhFUYmz/N4gYzBw+gMCIq7TUUtnlNfWOUA+uBnp3tkX1R/WNxfAog==", "OiFAqODR1TspUSA1oHWcMA=="),
+(1, "wFBF6XUc0wI=", 1530, "DNBaz9cZ2fWyXPYNIyJSSA==", "O+lAqmiDFJyEU12xp5GLqg==");
 
 /* ------------------------------FREE FOR ALL------------------------------------------ */
 CREATE DATABASE freeforall;

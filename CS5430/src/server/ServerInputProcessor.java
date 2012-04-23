@@ -407,7 +407,7 @@ public class ServerInputProcessor {
 		Arrays.fill(pwdChars, ' ');
 		// ask security question
 		command = "print Please answer the following security question for password retrieval.;";
-		command += SECURITY_QUESTION + "getPassword;";
+		command += SECURITY_QUESTION + "getSecAnswer;";
 		byte[] answerBytes = recvBytesWithNonce();
 		char[] answerChars = Utils.byteToCharArray(answerBytes);
 		String answerStore = Hash.createPwdHashStore(answerChars);

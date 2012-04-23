@@ -99,6 +99,9 @@ public class ClientProcessor {
 			if (commands[i].equals("getPassword")) {
 				getPassword();
 			}
+			if (commands[i].equals("getSecAnswer")) {
+				getSecAnswer();
+			}
 			if (commands[i].equals("createPassword")) {
 				createPassword();
 			}
@@ -109,6 +112,33 @@ public class ClientProcessor {
 				}
 			}
 			// *** Add commands here ***
+		}
+	}
+	
+	private void getSecAnswer() throws ConnectionException {
+		char[] charBuff = new char[22];
+		System.out.print(">> ");
+		try {
+			boolean overflow = false;
+			int i = keyboard.read(charBuff);
+			if (keyboard.ready()) {
+				keyboard.readLine();
+				overflow = true;
+			}
+			char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
+			if (overflow) {
+				// if longer than 20 char, blank the array to avoid partially correct pwd
+				Arrays.fill(charBuff, ' ');
+			}
+			byte[] pwdBytes = Utils.charToByteArray(pwd);
+			
+			sendWithNonce(pwdBytes);
+			Arrays.fill(charBuff, ' ');
+			Arrays.fill(pwd, ' ');
+			Arrays.fill(pwdBytes, (byte)0x00);
+			processCommands(recvWithNonce());
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
