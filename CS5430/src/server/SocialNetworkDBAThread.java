@@ -98,7 +98,7 @@ public class SocialNetworkDBAThread implements Runnable{
 				System.out.print(">> ");
 				keyboard.read(charbuf2);
 				
-				//TODO secQ secA
+				
 				
 				if (Arrays.equals(charbuf, charbuf2)) {
 					//generates a pwhash for storage into the database.
@@ -108,8 +108,11 @@ public class SocialNetworkDBAThread implements Runnable{
 					Arrays.fill(charbuf, ' ');
 					Arrays.fill(charbuf2, ' ');
 					
+					//TODO secA
+					String secA = "";
+					
 					Connection conn = DBManager.getConnection();
-					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash);
+					DatabaseDBA.createAcappellaGroup(conn, aname, username, pwhash, secA);
 					DBManager.closeConnection(conn);
 					System.out.println("Feel free to create another group!");
 				}
