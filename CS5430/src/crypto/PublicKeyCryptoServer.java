@@ -60,7 +60,7 @@ public class PublicKeyCryptoServer {
 	 * Null if the param is invalid, or if
 	 * the PKExp static info is somehow corrupted.
 	 */
-	public static PrivateKey serverPrivateKeyRSA(BigInteger privExp) throws NoSuchAlgorithmException, InvalidKeySpecException {
+	public static PrivateKey serverPrivateKeyRSA(BigInteger privExp) {
 		RSAPrivateKeySpec pks = new RSAPrivateKeySpec(serverPKModRSA, privExp);
 		PrivateKey pk = null;
 		try {

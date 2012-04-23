@@ -28,7 +28,7 @@ public class SharedKeyCrypto {
 	
 	private static Key key = null;
 	
-	public static boolean initSharedKeyCrypto(String key_string) {
+	public static boolean initSharedKeyCrypto(byte[] key_string) {
 		try {
 			key = unwrapKey(key_string);
 		} catch (InvalidKeyException e) {
@@ -72,9 +72,9 @@ public class SharedKeyCrypto {
 		return null;
 	}
 	
-	public static SecretKey unwrapKey(String wrappedKey) throws InvalidKeyException, InvalidKeySpecException {
+	public static SecretKey unwrapKey(byte[] wrappedKey) throws InvalidKeyException, InvalidKeySpecException {
 		try {
-			DESKeySpec keySpec = new DESKeySpec(decode(wrappedKey));
+			DESKeySpec keySpec = new DESKeySpec(wrappedKey);
 			SecretKeyFactory factory = SecretKeyFactory.getInstance("DES");
 			SecretKey key = factory.generateSecret(keySpec);
 			return key;
