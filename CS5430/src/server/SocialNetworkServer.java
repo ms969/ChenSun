@@ -113,7 +113,7 @@ public class SocialNetworkServer {
 				
 				byte[] decryptedKey = PasswordBasedEncryption.decrypt(encKey, pwd, salt, iterations);
 				if (decryptedKey == null) {
-					continue;
+					break;
 				}
 				
 				//checksum is made up of (index, salt, iterations, decryptedKey)

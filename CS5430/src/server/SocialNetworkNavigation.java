@@ -101,7 +101,7 @@ public class SocialNetworkNavigation {
 		else {
 			toReturn = SocialNetworkRegions.viewRegions(username, boardName, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
-				currentPath[0] = boardName;
+				currentPath[0] = boardName.toLowerCase();
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
 			}
 			else {
@@ -123,7 +123,7 @@ public class SocialNetworkNavigation {
 		else {
 			String toReturn = SocialNetworkPosts.viewPostList(username, currentPath[0], regionName, true);
 			if (!toReturn.substring(0, ("print Error:").length()).equals("print Error:")) {
-				currentPath[1] = regionName;
+				currentPath[1] = regionName.toLowerCase();
 				toReturn = printPath(currentPath) + "print ;" + toReturn;
 			}
 			else {
