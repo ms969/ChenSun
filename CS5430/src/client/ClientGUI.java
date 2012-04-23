@@ -29,7 +29,7 @@ public class ClientGUI {
 		try {
 			kkSocket = new Socket(InetAddress.getByName(SERVER_HOST_NAME),
 					SERVER_PORT);
-			kkSocket.setSoTimeout(ProjectConfig.TIMEOUT);
+			kkSocket.setSoTimeout(ProjectConfig.CLIENT_TIMEOUT);
 			
 			PublicKey pubk = PublicKeyCryptoClient.serverPublicKeyRSA();
 			if (pubk == null) {

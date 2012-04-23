@@ -38,9 +38,10 @@ public class SocialNetworkAdmin {
 		return command;
 	}
 	
-	public static String insertRegRequest(Connection conn, String newUser, int aid, String pwdStore) {
+	public static String insertRegRequest(Connection conn, String newUser, int aid, 
+			String pwdStore, String answerStore) {
 		String command = "";
-		int success = DatabaseAdmin.insertRegRequest(conn, newUser, aid, pwdStore);
+		int success = DatabaseAdmin.insertRegRequest(conn, newUser, aid, pwdStore, answerStore);
 		if (success == 1) {
 			command = "print Registration request for " + newUser
 					+ " has been sent.;print Once an admin from your group "
@@ -104,6 +105,7 @@ public class SocialNetworkAdmin {
 		}
 		String pwhash = userInfo[1];
 		int aid = Integer.parseInt(userInfo[2]);
+		String secanswer = userInfo[3];
 		try {
 			conn.setAutoCommit(false);
 		} catch (SQLException e) {
@@ -112,7 +114,7 @@ public class SocialNetworkAdmin {
 		}
 		
 		int deleteStatus = DatabaseAdmin.deleteRegRequest(conn, username);
-		int addStatus = DatabaseAdmin.addUser(conn, username, pwhash, aid);
+		int addStatus = DatabaseAdmin.addUser(conn, username, pwhash, aid, secanswer);
 		if (DEBUG) System.out.println("Going into addFriendsFromGroup");
 		int addFriendStatus = DatabaseAdmin.addFriendsFromGroup(conn, username, aid);
 		
@@ -596,6 +598,17 @@ public class SocialNetworkAdmin {
 		command += "print To remove admins, type their usernames separated by comma: " +
 				"'<user1>, <user2>';askForInput;";
 		return command;
+	}
+	
+	public static String changePassword(Connection conn, String username, String pwdStore) {
+		String success = "print Password changed successfully.;";
+		String error = "print Password change failed. Try again or contact System Admin.;";
+		int status = DatabaseAdmin.changePassword(conn, username, pwdStore);
+		if (status >= 0) {
+			return success;
+		} else {
+			return error;
+		}
 	}
 }
 

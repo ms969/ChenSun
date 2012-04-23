@@ -50,16 +50,17 @@ public class DatabaseAdmin {
 	 * @param aid
 	 * @return 1 if successfully added.
 	 */
-	public static int addUser(Connection conn, String username, String pwhash, int aid) {
+	public static int addUser(Connection conn, String username, String pwhash, int aid, String secanswer) {
 		int status = -1;
-		String query = "INSERT INTO main.users (username, pwhash, aid, role) " +
-				"VALUE (?, ?, ?, 'member')";
+		String query = "INSERT INTO main.users (username, pwhash, aid, role, secanswer) " +
+				"VALUE (?, ?, ?, 'member', ?)";
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = conn.prepareStatement(query);
 			pstmt.setString(1, username);
 			pstmt.setString(2, pwhash);
 			pstmt.setInt(3, aid);
+			pstmt.setString(4, secanswer);
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (DEBUG) e.printStackTrace();
@@ -93,14 +94,15 @@ public class DatabaseAdmin {
 	 * userInfo[1] = pwhash
 	 * userInfo[2] = a cappella name 
 	 * userInfo[3] = role
+	 * userInfo[4] = secanswer
 	 * 
 	 * if user does not exist return null
 	 */
 	public static String[] getUserInfo(Connection conn, String user) {
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
-		String[] userInfo = new String[4];
-		String query = "SELECT username, pwhash, aname, role FROM main.users NATURAL JOIN "
+		String[] userInfo = new String[5];
+		String query = "SELECT username, pwhash, aname, role, secanswer FROM main.users NATURAL JOIN "
 				+ "main.acappella WHERE username = ?";
 		try {
 			pstmt = conn.prepareStatement(query);
@@ -111,6 +113,7 @@ public class DatabaseAdmin {
 				userInfo[1] = result.getString("pwhash");
 				userInfo[2] = result.getString("aname");
 				userInfo[3] = result.getString("role");
+				userInfo[4] = result.getString("secanswer");
 			} else {
 				userInfo = null;
 			}
@@ -121,6 +124,23 @@ public class DatabaseAdmin {
 			DBManager.closeResultSet(result);
 		}
 		return userInfo;
+	}
+	
+	public static int changePassword(Connection conn, String username, String pwdStore) {
+		int status = -1;
+		String query = "UPDATE main.users SET pwhash = ? WHERE username = ?";
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = conn.prepareStatement(query);
+			pstmt.setString(1, pwdStore);
+			pstmt.setString(2, username);
+			status = pstmt.executeUpdate();
+		} catch (SQLException e) {
+			status = -1;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
+		}
+		return status;
 	}
 	
 	/**
@@ -521,9 +541,9 @@ public class DatabaseAdmin {
 	 * @param pwdStore
 	 * @return 1 if successfully inserted
 	 */
-	public static int insertRegRequest(Connection conn, String newUser, int aid, String pwdStore) {
-		String query = "INSERT INTO main.registrationrequests (username, aid, pwhash) "
-				+ "VALUE (?, ?, ?)";
+	public static int insertRegRequest(Connection conn, String newUser, int aid, String pwdStore, String answerStore) {
+		String query = "INSERT INTO main.registrationrequests (username, aid, pwhash, secanswer) "
+				+ "VALUE (?, ?, ?, ?)";
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
 		int status = -1;
@@ -532,6 +552,7 @@ public class DatabaseAdmin {
 			pstmt.setString(1, newUser);
 			pstmt.setInt(2, aid);
 			pstmt.setString(3, pwdStore);
+			pstmt.setString(4, answerStore);
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DBManager.DUPLICATE_KEY_CODE) {
@@ -581,13 +602,14 @@ public class DatabaseAdmin {
 	 * userInfo[0] = username
 	 * userInfo[1] = pwhash
 	 * userInfo[2] = aid
+	 * userInfo[3] = secanswer
 	 * Returns null if user is not a registering user or db error.
 	 * @param conn
 	 * @param username the username of the registering user whose info is to be fetched
 	 * @return array of user info
 	 */
 	public static String[] getRegUserInfo(Connection conn, String username) {
-		String[] userInfo = new String[3];
+		String[] userInfo = new String[4];
 		String query = "SELECT * FROM main.registrationrequests WHERE username = ?";
 		PreparedStatement pstmt = null;
 		ResultSet result = null;
@@ -599,6 +621,7 @@ public class DatabaseAdmin {
 				userInfo[0] = result.getString("username");
 				userInfo[1] = result.getString("pwhash");
 				userInfo[2] = result.getString("aid");
+				userInfo[3] = result.getString("secanswer");
 			} else {
 				userInfo = null;
 			}
