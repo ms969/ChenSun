@@ -97,12 +97,13 @@ public class SocialNetworkDatabaseRegions {
 			return "print Error: Region cannot be created.";
 		}
 		PreparedStatement regionPstmt = null;
-		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (?)";
+		String createRegion = "INSERT INTO " + boardName + ".regions VALUES (?, ?)";
 		boolean success = false;
 		String sqlexmsg = "";
 		try {
 			regionPstmt = conn.prepareStatement(createRegion);
 			regionPstmt.setString(1, regionName);
+			regionPstmt.setString(2, username);
 			success =  (regionPstmt.executeUpdate() == 1);
 		}
 		catch (SQLException e) {

@@ -77,7 +77,6 @@ public class SocialNetworkDBAThread implements Runnable{
 				boolean valid = false;
 				int pwlen = 0;
 				while (!valid) {
-					pwlen = keyboard.read(charbuf);
 					
 					EraserThread et = null;
 					if (!ProjectConfig.DEBUG) {
@@ -85,6 +84,7 @@ public class SocialNetworkDBAThread implements Runnable{
 						Thread mask = new Thread(et);
 					    mask.start();
 					}
+					pwlen = keyboard.read(charbuf);
 					if (keyboard.ready()) {
 						//their password is longer than 20 characters
 						keyboard.readLine();
@@ -93,9 +93,9 @@ public class SocialNetworkDBAThread implements Runnable{
 					if (!ProjectConfig.DEBUG){
 						et.stopMasking();
 					}
-					else {
-						valid = CryptoUtil.validPassword(Arrays.copyOf(charbuf, pwlen-2));
-					}
+					
+					valid = CryptoUtil.validPassword(Arrays.copyOf(charbuf, pwlen-2));
+					
 					if (!valid) {
 						System.out.println("Password is not strong enough");
 						System.out.println("Requirements: 6-20 char long");
@@ -106,7 +106,20 @@ public class SocialNetworkDBAThread implements Runnable{
 				
 				System.out.println("Confirm the password");
 				System.out.print(">> ");
+				
+				EraserThread et = null;
+				if (!ProjectConfig.DEBUG) {
+					et = new EraserThread("");
+					Thread mask = new Thread(et);
+				    mask.start();
+				}
 				keyboard.read(charbuf2);
+				if (keyboard.ready()) {
+					keyboard.readLine();
+				}
+				if (!ProjectConfig.DEBUG) {
+					et.stopMasking();
+				}
 
 				// secQ secA
 				System.out.println("Please answer the following security question for password retrieval.");
@@ -115,19 +128,12 @@ public class SocialNetworkDBAThread implements Runnable{
 				char[] charBuff = new char[42];
 				System.out.print(">> ");
 				
-				EraserThread et = null;
-				if (!ProjectConfig.DEBUG) {
-					et = new EraserThread("");
-					Thread mask = new Thread(et);
-				    mask.start();
-				}
+
 				int i = keyboard.read(charBuff);
 				if (keyboard.ready()) {
 					keyboard.readLine();
 				}
-				if (!ProjectConfig.DEBUG) {
-					et.stopMasking();
-				}
+				
 				char[] pwd = Arrays.copyOfRange(charBuff, 0, i-2);
 				String answerStore = Hash.createPwdHashStore(pwd);
 				

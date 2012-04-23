@@ -47,7 +47,7 @@ public class SocialNetworkProtocol implements Runnable {
 			String inputLine;
 			while ((inputLine = iprocessor.recvWithNonce()) != null) {
 				
-				System.out.println(inputLine);
+				//System.out.println(inputLine);
 				iprocessor.processCommand(inputLine);
 			}
 	
