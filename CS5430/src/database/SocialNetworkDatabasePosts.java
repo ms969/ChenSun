@@ -707,6 +707,8 @@ public class SocialNetworkDatabasePosts {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
 		}
 		return status;
 	}
