@@ -1167,6 +1167,8 @@ public class DatabaseAdmin {
 				e.printStackTrace();
 			}
 			status = -1;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
 		}
 		return status;
 	}
