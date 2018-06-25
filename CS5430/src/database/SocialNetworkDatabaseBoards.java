@@ -246,6 +246,7 @@ public class SocialNetworkDatabaseBoards {
 		finally {
 			DBManager.closePreparedStatement(insertBoardPstmt);
 			DBManager.closeResultSet(idresult);
+			DBManager.closePreparedStatement(addAdminPstmt);
 			DBManager.trueAutoCommit(conn);
 		}
 		if (firstsuccess == 1 && secondsuccess && thirdsuccess == 1) {
