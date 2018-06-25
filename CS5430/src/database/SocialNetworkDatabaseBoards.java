@@ -274,9 +274,7 @@ public class SocialNetworkDatabaseBoards {
 	 * Assumes the board already exists and is not 'freeforall' board
 	 */
 	public static Boolean authorizedGoToBoard(Connection conn, String username, String boardname) {
-		Statement stmt = null;
 		PreparedStatement pstmt = null;
-		ResultSet boards = null;
 		ResultSet privResult = null;
 		Boolean authorized = null;
 		try {
@@ -290,24 +288,14 @@ public class SocialNetworkDatabaseBoards {
 				pstmt.setString(2, username);
 				privResult = pstmt.executeQuery();
 				authorized = new Boolean(privResult.next());
-				privResult.close();
-				pstmt.close();
-				privResult = null;
-				pstmt = null;
 			}
 			else if (!role.equals("")) {
-				stmt = conn.createStatement();
-
-				getRegionPrivs = "SELECT privilege FROM " 
+				getRegionPrivs = "SELECT privilege FROM "
 					+ boardname + ".regionprivileges WHERE username = ?";
 				pstmt = conn.prepareStatement(getRegionPrivs);
 				pstmt.setString(1, username);
 				privResult = pstmt.executeQuery();
 				authorized = new Boolean(privResult.next());
-				privResult.close();
-				pstmt.close();
-				privResult = null;
-				pstmt = null;
 			}
 			else { //there was an sql exception when getting the role.
 				
@@ -318,9 +306,8 @@ public class SocialNetworkDatabaseBoards {
 			
 		}
 		finally {
-			DBManager.closeStatement(stmt);
+			DBManager.closeResultSet(privResult);
 			DBManager.closePreparedStatement(pstmt);
-			DBManager.closeResultSet(boards);
 		}
 		return authorized;
 	}
