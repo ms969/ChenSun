@@ -684,6 +684,11 @@ public class SocialNetworkDatabasePosts {
 			sqlex = true;
 		} catch (UnsupportedEncodingException e) {
 			// This should not happen.
+		} finally {
+			DBManager.closeResultSet(postResult);
+			DBManager.closePreparedStatement(originalPost);
+			DBManager.closeResultSet(repliesResult);
+			DBManager.closePreparedStatement(replies);
 		}
 		if (postAndReplies.equals("") && !sqlex) {
 			return "print Error: Post does not exist. Refresh. If the problem persists, contact an admin.";
