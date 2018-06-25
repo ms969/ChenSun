@@ -47,6 +47,7 @@ public class SocialNetworkDatabasePosts {
 			System.out.println(e.getSQLState());
 		}
 		finally {
+			DBManager.closeResultSet(postResult);
 			DBManager.closePreparedStatement(pstmt);
 		}
 		return postExists;
