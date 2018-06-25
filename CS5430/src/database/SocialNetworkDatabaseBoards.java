@@ -342,7 +342,7 @@ public class SocialNetworkDatabaseBoards {
 		try {
 			String getRegionPrivs, getRegionAdmins;
 			String role = DatabaseAdmin.getUserRole(conn, username);
-			
+
 			if (role.equals("admin") || role.equals("sa")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
@@ -351,10 +351,6 @@ public class SocialNetworkDatabaseBoards {
 				while (privResult.next()) { // returns true if there is a result set.
 					boardlist += "print \t" + privResult.getString("bname") + ";";
 				}
-				privResult.close();
-				pstmt.close();
-				privResult = null;
-				pstmt = null;
 			}
 			else if (!role.equals("")) {
 				stmt = conn.createStatement();
@@ -391,9 +387,10 @@ public class SocialNetworkDatabaseBoards {
 			sqlex = true;
 		}
 		finally {
-			DBManager.closeStatement(stmt);
+			DBManager.closeResultSet(privResult);
 			DBManager.closePreparedStatement(pstmt);
 			DBManager.closeResultSet(boards);
+			DBManager.closeStatement(stmt);
 		}
 		if (boardlist.equals("print Boards:;print freeforall") && !sqlex) {
 			return boardlist;
