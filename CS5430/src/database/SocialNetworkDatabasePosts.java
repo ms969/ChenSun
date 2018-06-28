@@ -47,6 +47,7 @@ public class SocialNetworkDatabasePosts {
 			System.out.println(e.getSQLState());
 		}
 		finally {
+			DBManager.closeResultSet(postResult);
 			DBManager.closePreparedStatement(pstmt);
 		}
 		return postExists;
@@ -683,6 +684,11 @@ public class SocialNetworkDatabasePosts {
 			sqlex = true;
 		} catch (UnsupportedEncodingException e) {
 			// This should not happen.
+		} finally {
+			DBManager.closeResultSet(postResult);
+			DBManager.closePreparedStatement(originalPost);
+			DBManager.closeResultSet(repliesResult);
+			DBManager.closePreparedStatement(replies);
 		}
 		if (postAndReplies.equals("") && !sqlex) {
 			return "print Error: Post does not exist. Refresh. If the problem persists, contact an admin.";
@@ -706,6 +712,8 @@ public class SocialNetworkDatabasePosts {
 			status = pstmt.executeUpdate();
 		} catch (SQLException e) {
 			status = 0;
+		} finally {
+			DBManager.closePreparedStatement(pstmt);
 		}
 		return status;
 	}

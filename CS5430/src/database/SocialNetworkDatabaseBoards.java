@@ -246,6 +246,7 @@ public class SocialNetworkDatabaseBoards {
 		finally {
 			DBManager.closePreparedStatement(insertBoardPstmt);
 			DBManager.closeResultSet(idresult);
+			DBManager.closePreparedStatement(addAdminPstmt);
 			DBManager.trueAutoCommit(conn);
 		}
 		if (firstsuccess == 1 && secondsuccess && thirdsuccess == 1) {
@@ -273,9 +274,7 @@ public class SocialNetworkDatabaseBoards {
 	 * Assumes the board already exists and is not 'freeforall' board
 	 */
 	public static Boolean authorizedGoToBoard(Connection conn, String username, String boardname) {
-		Statement stmt = null;
 		PreparedStatement pstmt = null;
-		ResultSet boards = null;
 		ResultSet privResult = null;
 		Boolean authorized = null;
 		try {
@@ -289,24 +288,14 @@ public class SocialNetworkDatabaseBoards {
 				pstmt.setString(2, username);
 				privResult = pstmt.executeQuery();
 				authorized = new Boolean(privResult.next());
-				privResult.close();
-				pstmt.close();
-				privResult = null;
-				pstmt = null;
 			}
 			else if (!role.equals("")) {
-				stmt = conn.createStatement();
-
-				getRegionPrivs = "SELECT privilege FROM " 
+				getRegionPrivs = "SELECT privilege FROM "
 					+ boardname + ".regionprivileges WHERE username = ?";
 				pstmt = conn.prepareStatement(getRegionPrivs);
 				pstmt.setString(1, username);
 				privResult = pstmt.executeQuery();
 				authorized = new Boolean(privResult.next());
-				privResult.close();
-				pstmt.close();
-				privResult = null;
-				pstmt = null;
 			}
 			else { //there was an sql exception when getting the role.
 				
@@ -317,9 +306,8 @@ public class SocialNetworkDatabaseBoards {
 			
 		}
 		finally {
-			DBManager.closeStatement(stmt);
+			DBManager.closeResultSet(privResult);
 			DBManager.closePreparedStatement(pstmt);
-			DBManager.closeResultSet(boards);
 		}
 		return authorized;
 	}
@@ -342,7 +330,7 @@ public class SocialNetworkDatabaseBoards {
 		try {
 			String getRegionPrivs, getRegionAdmins;
 			String role = DatabaseAdmin.getUserRole(conn, username);
-			
+
 			if (role.equals("admin") || role.equals("sa")) { // an admin
 				getRegionAdmins = "SELECT * FROM main.boardadmins WHERE username = ?";
 				pstmt = conn.prepareStatement(getRegionAdmins);
@@ -351,10 +339,6 @@ public class SocialNetworkDatabaseBoards {
 				while (privResult.next()) { // returns true if there is a result set.
 					boardlist += "print \t" + privResult.getString("bname") + ";";
 				}
-				privResult.close();
-				pstmt.close();
-				privResult = null;
-				pstmt = null;
 			}
 			else if (!role.equals("")) {
 				stmt = conn.createStatement();
@@ -391,9 +375,10 @@ public class SocialNetworkDatabaseBoards {
 			sqlex = true;
 		}
 		finally {
-			DBManager.closeStatement(stmt);
+			DBManager.closeResultSet(privResult);
 			DBManager.closePreparedStatement(pstmt);
 			DBManager.closeResultSet(boards);
+			DBManager.closeStatement(stmt);
 		}
 		if (boardlist.equals("print Boards:;print freeforall") && !sqlex) {
 			return boardlist;
